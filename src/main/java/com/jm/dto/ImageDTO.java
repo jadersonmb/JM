@@ -17,4 +17,5 @@ public class ImageDTO {
     private String fileName;
     private String url;
     private UUID userId;
+    private String fileKey;
 }
