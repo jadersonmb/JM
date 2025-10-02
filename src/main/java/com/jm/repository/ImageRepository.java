@@ -7,10 +7,12 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ImageRepository extends CrudRepository<Image, UUID>, JpaSpecificationExecutor<Users> {
 
-    List<Image> findByUsersId(UUID userId);
+    Optional<List<Image>> findByUsersId(UUID userId);
+    void deleteByFileName(String fileName);
 }

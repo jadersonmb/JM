@@ -45,7 +45,7 @@ public class UserService {
     }
 
     public Users findByEntityId(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_EXISTS;
+        ProblemType problemType = ProblemType.USER_NOT_FOUND;
         Optional<Users> obj = repository.findById(id);
         String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
         return obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
@@ -53,7 +53,7 @@ public class UserService {
     }
 
     public UserDTO findById(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_EXISTS;
+        ProblemType problemType = ProblemType.USER_NOT_FOUND;
         Optional<Users> obj = repository.findById(id);
         String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
         return mapper
@@ -62,7 +62,7 @@ public class UserService {
     }
 
     public Users findEntityById(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_EXISTS;
+        ProblemType problemType = ProblemType.USER_NOT_FOUND;
         Optional<Users> obj = repository.findById(id);
         String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
         return obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),

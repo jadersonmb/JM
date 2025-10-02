@@ -11,12 +11,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLConnection;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/cloudflare/storage")
 @Data
 @AllArgsConstructor
+@RequestMapping("/api/v1/cloudflare/storage")
 public class CloudFlareStorageController {
 
     private final CloudflareR2Service r2Service;
@@ -40,11 +41,16 @@ public class CloudFlareStorageController {
     @GetMapping("/view/{userId}/{fileName}")
     public ResponseEntity<byte[]> viewImage(@PathVariable UUID userId, @PathVariable String fileName) {
             byte[] imageData = r2Service.downloadFile(userId, fileName);
-            String contentType = "image/jpeg";
+            String contentType = URLConnection.guessContentTypeFromName(fileName);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(imageData);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> listFiles() {
+        return ResponseEntity.ok().body(r2Service.listFiles());
     }
 
     @DeleteMapping("/{userId}/{fileName}")

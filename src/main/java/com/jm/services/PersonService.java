@@ -43,7 +43,7 @@ public class PersonService {
     }
 
     public PersonDTO findById(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.PERSON_NOT_EXISTS;
+        ProblemType problemType = ProblemType.PERSON_NOT_FOUND;
         Optional<Person> obj = repository.findById(id);
         String messageDetails = messageSource.getMessage(problemType.getMessageSource(),
                 new Object[]{""}, LocaleContextHolder.getLocale());

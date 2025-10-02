@@ -42,9 +42,7 @@ public class CloudflareR2Service {
         this.userService = userService;
     }
 
-
-    public ImageDTO uploadFile(@RequestParam("file") MultipartFile file,
-                               @RequestParam("userId") UUID userId) {
+    public ImageDTO uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("userId") UUID userId) {
         try {
 
             UserDTO userDTO = userService.findById(userId);
@@ -54,23 +52,16 @@ public class CloudflareR2Service {
             String key = (userDTO.getId() != null) ? userDTO.getId() + "/" + fileName : fileName;
 
             /* Faz o upload do file */
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .contentLength(file.getSize())
-                    .build();
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder().bucket(bucketName).key(key)
+                    .contentType(file.getContentType()).contentLength(file.getSize()).build();
 
-            s3Client.putObject(putObjectRequest,
-                    RequestBody.fromBytes(file.getBytes()));
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
+            ImageDTO imageDTO = imageService.save(ImageDTO.builder().fileName(fileName)
+                    .url(publicUrl + "/bucketName" + "/fileName").userId(userDTO.getId()).fileKey(key).build());
 
-            return imageService.save(ImageDTO.builder()
-                    .fileName(fileName)
-                    .url(publicUrl + "/bucketName" + "/fileName")
-                    .userId(userDTO.getId())
-                    .fileKey(key)
-                    .build());
+            imageDTO.setFileKey(key);
+            return imageDTO;
 
         } catch (Exception e) {
             logger.info("Error to uploading file: {}", e.getMessage());
@@ -89,10 +80,8 @@ public class CloudflareR2Service {
 
     public byte[] downloadFile(@PathVariable UUID userId, @PathVariable String fileName) {
         try {
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(userId + "/" + generateFileName(fileName, userId))
-                    .build();
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder().bucket(bucketName)
+                    .key(userId + "/" + generateFileName(fileName, userId)).build();
             ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
             return objectBytes.asByteArray();
         } catch (Exception e) {
@@ -103,26 +92,27 @@ public class CloudflareR2Service {
         }
     }
 
-    public List<String> listFiles(String prefix) {
-        ListObjectsV2Request request = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .prefix(prefix)
-                .build();
+    public List<String> listFiles() {
+        try {
+            ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).prefix("").build();
 
-        ListObjectsV2Response response = s3Client.listObjectsV2(request);
-        return response.contents().stream()
-                .map(S3Object::key)
-                .collect(Collectors.toList());
+            ListObjectsV2Response response = s3Client.listObjectsV2(request);
+            return response.contents().stream().map(S3Object::key).collect(Collectors.toList());
+        } catch (Exception e) {
+            logger.info("Error to get file: {}", e.getMessage());
+            ProblemType problemType = ProblemType.ERROR_GET_FILE;
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error to get file: " + e.getMessage());
+        }
     }
 
     public void deleteFile(UUID userId, String fileName) {
         try {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(userId + "/" + generateFileName(fileName, userId))
-                    .build();
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName)
+                    .key(userId + "/" + generateFileName(fileName, userId)).build();
 
             s3Client.deleteObject(deleteObjectRequest);
+            imageService.delete(fileName);
         } catch (Exception e) {
             logger.info("Error to delete file: {}", e.getMessage());
             ProblemType problemType = ProblemType.ERROR_DELETE_FILE;
@@ -131,7 +121,9 @@ public class CloudflareR2Service {
         }
     }
 
-    /* Gerar URL pública (se configurado domínio no R2)  Ou seu domínio customizado*/
+    /*
+     * Gerar URL pública (se configurado domínio no R2) Ou seu domínio customizado
+     */
     public String getPublicUrl(String fileKey) {
         return "https://pub-" + fileKey + ".r2.dev";
     }
