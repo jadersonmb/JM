@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 public class UserMapper {
 
     public UserDTO toDTO(Users entity){
+        if (entity == null) {
+            return null;
+        }
         return UserDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -20,10 +23,14 @@ public class UserMapper {
                 .postalCode(entity.getPostalCode())
                 .state(entity.getState())
                 .street(entity.getStreet())
+                .type(entity.getType())
                 .build();
     }
 
     public Users toEntity(UserDTO userDTO){
+        if (userDTO == null) {
+            return null;
+        }
         return Users.builder()
                 .id(userDTO.getId())
                 .name(userDTO.getName())
@@ -37,6 +44,7 @@ public class UserMapper {
                 .state(userDTO.getState())
                 .street(userDTO.getStreet())
                 .password(userDTO.getPassword())
+                .type(userDTO.getType())
                 .build();
     }
 
@@ -53,6 +61,4 @@ public class UserMapper {
         entity.setStreet(entity.getStreet());
         return entity;
     }
-
 }
-

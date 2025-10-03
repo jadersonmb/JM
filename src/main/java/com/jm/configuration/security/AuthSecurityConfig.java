@@ -13,6 +13,9 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.GrantedAuthority;
@@ -67,14 +70,15 @@ public class AuthSecurityConfig {
     }
 
     @Bean
+    @Order(Ordered.LOWEST_PRECEDENCE - 1)
     public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Desativa CSRF para facilitar testes
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**").permitAll() // Endpoints públicos
-                        .anyRequest().authenticated() // Protege os demais
+                        .requestMatchers("/public/**", "/api/auth/**", "/oauth2/token", "/oauth2/jwks").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt()); // Aceita Bearer Token
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt());
 
         return http.build();
     }
@@ -82,16 +86,14 @@ public class AuthSecurityConfig {
     @Bean
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
-        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(withDefaults()); // Ativa o OpenID Connect (opcional)
-
+        http.getConfigurer(OAuth2AuthorizationServerConfigurer.class).oidc(withDefaults());
         return http.build();
     }
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
         return AuthorizationServerSettings.builder()
-                .issuer("http://localhost:8080") // Certifique-se de que o issuer está correto
+                .issuer("http://localhost:8080")
                 .authorizationEndpoint("/oauth2/authorize")
                 .tokenEndpoint("/oauth2/token")
                 .jwkSetEndpoint("/oauth2/jwks")
@@ -107,7 +109,8 @@ public class AuthSecurityConfig {
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtClaimsCustomizer(UserRepository userRepository) {
         return context -> {
             Object principal = context.getPrincipal().getPrincipal();
-            if (principal instanceof User user) {
+            if (principal instanceof User) {
+                User user = (User) principal;
                 Users users = userRepository.findByEmail(user.getUsername())
                         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
@@ -138,7 +141,7 @@ public class AuthSecurityConfig {
         JdbcRegisteredClientRepository clientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
 
         RegisteredClient existingClient = clientRepository.findByClientId("JM");
-        if (existingClient == null) { // Evita duplicação de clientes
+        if (existingClient == null) {
             RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
                     .clientId("JM")
                     .clientSecret(passwordEncoder.encode("4ICvE=Qejwort0LcRBQPC)Xna"))
@@ -208,5 +211,13 @@ public class AuthSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(provider);
     }
 }

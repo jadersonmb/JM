@@ -10,6 +10,8 @@ import com.jm.entity.Users;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.execption.Response;
+import com.jm.mappers.UserMapper;
+
 import lombok.SneakyThrows;
 import org.apache.logging.log4j.util.Strings;
 import org.bytedeco.opencv.global.opencv_core;
@@ -53,13 +55,15 @@ public class FaceDetectionService {
 
     private final UserService userService;
     private final ImageService imageService;
-    //private final VideoFrameDisplay frameDisplay = new VideoFrameDisplay();
+    /* private final VideoFrameDisplay frameDisplay = new VideoFrameDisplay(); */
     private final FlickrDownloader flickrDownloader = new FlickrDownloader();
+    private final UserMapper userMapper;
 
-    public FaceDetectionService(UserService userService, ImageService imageService) {
+    public FaceDetectionService(UserService userService, ImageService imageService, UserMapper userMapper) {
         this.imageService = imageService;
         this.faceRecognizer = LBPHFaceRecognizer.create();
         this.userService = userService;
+        this.userMapper = userMapper;
     }
 
     public Response detectFacesOpenCV(@RequestParam("file") MultipartFile file) {
@@ -70,7 +74,7 @@ public class FaceDetectionService {
             }
             CascadeClassifier faceDetector = new CascadeClassifier(tempFile.toString());
 
-            /* Converte a imagem para grayscale e adiciona à lista de imagens*/
+            /* Converte a imagem para grayscale e adiciona à lista de imagens */
             Mat image = opencv_imgcodecs.imdecode(new Mat(file.getBytes()), opencv_imgcodecs.IMREAD_GRAYSCALE);
 
             /* Detectar rostos */
@@ -79,23 +83,23 @@ public class FaceDetectionService {
 
             showInDisplay(image);
 
-            return Response.builder().status(HttpStatus.OK.value()).message("Faces detectable: " + faceDetections.size()).build();
+            return Response.builder().status(HttpStatus.OK.value())
+                    .message("Faces detectable: " + faceDetections.size()).build();
 
         } catch (Exception e) {
             logger.info("Error to process file: " + e.getMessage());
             ProblemType problemType = ProblemType.ERROR_FACE_DETECTED;
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(), "Error to process file: " + file.getOriginalFilename());
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error to process file: " + file.getOriginalFilename());
         }
     }
 
     public Response recognizeImage(@RequestParam("file") MultipartFile file) throws IOException {
         this.faceRecognizer.read("user_model_jaderson.xml");
-        /* Realizar reconhecimento*/
-        handlerFaceRecognized(opencv_imgcodecs.imdecode(new Mat(file.getBytes()), opencv_imgcodecs.IMREAD_GRAYSCALE), new Rect(), new Mat());
-        return Response.
-                builder()
-                .status(HttpStatus.OK.value())
-                .message("Face recognized successfully").build();
+        /* Realizar reconhecimento */
+        handlerFaceRecognized(opencv_imgcodecs.imdecode(new Mat(file.getBytes()), opencv_imgcodecs.IMREAD_GRAYSCALE),
+                new Rect(), new Mat());
+        return Response.builder().status(HttpStatus.OK.value()).message("Face recognized successfully").build();
     }
 
     public Response processVideo(MultipartFile videoFilePath, String filePathXml) {
@@ -111,13 +115,14 @@ public class FaceDetectionService {
 
             if (!videoCapture.isOpened()) {
                 logger.info("Error opening video.");
-                throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.ERROR_FACE_DETECTED.getUri(), ProblemType.ERROR_FACE_DETECTED.getTitle(), "Error opening video");
+                throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.ERROR_FACE_DETECTED.getUri(),
+                        ProblemType.ERROR_FACE_DETECTED.getTitle(), "Error opening video");
             }
 
             Mat frame = new Mat();
             Mat grayFrame = new Mat();
             while (videoCapture.read(frame)) {
-                /* Converte a imagem para grayscale e adiciona à lista de imagens*/
+                /* Converte a imagem para grayscale e adiciona à lista de imagens */
                 opencv_imgproc.cvtColor(frame, grayFrame, opencv_imgproc.COLOR_BGR2GRAY);
 
                 /* Detectar rostos no frame */
@@ -125,14 +130,16 @@ public class FaceDetectionService {
                 faceDetector.detectMultiScale(grayFrame, faceDetections);
 
                 for (Rect rect : faceDetections.get()) {
-                    /* Recortar a região do rosto para reconhecimento
-                     * logger.info("Face detected: " + rect); */
+                    /*
+                     * Recortar a região do rosto para reconhecimento logger.info("Face detected: "
+                     * + rect);
+                     */
                     Mat face = new Mat(grayFrame, rect);
 
                     /* Redimensionar para o tamanho esperado pelo modelo treinado */
                     opencv_imgproc.resize(face, face, new Size(200, 200));
                     handlerFaceRecognized(face, rect, frame);
-                    /*opencv_highgui.imshow("Face Detection", frame);*/
+                    /* opencv_highgui.imshow("Face Detection", frame); */
                 }
                 showInDisplay(frame);
             }
@@ -142,7 +149,8 @@ public class FaceDetectionService {
         } catch (Exception e) {
             logger.error("Error to process video: " + e.getMessage());
             ProblemType problemType = ProblemType.ERROR_VIDEO_PROCESS;
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(), "Error to process video: " + videoFilePath);
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error to process video: " + videoFilePath);
         }
     }
 
@@ -161,7 +169,8 @@ public class FaceDetectionService {
 
             if (!videoCapture.isOpened()) {
                 logger.info("Error opening video.");
-                throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.ERROR_FACE_DETECTED.getUri(), ProblemType.ERROR_FACE_DETECTED.getTitle(), "Error opening video");
+                throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.ERROR_FACE_DETECTED.getUri(),
+                        ProblemType.ERROR_FACE_DETECTED.getTitle(), "Error opening video");
             }
 
             Mat frame = new Mat();
@@ -171,7 +180,7 @@ public class FaceDetectionService {
             List<Integer> labels = new ArrayList<>();
 
             while (videoCapture.read(frame)) {
-                /* Converte a imagem para grayscale e adiciona à lista de imagens*/
+                /* Converte a imagem para grayscale e adiciona à lista de imagens */
                 opencv_imgproc.cvtColor(frame, grayFrame, opencv_imgproc.COLOR_BGR2GRAY);
 
                 /* Detectar rostos no frame */
@@ -179,8 +188,10 @@ public class FaceDetectionService {
                 faceDetector.detectMultiScale(grayFrame, faceDetections);
 
                 for (Rect rect : faceDetections.get()) {
-                    /* Recortar a região do rosto para reconhecimento
-                     * logger.info("Face detected: " + rect); */
+                    /*
+                     * Recortar a região do rosto para reconhecimento logger.info("Face detected: "
+                     * + rect);
+                     */
                     Mat face = new Mat(grayFrame, rect);
                     /* Redimensionar para o tamanho esperado pelo modelo treinado */
                     opencv_imgproc.resize(face, face, new Size(200, 200));
@@ -192,13 +203,16 @@ public class FaceDetectionService {
             }
             videoCapture.release();
 
-            /* Converter a lista de imagens para MatVector*/
+            /* Converter a lista de imagens para MatVector */
             MatVector images = new MatVector(imageMats.size());
             for (int i = 0; i < imageMats.size(); i++) {
                 images.put(i, imageMats.get(i));
             }
 
-            /* Converter a lista de labels para um Mat do tipo CV_32SC1 (inteiros de 32 bits)*/
+            /*
+             * Converter a lista de labels para um Mat do tipo CV_32SC1 (inteiros de 32
+             * bits)
+             */
             Mat labelsMat = new Mat(labels.size(), 1, opencv_core.CV_32SC1);
             for (int i = 0; i < labels.size(); i++) {
                 labelsMat.ptr(i).putInt(labels.get(i));
@@ -211,7 +225,8 @@ public class FaceDetectionService {
         } catch (Exception e) {
             logger.error("Error to process video: " + e.getMessage());
             ProblemType problemType = ProblemType.ERROR_VIDEO_PROCESS;
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(), "Error to process video: " + videoFilePath);
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error to process video: " + videoFilePath);
         }
     }
 
@@ -223,35 +238,42 @@ public class FaceDetectionService {
 
         if (userImages.isEmpty()) {
             ProblemType problemType = ProblemType.IMAGE_NOT_FOUND;
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), "Image not found for user: " + users.getId());
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                    "Image not found for user: " + users.getId());
         }
 
         List<Mat> imageMats = new ArrayList<>();
         List<Integer> labels = new ArrayList<>();
 
-        /*getAllImgByUserForTrain(user, imageMats, labels);*/
-        /*getImgFromInternet("neymar", imageMats, labels, user);*/
+        /* getAllImgByUserForTrain(user, imageMats, labels); */
+        /* getImgFromInternet("neymar", imageMats, labels, user); */
 
         for (Image img : userImages) {
-            Mat imageMat = opencv_imgcodecs.imdecode(new Mat(Commons.downloadImageStorageByFileName(BUCKET_NAME, img.getFileName())), opencv_imgcodecs.IMREAD_GRAYSCALE);
+            Mat imageMat = opencv_imgcodecs.imdecode(
+                    new Mat(Commons.downloadImageStorageByFileName(BUCKET_NAME, img.getFileName())),
+                    opencv_imgcodecs.IMREAD_GRAYSCALE);
 
             Mat resizedMat = new Mat();
             opencv_imgproc.resize(imageMat, resizedMat, new Size(200, 200));
 
             imageMats.add(resizedMat);
             labels.add(users.getId().hashCode());
-        };
+        }
+        ;
 
         users.setHashCode(hashCodeUser);
-        userService.updateUserEntity(users);
+        userService.updateUser(userMapper.toDTO(users));
 
-        /* Converter a lista de imagens para MatVector*/
+        /* Converter a lista de imagens para MatVector */
         MatVector images = new MatVector(imageMats.size());
         for (int i = 0; i < imageMats.size(); i++) {
             images.put(i, imageMats.get(i));
         }
 
-        /* Converter a lista de labels para um Mat do tipo CV_32SC1 (inteiros de 32 bits)*/
+        /*
+         * Converter a lista de labels para um Mat do tipo CV_32SC1 (inteiros de 32
+         * bits)
+         */
         Mat labelsMat = new Mat(labels.size(), 1, opencv_core.CV_32SC1);
         for (int i = 0; i < labels.size(); i++) {
             labelsMat.ptr(i).putInt(labels.get(i));
@@ -261,14 +283,17 @@ public class FaceDetectionService {
 
         saveTrainedModel(users.getName());
 
-        return Response.builder().status(HttpStatus.OK.value()).message("Model training successfully for user: " + users.getName()).build();
+        return Response.builder().status(HttpStatus.OK.value())
+                .message("Model training successfully for user: " + users.getName()).build();
     }
 
     private void getImgFromInternet(String query, List<Mat> imageMats, List<Integer> labels, Users users) {
         PhotoList<Photo> photos = flickrDownloader.getImageWithQuery(query, 50);
         photos.forEach(photo -> {
             try {
-                Mat imageMat = opencv_imgcodecs.imdecode(new Mat(flickrDownloader.downloadImageAsBytes(photo.getMediumUrl())), opencv_imgcodecs.IMREAD_GRAYSCALE);
+                Mat imageMat = opencv_imgcodecs.imdecode(
+                        new Mat(flickrDownloader.downloadImageAsBytes(photo.getMediumUrl())),
+                        opencv_imgcodecs.IMREAD_GRAYSCALE);
                 Mat resizedMat = new Mat();
                 opencv_imgproc.resize(imageMat, resizedMat, new Size(200, 200));
 
@@ -287,12 +312,13 @@ public class FaceDetectionService {
     }
 
     private void handlerFaceRecognized(Mat img, Rect rect, Mat frame) {
-        /* Realizar reconhecimento*/
+        /* Realizar reconhecimento */
         int[] predictedLabel = new int[1];
         double[] confidence = new double[1];
         faceRecognizer.predict(img, predictedLabel, confidence);
         if (confidence[0] < 50.0) {
-            opencv_imgproc.rectangle(frame, new Point(rect.x(), rect.y()), new Point(rect.x() + rect.width(), rect.y() + rect.height()), new Scalar(0, 255, 0, 0));
+            opencv_imgproc.rectangle(frame, new Point(rect.x(), rect.y()),
+                    new Point(rect.x() + rect.width(), rect.y() + rect.height()), new Scalar(0, 255, 0, 0));
             Users usersName = userService.getUserFromLabel(predictedLabel[0]);
             logger.info("Face detected: " + usersName.getName() + " with confidant: " + confidence[0]);
         }
@@ -306,11 +332,11 @@ public class FaceDetectionService {
         } catch (IOException e) {
             logger.error("Error creating temp file: " + e.getMessage());
             ProblemType problemType = ProblemType.ERROR_FACE_DETECTED;
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(), "Error creating temp file frontal face: " + e.getMessage());
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error creating temp file frontal face: " + e.getMessage());
         }
         return tempFile;
     }
-
 
     private void getAllImgByUserForTrain(Users users, List<Mat> imageMats, List<Integer> labels) throws IOException {
         Commons.downloadImageStorageByFolder(BUCKET_NAME, users.getId().toString()).forEach(imageBytes -> {
@@ -319,7 +345,7 @@ public class FaceDetectionService {
             Mat resizedMat = new Mat();
             opencv_imgproc.resize(imageMat, resizedMat, new Size(200, 200));
 
-            //showInDisplay(imageMat);
+            // showInDisplay(imageMat);
 
             imageMats.add(imageMat);
             labels.add(users.getId().hashCode());
@@ -333,7 +359,7 @@ public class FaceDetectionService {
 
     private void showInDisplay(Mat image) {
         if (isShowVideo) {
-           // frameDisplay.showInFrame(image);
+            // frameDisplay.showInFrame(image);
         }
     }
 }

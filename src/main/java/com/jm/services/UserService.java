@@ -14,24 +14,26 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.util.StringUtils;
 import java.util.UUID;
 
 @Service
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-
     private final UserRepository repository;
     private final UserMapper mapper;
     private final MessageSource messageSource;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource) {
+    public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
+            PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -40,44 +42,63 @@ public class UserService {
 
     public UserDTO createUser(UserDTO dto) {
         Users entity = mapper.toEntity(dto);
-        entity.setType(Users.Type.CLIENT);
-        return mapper.toDTO(repository.save(entity));
+        if (!StringUtils.hasText(entity.getPassword()) && dto.getId() != null) {
+            repository.findById(dto.getId()).ifPresent(existing -> entity.setPassword(existing.getPassword()));
+        }
+        encodePasswordIfPresent(entity, dto.getPassword());
+        if (entity.getType() == null) {
+            entity.setType(Users.Type.CLIENT);
+        }
+        Users saved = repository.save(entity);
+        logger.debug("User {} saved with id {}", saved.getEmail(), saved.getId());
+        return mapper.toDTO(saved);
     }
 
     public Users findByEntityId(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_FOUND;
-        Optional<Users> obj = repository.findById(id);
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
-        return obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
-                problemType.getTitle(), problemType.getUri(), messageDetails));
+        return repository.findById(id).orElseThrow(this::userNotFound);
     }
 
     public UserDTO findById(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_FOUND;
-        Optional<Users> obj = repository.findById(id);
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
-        return mapper
-                .toDTO(obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
-                        problemType.getTitle(), problemType.getUri(), messageDetails)));
+        return mapper.toDTO(repository.findById(id).orElseThrow(this::userNotFound));
     }
 
     public Users findEntityById(UUID id) throws JMException {
-        ProblemType problemType = ProblemType.USER_NOT_FOUND;
-        Optional<Users> obj = repository.findById(id);
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, LocaleContextHolder.getLocale());
-        return obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
-                problemType.getTitle(), problemType.getUri(), messageDetails));
+        return repository.findById(id).orElseThrow(this::userNotFound);
     }
 
     public UserDTO updateUser(UserDTO dto) {
-        return mapper.toDTO(repository.save(mapper.toEntity(dto)));
+        return createUser(dto);
     }
 
-    public UserDTO updateUserEntity(Users entity) {
-        return mapper.toDTO(repository.save(mapper.toUpdate(entity)));
+    public UserDTO updatePassword(UUID userId, String rawPassword) throws JMException {
+        Users user = findEntityById(userId);
+        encodePasswordIfPresent(user, rawPassword);
+        Users updated = repository.save(user);
+        return mapper.toDTO(updated);
+    }
+
+    public UserDTO updatePasswordByEmail(String email, String rawPassword) throws JMException {
+        Users user = repository.findByEmail(email).orElseThrow(this::userNotFound);
+        encodePasswordIfPresent(user, rawPassword);
+        Users updated = repository.save(user);
+        return mapper.toDTO(updated);
     }
 
     public Users getUserFromLabel(int hasCode) {
         return repository.findByHashCode(hasCode);
+    }
+
+    private JMException userNotFound() {
+        ProblemType problemType = ProblemType.USER_NOT_FOUND;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
+    }
+
+    private void encodePasswordIfPresent(Users entity, String rawPassword) {
+        if (StringUtils.hasText(rawPassword)) {
+            entity.setPassword(passwordEncoder.encode(rawPassword));
+        }
     }
 }

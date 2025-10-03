@@ -1,5 +1,6 @@
 package com.jm.dto;
 
+import com.jm.entity.Users;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,4 +28,5 @@ public class UserDTO {
     private String postalCode;
     private String country;
     private String password;
+    private Users.Type type;
 }
