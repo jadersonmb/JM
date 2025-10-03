@@ -21,7 +21,7 @@
         <div class="grid gap-4 md:grid-cols-2">
           <div>
             <label class="mb-1 block text-sm font-semibold text-slate-700">Default user role</label>
-            <select v-model="preferences.defaultRole" class="input" required>
+            <select v-model="preferences.defaultRole" class="input" required >
               <option value="user">User</option>
               <option value="moderator">Moderator</option>
               <option value="admin">Administrator</option>

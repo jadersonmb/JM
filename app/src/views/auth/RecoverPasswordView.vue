@@ -8,13 +8,11 @@
         </header>
         <form class="mt-6 space-y-5" @submit.prevent="handleSubmit">
           <div :class="['floating-input', errors.email ? 'input-error' : '']">
-            <input v-model="form.email" id="recover-email" type="email" required placeholder=" " />
-            <label for="recover-email">Email</label>
+            <input v-model="form.email" id="recover-email" type="email" required placeholder="E-mail" class="input"/>
             <p v-if="errors.email" class="text-xs text-red-500">{{ errors.email }}</p>
           </div>
           <div :class="['floating-input', errors.newPassword ? 'input-error' : '']">
-            <input v-model="form.newPassword" id="recover-password" type="password" required placeholder=" " />
-            <label for="recover-password">New password</label>
+            <input v-model="form.newPassword" id="recover-password" type="password" required placeholder="New password" class="input"/>
             <p v-if="errors.newPassword" class="text-xs text-red-500">{{ errors.newPassword }}</p>
           </div>
           <button type="submit" class="btn-primary w-full">Update password</button>

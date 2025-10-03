@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
+  content: ['./index.html', './src/**/*.{vue,js,jsx,ts,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -17,14 +17,8 @@ export default {
           900: '#1e3a8a',
         },
       },
-      animation: {
-        'fade-in': 'fade-in 0.15s ease-out',
-      },
-      keyframes: {
-        'fade-in': {
-          '0%': { opacity: 0, transform: 'translateY(4px)' },
-          '100%': { opacity: 1, transform: 'translateY(0)' },
-        },
+      boxShadow: {
+        soft: '0 10px 30px -15px rgba(30, 64, 175, 0.35)',
       },
     },
   },

@@ -10,7 +10,7 @@ const router = createRouter({
       component: () => import('@/views/auth/LoginView.vue'),
       meta: { guestOnly: true },
     },
-    {
+     {
       path: '/recover-password',
       name: 'recover-password',
       component: () => import('@/views/auth/RecoverPasswordView.vue'),
@@ -21,6 +21,9 @@ const router = createRouter({
       component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
       children: [
+        { path: '',
+          redirect: { name: 'dashboard' },
+        },
         {
           path: 'dashboard',
           name: 'dashboard',
@@ -75,7 +78,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.title) {
-    document.title = `${to.meta.title} JM Admin`;
+    document.title = `${to.meta.title} - JM Admin`;
   } else {
     document.title = 'JM Admin';
   }

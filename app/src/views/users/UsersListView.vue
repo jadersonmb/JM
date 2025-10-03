@@ -1,42 +1,22 @@
 <template>
   <div class="space-y-8">
-    <DataTable
-      title="User management"
-      subtitle="Search, review, and manage users connected to your Java backend."
-      :columns="tableColumns"
-      :rows="users.items"
-      :loading="loading"
-      :selected="selectedIds"
-      :sort="{ field: filters.sortField, direction: filters.sortDirection }"
-      :pagination="users.meta"
-      empty-state="No users found with the current filters."
-      @update:selected="(value) => (selectedIds.value = value)"
-      @change:sort="handleSort"
-      @change:page="handlePage"
-      @change:per-page="handlePerPage"
-      @change:columns="persistColumns"
-      @refresh="fetchUsers"
-    >
+    <DataTable title="User management" subtitle="Search, review, and manage users connected to your Java backend."
+      :columns="tableColumns" :rows="users.items" :loading="loading" :selected="selectedIds"
+      :sort="{ field: filters.sortField, direction: filters.sortDirection }" :pagination="users.meta"
+      empty-state="No users found with the current filters." @update:selected="(value) => (selectedIds.value = value)"
+      @change:sort="handleSort" @change:page="handlePage" @change:per-page="handlePerPage"
+      @change:columns="persistColumns" @refresh="fetchUsers">
       <template #toolbar="{ selected }">
         <button type="button" class="btn-primary" @click="openCreate">
           <PlusIcon class="h-4 w-4" />
           <span>New user</span>
         </button>
-        <button
-          type="button"
-          class="btn-secondary"
-          :disabled="selected.length !== 1"
-          @click="openEdit(selected[0])"
-        >
+        <button type="button" class="btn-secondary" :disabled="selected.length !== 1" @click="openEdit(selected[0])">
           <PencilSquareIcon class="h-4 w-4" />
           <span>Edit</span>
         </button>
-        <button
-          type="button"
-          class="btn-secondary text-red-600 hover:border-red-200 hover:text-red-600"
-          :disabled="selected.length === 0"
-          @click="openBulkDelete"
-        >
+        <button type="button" class="btn-secondary text-red-600 hover:border-red-200 hover:text-red-600"
+          :disabled="selected.length === 0" @click="openBulkDelete">
           <TrashIcon class="h-4 w-4" />
           <span>Delete</span>
         </button>
@@ -46,8 +26,11 @@
         <div class="md:col-span-2">
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Search</label>
           <div class="relative mt-1">
-            <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input v-model="searchInput" type="search" class="input pl-9" placeholder="Name or email" />
+            <MagnifyingGlassIcon
+              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input v-model="searchInput" type="search" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent  text-sm 
+           placeholder:text-gray-400" placeholder="Name or email" />
           </div>
         </div>
         <div>
@@ -93,10 +76,8 @@
       </template>
 
       <template #cell:status="{ row }">
-        <span
-          class="badge capitalize"
-          :class="row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'"
-        >
+        <span class="badge capitalize"
+          :class="row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
           {{ row.status }}
         </span>
       </template>
@@ -117,20 +98,10 @@
       </template>
     </DataTable>
 
-    <UserFormModal
-      v-model="formModalOpen"
-      :user="activeUser"
-      :submitting="formSubmitting"
-      @submit="handleSubmit"
-    />
+    <UserFormModal v-model="formModalOpen" :user="activeUser" :submitting="formSubmitting" @submit="handleSubmit" />
 
-    <ConfirmDialog
-      v-model="confirmOpen"
-      :title="confirmTitle"
-      :message="confirmMessage"
-      confirm-label="Delete"
-      @confirm="handleConfirmDelete"
-    />
+    <ConfirmDialog v-model="confirmOpen" :title="confirmTitle" :message="confirmMessage" confirm-label="Delete"
+      @confirm="handleConfirmDelete" />
   </div>
 </template>
 
@@ -156,9 +127,9 @@ const filters = reactive({
   search: '',
   role: 'all',
   status: 'all',
-  sortField: 'createdAt',
+  sortField: 'name',
   sortDirection: 'desc',
-  page: 1,
+  page: 0,
   perPage: 10,
 });
 
@@ -220,7 +191,7 @@ function loadFilters() {
     if (stored.sortField) filters.sortField = stored.sortField;
     if (stored.sortDirection) filters.sortDirection = stored.sortDirection;
   } catch {
-    // ignore malformed storage
+    console.error('Failed to load filters');
   }
 }
 
@@ -380,7 +351,6 @@ const prepareDelete = (id) => {
   confirmMessage.value = 'The user will be permanently removed.';
   confirmOpen.value = true;
 }
-
 const handleSubmit = async (payload) => {
   formSubmitting.value = true;
   try {
@@ -397,7 +367,8 @@ const handleSubmit = async (payload) => {
     }
 
     if (activeUser.value?.id) {
-      await updateUser(activeUser.value.id, formData);
+      formData.append('id', activeUser.value?.id);
+      await updateUser(formData);
       notifications.push({ type: 'success', title: 'User updated', message: `${payload.name} has been updated.` });
     } else {
       await createUser(formData);

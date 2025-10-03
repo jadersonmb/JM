@@ -98,7 +98,7 @@
               </td>
               <td v-for="column in visibleColumns" :key="column.key" class="px-4 py-3 align-top text-sm text-slate-600">
                 <slot :name="`cell:${column.key}`" :row="row">
-                  {{ row[column.key] ?? '—' }}
+                  {{ row[column.key] ?? '-' }}
                 </slot>
               </td>
               <td v-if="$slots.actions" class="px-4 py-3">
@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, useSlots } from 'vue';
 import {
   AdjustmentsHorizontalIcon,
   ArrowPathIcon,

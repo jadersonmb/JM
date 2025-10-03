@@ -7,47 +7,25 @@
 }
 
 body {
-  @apply text-slate-800;
+  @apply bg-slate-100 text-slate-800;
 }
 
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2;
 }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary-200 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60;
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary-300 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2;
 }
 
-.floating-input {
-  @apply relative flex flex-col gap-1;
-}
-
-.floating-input input {
-  @apply block w-full rounded-2xl border border-slate-200 bg-white px-4 pb-2 pt-6 text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-150 ease-out focus:border-primary-400 focus:ring-2 focus:ring-primary-200 focus:ring-offset-0;
-}
-
-.floating-input label {
-  @apply pointer-events-none absolute left-4 top-3 text-xs font-semibold uppercase tracking-wide text-slate-400 transition-all duration-150;
-}
-
-.floating-input input:focus + label,
-.floating-input input:not(:placeholder-shown) + label {
-  @apply text-primary-500;
-  transform: translateY(-0.45rem) scale(0.95);
-}
-
-.input-error input {
-  @apply border-red-300 focus:border-red-400 focus:ring-red-200;
-}
-
-.input-error label {
-  @apply text-red-500;
-}
-
-.form-helper {
-  @apply text-xs text-slate-400;
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
 }
 
 .card {
-  @apply rounded-3xl border border-slate-200 bg-white p-8 shadow-xl;
+  @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+}
+
+.input {
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm placeholder-slate-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400;
 }

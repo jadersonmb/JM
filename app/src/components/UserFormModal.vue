@@ -142,7 +142,7 @@ watch(
   () => props.user,
   (user) => {
     if (!user) {
-      resetForm();
+      /*resetForm();*/
       return;
     }
     form.name = user.name ?? '';
