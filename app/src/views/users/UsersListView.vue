@@ -386,8 +386,7 @@ const handleSubmit = async (payload) => {
           userId: data?.id,
         };
        
-        const { data: imageDTO } =  await uploadFile(params);
-       console.log(imageDTO);
+       const { data: imageDTO } =  await uploadFile(params);
        formData.append('avatarUrl', imageDTO?.url);
        formData.append('id', data?.id);
        await updateUser(formData)

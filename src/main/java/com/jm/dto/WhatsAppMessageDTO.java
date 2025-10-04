@@ -6,9 +6,12 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+import com.google.auto.value.AutoValue.Builder;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class WhatsAppMessageDTO {
 
     private String phoneNumber;
@@ -22,4 +25,3 @@ public class WhatsAppMessageDTO {
         private String mediaId;
     }
 }
-

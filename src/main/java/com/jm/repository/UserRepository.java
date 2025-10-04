@@ -14,4 +14,6 @@ public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecifica
     Users findByHashCode(int hasCode);
 
     Optional<Users> findByEmail(String username);
+
+    Optional<Users> findByPhoneNumber(String phoneNumber);
 }

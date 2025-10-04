@@ -6,7 +6,6 @@ import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.PersonMapper;
 import com.jm.repository.PersonRepository;
-import com.jm.speciation.PersonSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -35,7 +34,7 @@ public class PersonService {
     }
 
     public Page<PersonDTO> findAll(Pageable pageable, PersonDTO filter) throws JMException {
-        return repository.findAll(PersonSpecification.search(filter), pageable).map(mapper::toDTO);
+        return repository.findAll(pageable).map(mapper::toDTO);
     }
 
     public PersonDTO createPerson(PersonDTO dto) {
@@ -45,12 +44,11 @@ public class PersonService {
     public PersonDTO findById(UUID id) throws JMException {
         ProblemType problemType = ProblemType.PERSON_NOT_FOUND;
         Optional<Person> obj = repository.findById(id);
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(),
-                new Object[]{""}, LocaleContextHolder.getLocale());
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                LocaleContextHolder.getLocale());
 
-        return mapper.toDTO(obj.orElseThrow(() ->
-                new JMException(HttpStatus.BAD_REQUEST.value(),
-                        problemType.getTitle(), problemType.getUri(), messageDetails)));
+        return mapper.toDTO(obj.orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
+                problemType.getTitle(), problemType.getUri(), messageDetails)));
     }
 
     public PersonDTO updatePerson(PersonDTO dto) {
@@ -61,4 +59,3 @@ public class PersonService {
         return repository.save(entity);
     }
 }
-

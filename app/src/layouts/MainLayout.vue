@@ -152,6 +152,7 @@ import {
   Bars3BottomLeftIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
   RectangleStackIcon,
   Squares2X2Icon,
   UserGroupIcon,
@@ -185,6 +186,13 @@ const navigation = computed(() => [
     to: { name: 'users' },
     icon: UserGroupIcon,
     active: route.name === 'users',
+  },
+  {
+    name: 'whatsapp-nutrition',
+    label: 'WhatsApp AI',
+    to: { name: 'whatsapp-nutrition' },
+    icon: ChatBubbleLeftRightIcon,
+    active: route.name === 'whatsapp-nutrition',
   },
   {
     name: 'settings',

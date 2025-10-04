@@ -1,17 +1,29 @@
 package com.jm.controllers;
 
+import com.jm.dto.NutritionDashboardDTO;
 import com.jm.dto.WhatsAppMessageDTO;
+import com.jm.dto.WhatsAppMessageFeedDTO;
 import com.jm.dto.WhatsAppMessageResponse;
+import com.jm.services.WhatsAppNutritionService;
 import com.jm.services.WhatsAppService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.InvalidMediaTypeException;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/public/api/v1/whatsapp")
@@ -21,45 +33,51 @@ public class WhatsAppController {
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppController.class);
 
     private final WhatsAppService whatsAppService;
+    private final WhatsAppNutritionService whatsappNutritionService;
 
     @PostMapping("/send")
     public Mono<ResponseEntity<WhatsAppMessageResponse>> sendMessage(@RequestBody WhatsAppMessageDTO dto) {
         return whatsAppService.sendMessage(dto).map(ResponseEntity::ok);
     }
 
-
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("Service is running!");
     }
 
-
     @PostMapping("/webhook")
     public ResponseEntity<Void> receiveMessage(@RequestBody Map<String, Object> payload) {
-        logger.info("Webhook recebido: {}", payload);
-
-        var entry = ((List<Map<String, Object>>) payload.get("entry")).get(0);
-        var changes = ((List<Map<String, Object>>) entry.get("changes")).get(0);
-        var value = (Map<String, Object>) changes.get("value");
-        var messages = (List<Map<String, Object>>) value.get("messages");
-
-        if (messages != null) {
-            var message = messages.getFirst();
-            String from = (String) message.get("from");
-            String type = (String) message.get("type");
-
-            if ("text".equals(type)) {
-                Map<String, Object> text = (Map<String, Object>) message.get("text");
-                String body = (String) text.get("body");
-                logger.info("Mensagem de texto recebida de {}: {}", from, body);
-            } else if ("image".equals(type)) {
-                Map<String, Object> image = (Map<String, Object>) message.get("image");
-                String mediaId = (String) image.get("id");
-                logger.info("Imagem recebida de {} com mediaId: {}", from, mediaId);
-            }
-        }
+        logger.info("WhatsApp webhook received");
+        whatsappNutritionService.handleWebhook(payload);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/messages")
+    public ResponseEntity<List<WhatsAppMessageFeedDTO>> listMessages(WhatsAppMessageDTO filter) {
+        return ResponseEntity.ok(whatsappNutritionService.getRecentMessagesWithFilter(filter));
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<NutritionDashboardDTO> getDashboard() {
+        return ResponseEntity.ok(whatsappNutritionService.getDashboard());
+    }
+
+    @GetMapping(value = "/messages/{id}/image", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<byte[]> getMessageImage(@PathVariable UUID id) {
+        Optional<WhatsAppNutritionService.ImagePayload> imagePayload = whatsappNutritionService.loadImage(id);
+        if (imagePayload.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        WhatsAppNutritionService.ImagePayload payload = imagePayload.get();
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        String mimeType = payload.mimeType();
+        if (mimeType != null && !mimeType.isBlank()) {
+            try {
+                mediaType = MediaType.parseMediaType(mimeType);
+            } catch (InvalidMediaTypeException ex) {
+                logger.warn("Unsupported media type {} for message {}", mimeType, id);
+            }
+        }
+        return ResponseEntity.ok().contentType(mediaType).body(payload.data());
+    }
 }
-
-

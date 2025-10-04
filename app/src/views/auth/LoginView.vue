@@ -7,19 +7,16 @@
       </div>
       <div class="relative flex flex-col justify-between gap-10 text-white">
         <div>
-          <p class="text-sm uppercase tracking-[0.4em] text-primary-200"></p>
-          <h1 class="mt-6 text-4xl font-semibold leading-tight">Securely manage your workspace.</h1>
-          <p class="mt-4 max-w-md text-base text-slate-200">Sign in to access the dashboard, manage users, and stay on
-            top of operations.</p>
+          <p class="text-sm uppercase tracking-[0.4em] text-primary-200">Revolutionize Your Nutrition</p>
+          <h1 class="mt-6 text-4xl font-semibold leading-tight">NutriVision AI</h1>
+          <p class="mt-4 max-w-md text-base text-slate-200 text-justify">
+            Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis
+            directly to your WhatsApp! With NutriVision AI, this reality is within reach on your phone.</p>
+          <div class="mt-8 flex items-center gap-2 ml-20">
+            <img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
+              class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" />
+          </div>
         </div>
-        <ul class="space-y-3 text-sm text-slate-200/80">
-          <li class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-400"></span> OAuth 2.0
-            secured endpoints</li>
-          <li class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-primary-200"></span> Responsive
-            dashboard experience</li>
-          <li class="flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-amber-300"></span> Session-based
-            authentication</li>
-        </ul>
       </div>
       <form class="relative mt-10 card lg:mt-0" @submit.prevent="handleSubmit">
         <header class="space-y-1">
@@ -35,7 +32,7 @@
           </div>
           <div :class="['floating-input', errors.password ? 'input-error' : '']">
             <input v-model="form.password" id="password" type="password" required autocomplete="current-password"
-              placeholder="Password" class="input"/>
+              placeholder="Password" class="input" />
             <p v-if="errors.password" class="text-xs text-red-500">{{ errors.password }}</p>
           </div>
           <div class="flex items-center justify-between text-xs text-slate-500">
@@ -56,6 +53,64 @@
           </span>
           <span v-else>Sign in</span>
         </button>
+
+        <div class="mt-8 space-y-6">
+          <ul class="space-y-3 text-sm text-slate-200/80 text-black text-left">
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-emerald-400 mt-1 flex-shrink-0"></span>
+              <span >Complete analysis: calories, proteins, carbohydrates and fats</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
+              <span >Personalized tips for every meal</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-amber-300 mt-1 flex-shrink-0"></span>
+              <span >Detailed reports of your nutritional progress</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-purple-400 mt-1 flex-shrink-0"></span>
+              <span >Direct integration via WhatsApp - quick and easy</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-cyan-400 mt-1 flex-shrink-0"></span>
+              <span >Advanced AI for accurate food identification</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></span>
+              <span >Real-time monitoring of your consumption</span>
+            </li>
+            <!-- Novos benefícios adicionados -->
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-green-400 mt-1 flex-shrink-0"></span>
+              <span >Allergy and dietary restriction alerts</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-indigo-400 mt-1 flex-shrink-0"></span>
+              <span >Weekly progress tracking and insights</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-yellow-400 mt-1 flex-shrink-0"></span>
+              <span >Portion size recommendations</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-pink-400 mt-1 flex-shrink-0"></span>
+              <span >Meal planning suggestions</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-teal-400 mt-1 flex-shrink-0"></span>
+              <span >Hydration tracking and reminders</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-orange-400 mt-1 flex-shrink-0"></span>
+              <span >Nutritional goal setting and monitoring</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-lime-400 mt-1 flex-shrink-0"></span>
+              <span >Food database with 10,000+ items</span>
+            </li>
+          </ul>
+        </div>
 
         <p v-if="errors.form" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{
           errors.form }}</p>

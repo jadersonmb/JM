@@ -4,6 +4,8 @@ import com.jm.dto.ImageDTO;
 import com.jm.dto.UserDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.utils.ByteArrayMultipartFile;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -91,6 +93,10 @@ public class CloudflareR2Service {
             throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
                     "Error to download file: " + e.getMessage());
         }
+    }
+
+    public MultipartFile toMultipartFile(byte[] bytes, String filename, String contentType) {
+        return new ByteArrayMultipartFile(bytes, "file", filename, contentType);
     }
 
     public List<String> listFiles() {

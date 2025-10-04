@@ -1,0 +1,1 @@
+ALTER TABLE whatsapp_messages ADD column if not exists cloudflare_image_url VARCHAR(255) NULL DEFAULT NULL;

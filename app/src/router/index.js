@@ -37,6 +37,12 @@ const router = createRouter({
           meta: { title: 'Users' },
         },
         {
+          path: 'whatsapp',
+          name: 'whatsapp-nutrition',
+          component: () => import('@/views/whatsapp/WhatsAppNutritionView.vue'),
+          meta: { title: 'WhatsApp Nutrition' },
+        },
+        {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/settings/SettingsView.vue'),
