@@ -20,45 +20,36 @@ import java.util.UUID;
 @Table(name = "user_entity")
 public class Users {
 
-    @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(
-            name = "UUID",
-            strategy = "org.hibernate.id.UUIDGenerator",
-            parameters = {
-                    @Parameter(
-                            name = "uuid_gen_strategy_class",
-                            value = "org.hibernate.id.uuid.CustomVersionOneStrategy"
-                    )
-            }
-    )
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+        @Id
+        @GeneratedValue(generator = "UUID")
+        @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
+                        @Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.CustomVersionOneStrategy") })
+        @Column(name = "id", updatable = false, nullable = false)
+        private UUID id;
 
-    private String name;
-    private String lastName;
-    private String email;
-    private int hashCode;
+        private String name;
+        private String lastName;
+        private String email;
+        private int hashCode;
 
-    private String password;
-    @Enumerated(EnumType.STRING)
-    private Type type;
+        private String password;
+        @Enumerated(EnumType.STRING)
+        private Type type;
 
-    private String documentNumber; // e.g. passport, ID card
-    private String phoneNumber;
+        private String documentNumber;
+        private String phoneNumber;
 
-    private String street;
-    private String city;
-    private String state;
-    private String postalCode;
-    private String country;
+        private String street;
+        private String city;
+        private String state;
+        private String postalCode;
+        private String country;
+        private String avatarUrl;
 
+        @OneToMany(mappedBy = "users", cascade = CascadeType.ALL)
+        private List<Image> imagens = new ArrayList<>();
 
-    @OneToMany(mappedBy = "users", cascade = CascadeType.ALL)
-    private List<Image> imagens = new ArrayList<>();
-
-    public enum Type {
-        ADMIN, CLIENT;
-    }
+        public enum Type {
+                ADMIN, CLIENT;
+        }
 }
-

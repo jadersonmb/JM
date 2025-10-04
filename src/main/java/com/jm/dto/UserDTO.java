@@ -28,5 +28,6 @@ public class UserDTO {
     private String postalCode;
     private String country;
     private String password;
+    private String avatarUrl;
     private Users.Type type;
 }

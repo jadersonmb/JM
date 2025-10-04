@@ -1,11 +1,9 @@
 package com.jm.execption;
 
-
 import lombok.Getter;
 
 @Getter
 public enum ProblemType {
-
 
     INVALID_BODY("/invalid-body", "Invalid Body", "invalid_message_body"),
     INVALID_BODY_PARAM("/invalid-body", "Invaled Body", "invalid_message_body_param"),
@@ -24,14 +22,14 @@ public enum ProblemType {
     ERROR_DOWNLOAD_FILE("/error-download", "Error to download file", "error_download_file"),
     ERROR_GET_FILE("/error-list", "Error to get file", "error_get_file"),
     ERROR_DELETE_FILE("/error-delete", "Error to delete file", "error_delete_file"),
-    ERROR_GEMINI("/gemini-chat","Error to chat with Gemini" , "error_gemini_chat" );
-
+    USER_NOT_CREATED("/user-not-created", "User not created", "user_not_created"),
+    ERROR_GEMINI("/gemini-chat", "Error to chat with Gemini", "error_gemini_chat");
 
     private String uri;
     private String title;
     private String messageSource;
 
-    ProblemType(String path, String title, String messageSource){
+    ProblemType(String path, String title, String messageSource) {
         this.uri = "https://jm-project.com" + path;
         this.title = title;
         this.messageSource = messageSource;

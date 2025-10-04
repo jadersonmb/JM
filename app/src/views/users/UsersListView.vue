@@ -118,6 +118,7 @@ import UserFormModal from '@/components/UserFormModal.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { useNotificationStore } from '@/stores/notifications';
 import { createUser, deleteUser, getUsers, updateUser } from '@/services/users';
+import { uploadFile } from '@/services/cloudFlare';
 
 const notifications = useNotificationStore();
 
@@ -137,7 +138,7 @@ const searchInput = ref('');
 const loading = ref(false);
 const users = reactive({
   items: [],
-  meta: { page: 1, perPage: 10, total: 0, lastPage: 1, from: 0, to: 0 },
+  meta: { page: 0, perPage: 10, total: 0, lastPage: 1, from: 0, to: 0 },
 });
 
 let searchTimeout = null;
@@ -368,10 +369,29 @@ const handleSubmit = async (payload) => {
 
     if (activeUser.value?.id) {
       formData.append('id', activeUser.value?.id);
+      if(payload.avatarFile != null) {
+          const params = {
+          file: payload.avatarFile,
+          userId: activeUser.value?.id,
+        };
+        await uploadFile(params);
+      }
       await updateUser(formData);
       notifications.push({ type: 'success', title: 'User updated', message: `${payload.name} has been updated.` });
     } else {
-      await createUser(formData);
+      const { data } = await createUser(formData);
+      if(payload.avatarFile != null) {
+          const params = {
+          file: payload.avatarFile,
+          userId: data?.id,
+        };
+       
+        const { data: imageDTO } =  await uploadFile(params);
+       console.log(imageDTO);
+       formData.append('avatarUrl', imageDTO?.url);
+       formData.append('id', data?.id);
+       await updateUser(formData)
+      }
       notifications.push({ type: 'success', title: 'User created', message: `${payload.name} has been added.` });
     }
     formModalOpen.value = false;
