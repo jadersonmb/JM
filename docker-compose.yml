@@ -1,38 +1,85 @@
+version: "3.9"
+
 services:
   db:
-    image: mariadb
-    restart: always
+    image: mariadb:11
+    container_name: jm-db
+    restart: unless-stopped
     environment:
-      TZ: Lisbon/Europe
-      MARIADB_ROOT_PASSWORD: root
-      MARIADB_DATABASE: fute-love
-      MARIADB_USER: root
-      MARIADB_PASSWORD: root
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-jm-root}
+      MARIADB_DATABASE: ${DB_NAME:-jm}
+      MARIADB_USER: ${DB_USER:-jm}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-jm}
+      TZ: ${TZ:-UTC}
     ports:
-      - 3306:3308
-    expose:
-      - 3306
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - fute-love-network
-  docker-app:
-    image: jadersonmorais/fute-love
-    restart: always
+      - jm-network
+
+  backend:
     build:
-      ./
-    working_dir: /
-    environment:
-      TZ: Lisbon/Europe
-      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/fute-love?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-    ports:
-      - 8080:8080
-    command:
-      - mvn spring-boot:run
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: jm-backend
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-jm}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-jm}
+      TZ: ${TZ:-UTC}
+    working_dir: /workspace
+    command: ["sh", "-c", "sed -i 's/\\r$//' mvnw && chmod +x mvnw && ./mvnw spring-boot:run"]
+    volumes:
+      - .:/workspace
+      - maven-cache:/root/.m2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     networks:
-      - fute-love-network
+      - jm-network
+
+  frontend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      target: development
+    container_name: jm-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      CHOKIDAR_USEPOLLING: "true"
+    command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 5173"]
+    volumes:
+      - ./app:/app
+      - node-modules:/app/node_modules
+    networks:
+      - jm-network
+
+volumes:
+  db-data:
+  maven-cache:
+  node-modules:
+
 networks:
-  fute-love-network:
+  jm-network:
     driver: bridge

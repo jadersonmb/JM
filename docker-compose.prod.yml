@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set in environment}
+      MARIADB_DATABASE: ${DB_NAME:-jm}
+      MARIADB_USER: ${DB_USER:-jm}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?set in environment}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - jm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  backend:
+    image: ghcr.io/${GHCR_NAMESPACE:-your-org-or-user}/jm-backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-jm}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?set in environment}
+      JAVA_OPTS: ${JAVA_OPTS:-"-XX:MaxRAMPercentage=75"}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - jm-network
+
+  frontend:
+    image: ghcr.io/${GHCR_NAMESPACE:-your-org-or-user}/jm-frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jm-network
+
+volumes:
+  db-data:
+
+networks:
+  jm-network:
+    driver: bridge
