@@ -10,7 +10,7 @@ const router = createRouter({
       component: () => import('@/views/auth/LoginView.vue'),
       meta: { guestOnly: true },
     },
-     {
+    {
       path: '/recover-password',
       name: 'recover-password',
       component: () => import('@/views/auth/RecoverPasswordView.vue'),
@@ -21,7 +21,8 @@ const router = createRouter({
       component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
       children: [
-        { path: '',
+        {
+          path: '',
           redirect: { name: 'dashboard' },
         },
         {
@@ -40,7 +41,13 @@ const router = createRouter({
           path: 'whatsapp',
           name: 'whatsapp-nutrition',
           component: () => import('@/views/whatsapp/WhatsAppNutritionView.vue'),
-          meta: { title: 'WhatsApp Nutrition' },
+          meta: { title: 'AI Nutrition' },
+        },
+        {
+          path: 'payments',
+          name: 'payments',
+          component: () => import('@/views/payments/PaymentsView.vue'),
+          meta: { title: 'Payments' },
         },
         {
           path: 'settings',

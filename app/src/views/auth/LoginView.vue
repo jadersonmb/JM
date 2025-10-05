@@ -58,56 +58,56 @@
           <ul class="space-y-3 text-sm text-slate-200/80 text-black text-left">
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-emerald-400 mt-1 flex-shrink-0"></span>
-              <span >Complete analysis: calories, proteins, carbohydrates and fats</span>
+              <span class="text-black">Complete analysis: calories, proteins, carbohydrates and fats</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
-              <span >Personalized tips for every meal</span>
+              <span class="text-black">Personalized tips for every meal</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-amber-300 mt-1 flex-shrink-0"></span>
-              <span >Detailed reports of your nutritional progress</span>
+              <span class="text-black">Detailed reports of your nutritional progress</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-purple-400 mt-1 flex-shrink-0"></span>
-              <span >Direct integration via WhatsApp - quick and easy</span>
+              <span class="text-black">Direct integration via WhatsApp - quick and easy</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-cyan-400 mt-1 flex-shrink-0"></span>
-              <span >Advanced AI for accurate food identification</span>
+              <span class="text-black">Advanced AI for accurate food identification</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></span>
-              <span >Real-time monitoring of your consumption</span>
+              <span class="text-black">Real-time monitoring of your consumption</span>
             </li>
             <!-- Novos benefícios adicionados -->
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-green-400 mt-1 flex-shrink-0"></span>
-              <span >Allergy and dietary restriction alerts</span>
+              <span class="text-black">Allergy and dietary restriction alerts</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-indigo-400 mt-1 flex-shrink-0"></span>
-              <span >Weekly progress tracking and insights</span>
+              <span class="text-black">Weekly progress tracking and insights</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-yellow-400 mt-1 flex-shrink-0"></span>
-              <span >Portion size recommendations</span>
+              <span class="text-black">Portion size recommendations</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-pink-400 mt-1 flex-shrink-0"></span>
-              <span >Meal planning suggestions</span>
+              <span class="text-black">Meal planning suggestions</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-teal-400 mt-1 flex-shrink-0"></span>
-              <span >Hydration tracking and reminders</span>
+              <span class="text-black">Hydration tracking and reminders</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-orange-400 mt-1 flex-shrink-0"></span>
-              <span >Nutritional goal setting and monitoring</span>
+              <span class="text-black">Nutritional goal setting and monitoring</span>
             </li>
             <li class="flex items-start gap-3">
               <span class="h-3 w-3 rounded-full bg-lime-400 mt-1 flex-shrink-0"></span>
-              <span >Food database with 10,000+ items</span>
+              <span class="text-black">Food database with 10,000+ items</span>
             </li>
           </ul>
         </div>
