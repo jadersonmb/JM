@@ -76,7 +76,7 @@
       />
 
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Atividade recente</h2>
+        <h2 class="text-lg font-semibold text-slate-900">Recenty Activity</h2>
         <div v-if="paymentsLoading" class="mt-4 space-y-3">
           <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
           <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
@@ -107,7 +107,7 @@
         <header class="flex items-start justify-between">
           <div>
             <h3 class="text-lg font-semibold text-slate-900">Payment details</h3>
-            <p class="text-sm text-slate-500">Gateway reference: {{ selectedPayment.paymentId ?? '�' }}</p>
+            <p class="text-sm text-slate-500">Gateway reference: {{ selectedPayment.paymentId ?? '-' }}</p>
           </div>
           <button type="button" class="btn-ghost" @click="selectedPayment = null">Close</button>
         </header>
@@ -131,7 +131,7 @@
           <div class="md:col-span-2">
             <dt class="text-xs uppercase tracking-wide text-slate-500">Metadata</dt>
             <dd class="mt-1 max-h-40 overflow-auto rounded-xl bg-slate-50 p-3 font-mono text-xs text-slate-700">
-              {{ selectedPayment.metadata ? JSON.stringify(selectedPayment.metadata, null, 2) : '�' }}
+              {{ selectedPayment.metadata ? JSON.stringify(selectedPayment.metadata, null, 2) : '-' }}
             </dd>
           </div>
         </dl>
@@ -295,6 +295,7 @@ async function loadPayments() {
       page: pagination.page - 1,
       size: pagination.perPage,
       sort: sort.value.field ? `${sort.value.field},${sort.value.direction}` : undefined,
+      customerId: auth.user.id,
       ...sanitizeFilters(filters),
     };
     const { data } = await listPayments(params);
@@ -559,7 +560,7 @@ function formatCurrency(value) {
 }
 
 function formatDate(value) {
-  if (!value) return '�';
+  if (!value) return '';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
 

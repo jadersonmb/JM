@@ -8,6 +8,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Data
 public class PaymentFilterRequest {
@@ -22,4 +23,5 @@ public class PaymentFilterRequest {
     @DecimalMin("0.00")
     private BigDecimal maxAmount;
     private String search;
+    private UUID customerId;
 }

@@ -46,12 +46,15 @@ public final class PaymentSpecification {
                 predicates.add(builder.lessThanOrEqualTo(root.get("amount"), filter.getMaxAmount()));
             }
 
+            if (filter.getCustomerId() != null) {
+                predicates.add(builder.equal(root.get("customer").get("id"), filter.getCustomerId()));
+            }
+
             if (StringUtils.hasText(filter.getSearch())) {
                 String likePattern = "%" + filter.getSearch().trim().toLowerCase() + "%";
                 predicates.add(builder.or(
                         builder.like(builder.lower(root.get("paymentId")), likePattern),
-                        builder.like(builder.lower(root.get("description")), likePattern)
-                ));
+                        builder.like(builder.lower(root.get("description")), likePattern)));
             }
 
             return builder.and(predicates.toArray(Predicate[]::new));

@@ -63,7 +63,7 @@ public class StripePaymentGateway {
             }
 
             if (card != null) {
-                builder.setPaymentMethod("pm_card_visa"); // card.getCardToken()
+                builder.setPaymentMethod("pm_card_visa"); /* card.getCardToken() */
             }
 
             if (metadata != null) {
@@ -74,9 +74,12 @@ public class StripePaymentGateway {
 
             PaymentIntent paymentIntent = PaymentIntent.create(builder.build());
 
-            return GatewayPaymentResponse.builder().gatewayPaymentId(paymentIntent.getId())
-                    .clientSecret(paymentIntent.getClientSecret()).status(mapStatus(paymentIntent.getStatus()))
-                    .metadata(paymentIntent.getMetadata()).build();
+            return GatewayPaymentResponse.builder()
+                    .gatewayPaymentId(paymentIntent.getId())
+                    .clientSecret(paymentIntent.getClientSecret())
+                    .status(mapStatus(paymentIntent.getStatus()))
+                    .metadata(paymentIntent.getMetadata())
+                    .build();
         } catch (StripeException ex) {
             log.error("Stripe payment intent creation failed", ex);
             throw new PaymentIntegrationException("Unable to create Stripe payment intent", ex);
@@ -92,9 +95,12 @@ public class StripePaymentGateway {
                 params.setPaymentMethod(paymentMethodToken);
             }
             PaymentIntent confirmed = intent.confirm(params.build());
-            return GatewayPaymentResponse.builder().gatewayPaymentId(confirmed.getId())
-                    .clientSecret(confirmed.getClientSecret()).status(mapStatus(confirmed.getStatus()))
-                    .metadata(confirmed.getMetadata()).build();
+            return GatewayPaymentResponse.builder()
+                    .gatewayPaymentId(confirmed.getId())
+                    .clientSecret(confirmed.getClientSecret())
+                    .status(mapStatus(confirmed.getStatus()))
+                    .metadata(confirmed.getMetadata())
+                    .build();
         } catch (StripeException ex) {
             log.error("Stripe payment confirmation failed", ex);
             throw new PaymentIntegrationException("Stripe confirmation failed", ex);
@@ -127,8 +133,10 @@ public class StripePaymentGateway {
 
             Subscription subscription = Subscription.create(builder.build());
 
-            return RecurringChargeResponse.builder().subscriptionId(subscription.getId())
-                    .status(mapSubscriptionStatus(subscription.getStatus())).interval(plan.getIntervals())
+            return RecurringChargeResponse.builder()
+                    .subscriptionId(subscription.getId())
+                    .status(mapSubscriptionStatus(subscription.getStatus()))
+                    .interval(plan.getIntervals())
                     .amount(plan.getAmount())
                     /*
                      * .nextBillingDate(subscription.getCurrentPeriodEnd() != null ? Instant
