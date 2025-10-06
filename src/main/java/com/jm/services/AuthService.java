@@ -59,12 +59,17 @@ public class AuthService {
                 Set<String> authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
                                 .collect(Collectors.toSet());
 
-                JwtClaimsSet claims = JwtClaimsSet.builder().issuer("jm-api").issuedAt(now).expiresAt(expiresAt)
-                                .subject(user.getId().toString()).claim("email", user.getEmail())
-                                .claim("name", user.getName()).claim("role",
-                                                user.getType() != null ? user.getType().name()
-                                                                : Users.Type.CLIENT.name())
-                                .claim("authorities", authorities).build();
+                JwtClaimsSet claims = JwtClaimsSet.builder()
+                                .issuer("jm-api")
+                                .issuedAt(now)
+                                .expiresAt(expiresAt)
+                                .subject(user.getId().toString())
+                                .claim("email", user.getEmail())
+                                .claim("name", user.getName())
+                                .claim("role", user.getType() != null ? user.getType().name()
+                                                : Users.Type.CLIENT.name())
+                                .claim("authorities", authorities)
+                                .build();
 
                 String tokenValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
                 UserDTO userDTO = userMapper.toDTO(user);

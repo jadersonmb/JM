@@ -1,7 +1,6 @@
 package com.jm.entity;
 
-import com.jm.enums.PaymentMethodType;
-import com.jm.enums.PaymentStatus;
+import com.jm.enums.RecurringInterval;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,14 +9,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.type.SqlTypes;
 import org.hibernate.annotations.Parameter;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -26,8 +22,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "payments")
-public class Payment {
+@Table(name = "payment_plans")
+public class PaymentPlan {
 
     @Id
     @GeneratedValue(generator = "UUID")
@@ -35,12 +31,14 @@ public class Payment {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "payment_id", unique = true)
-    private String paymentId;
+    @Column(nullable = false, unique = true, length = 100)
+    private String code;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Users customer;
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    @Column(length = 255)
+    private String description;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
@@ -49,19 +47,17 @@ public class Payment {
     private String currency;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_method", nullable = false, length = 20)
-    private PaymentMethodType paymentMethod;
+    @Column(nullable = false, length = 20)
+    private RecurringInterval intervals;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status", nullable = false, length = 20)
-    private PaymentStatus paymentStatus;
+    @Column(name = "stripe_price_id", length = 120)
+    private String stripePriceId;
 
-    @Column(length = 255)
-    private String description;
+    @Column(name = "asaas_plan_id", length = 120)
+    private String asaasPlanId;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
-    private Map<String, Object> metadata;
+    @Column(nullable = false)
+    private Boolean active;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -70,4 +66,14 @@ public class Payment {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    @PrePersist
+    void prePersist() {
+        if (currency == null) {
+            currency = "BRL";
+        }
+        if (active == null) {
+            active = Boolean.TRUE;
+        }
+    }
 }

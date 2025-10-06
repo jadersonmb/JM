@@ -107,9 +107,9 @@ public class WhatsAppNutritionService {
                 .fromPhone(from).toPhone(to).messageType(messageType).receivedAt(receivedAt);
 
         switch (messageType) {
-        case "image" -> handleImageMessage(builder, message, from);
-        case "text" -> handleTextMessage(builder, message);
-        default -> logger.info("Message type {} not handled", messageType);
+            case "image" -> handleImageMessage(builder, message, from);
+            case "text" -> handleTextMessage(builder, message);
+            default -> logger.info("Message type {} not handled", messageType);
         }
     }
 
@@ -316,12 +316,17 @@ public class WhatsAppNutritionService {
         NutritionAnalysis analysis = message.getNutritionAnalysis();
         WhatsAppMessageFeedDTO.NutritionSummary nutritionSummary = null;
         if (analysis != null) {
-            nutritionSummary = WhatsAppMessageFeedDTO.NutritionSummary.builder().foodName(analysis.getFoodName())
-                    .calories(optionalDouble(analysis.getCalories())).protein(optionalDouble(analysis.getProtein()))
-                    .carbs(optionalDouble(analysis.getCarbs())).fat(optionalDouble(analysis.getFat()))
+            nutritionSummary = WhatsAppMessageFeedDTO.NutritionSummary
+                    .builder()
+                    .foodName(analysis.getFoodName())
+                    .calories(optionalDouble(analysis.getCalories()))
+                    .protein(optionalDouble(analysis.getProtein()))
+                    .carbs(optionalDouble(analysis.getCarbs()))
+                    .fat(optionalDouble(analysis.getFat()))
                     .primaryCategory(
                             Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getName).orElse(null))
-                    .summary(analysis.getSummary()).build();
+                    .summary(analysis.getSummary())
+                    .build();
         }
 
         String imageUrl = null;
@@ -330,10 +335,18 @@ public class WhatsAppNutritionService {
 
         }
 
-        return WhatsAppMessageFeedDTO.builder().id(message.getId()).whatsappMessageId(message.getWhatsappMessageId())
-                .fromPhone(message.getFromPhone()).toPhone(message.getToPhone()).messageType(message.getMessageType())
-                .textContent(message.getTextContent()).imageUrl(imageUrl).receivedAt(message.getReceivedAt())
-                .cloudFlareImageUrl(message.getCloudflareImageUrl()).nutrition(nutritionSummary).build();
+        return WhatsAppMessageFeedDTO.builder()
+                .id(message.getId())
+                .whatsappMessageId(message.getWhatsappMessageId())
+                .fromPhone(message.getFromPhone())
+                .toPhone(message.getToPhone())
+                .messageType(message.getMessageType())
+                .textContent(message.getTextContent())
+                .imageUrl(imageUrl)
+                .receivedAt(message.getReceivedAt())
+                .cloudFlareImageUrl(message.getCloudflareImageUrl())
+                .nutrition(nutritionSummary)
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -353,17 +366,28 @@ public class WhatsAppNutritionService {
 
         List<NutritionDashboardDTO.NutritionHistoryItem> history = analyses.stream()
                 .map(analysis -> NutritionDashboardDTO.NutritionHistoryItem.builder()
-                        .messageId(analysis.getMessage().getId()).foodName(analysis.getFoodName())
-                        .calories(optionalDouble(analysis.getCalories())).protein(optionalDouble(analysis.getProtein()))
-                        .carbs(optionalDouble(analysis.getCarbs())).fat(optionalDouble(analysis.getFat()))
-                        .primaryCategory(Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getName)
-                                .orElse(null))
-                        .analyzedAt(analysis.getCreatedAt()).summary(analysis.getSummary()).build())
+                        .messageId(analysis.getMessage().getId())
+                        .foodName(analysis.getFoodName())
+                        .calories(optionalDouble(analysis.getCalories()))
+                        .protein(optionalDouble(analysis.getProtein()))
+                        .carbs(optionalDouble(analysis.getCarbs()))
+                        .fat(optionalDouble(analysis.getFat()))
+                        .primaryCategory(Optional.ofNullable(analysis.getPrimaryCategory())
+                                .map(FoodCategory::getName).orElse(null))
+                        .analyzedAt(analysis.getCreatedAt())
+                        .summary(analysis.getSummary())
+                        .build())
                 .collect(Collectors.toList());
 
-        return NutritionDashboardDTO.builder().totalCalories(totalCalories).totalProtein(totalProtein)
-                .totalCarbs(totalCarbs).totalFat(totalFat).mealsAnalyzed(analyses.size())
-                .categoryCalories(categoryCalories).history(history).build();
+        return NutritionDashboardDTO.builder()
+                .totalCalories(totalCalories)
+                .totalProtein(totalProtein)
+                .totalCarbs(totalCarbs)
+                .totalFat(totalFat)
+                .mealsAnalyzed(analyses.size())
+                .categoryCalories(categoryCalories)
+                .history(history)
+                .build();
     }
 
     @Transactional(readOnly = true)

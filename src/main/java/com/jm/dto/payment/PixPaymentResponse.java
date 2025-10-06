@@ -6,11 +6,12 @@ import lombok.Value;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Value
 @Builder
 public class PixPaymentResponse {
-    Long id;
+    UUID id;
     String paymentId;
     String qrCodeImage;
     String payload;

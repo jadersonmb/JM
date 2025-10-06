@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -24,5 +23,4 @@ public class PixPaymentRequest {
     @Size(max = 255)
     private String description;
 
-    private Map<String, Object> metadata;
 }

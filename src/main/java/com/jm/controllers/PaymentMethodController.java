@@ -3,6 +3,8 @@ package com.jm.controllers;
 import com.jm.dto.payment.CardRequest;
 import com.jm.dto.payment.PaymentMethodResponse;
 import com.jm.services.payment.PaymentService;
+import com.stripe.exception.StripeException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,7 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/payment-methods")
+@RequestMapping("/v1/api/payment-methods")
 @RequiredArgsConstructor
 @Validated
 public class PaymentMethodController {
@@ -34,12 +36,12 @@ public class PaymentMethodController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PaymentMethodResponse>> listCards(@RequestParam UUID customerId) {
+    public ResponseEntity<List<PaymentMethodResponse>> listCards(@RequestParam UUID customerId) throws StripeException {
         return ResponseEntity.ok(paymentService.listCards(customerId));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCard(@PathVariable Long id, @RequestParam UUID customerId) {
+    public ResponseEntity<Void> deleteCard(@PathVariable UUID id, @RequestParam UUID customerId) {
         paymentService.deleteCard(id, customerId);
         return ResponseEntity.noContent().build();
     }

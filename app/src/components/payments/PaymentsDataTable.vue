@@ -21,7 +21,7 @@
     <template #filters>
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Search</span>
-        <input v-model="filtersLocal.search" type="search" class="input" placeholder="Payment ID, description…" />
+        <input v-model="filtersLocal.search" type="search" class="input" placeholder="Payment ID, descriptionï¿½" />
       </label>
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
@@ -70,8 +70,8 @@
     </template>
 
     <template #row="{ row }">
-      <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-500">{{ row.paymentId ?? '—' }}</td>
-      <td class="px-4 py-3 text-sm text-slate-700">{{ row.description || '—' }}</td>
+      <td class="whitespace-nowrap px-4 py-3 font-mono text-xs text-slate-500">{{ row.paymentId ?? '' }}</td>
+      <td class="px-4 py-3 text-sm text-slate-700">{{ row.description || '' }}</td>
       <td class="px-4 py-3 text-sm text-slate-700">{{ row.paymentMethod }}</td>
       <td class="px-4 py-3 text-sm text-slate-700">
         <span :class="statusBadge(row.status)" class="rounded-full px-2 py-1 text-xs font-semibold uppercase">
@@ -206,7 +206,7 @@ function formatCurrency(value) {
 }
 
 function formatDate(value) {
-  if (!value) return '—';
+  if (!value) return 'ï¿½';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
 }
 </script>

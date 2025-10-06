@@ -4,11 +4,12 @@ import lombok.Builder;
 import lombok.Value;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Value
 @Builder
 public class PaymentMethodResponse {
-    Long id;
+    UUID id;
     String brand;
     String lastFour;
     Integer expiryMonth;

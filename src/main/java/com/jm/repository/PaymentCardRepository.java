@@ -6,8 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long> {
+public interface PaymentCardRepository extends JpaRepository<PaymentCard, UUID> {
 
     List<PaymentCard> findByCustomerOrderByDefaultCardDescCreatedAtDesc(Users customer);
 

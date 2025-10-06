@@ -36,7 +36,7 @@ public class PaymentIntentRequest {
     @Size(max = 255)
     private String description;
 
-    private Long paymentCardId;
+    private UUID paymentCardId;
 
     private Map<String, Object> metadata;
 }

@@ -2,14 +2,17 @@ package com.jm.services.payment;
 
 import com.jm.configuration.config.PaymentGatewayProperties;
 import com.jm.dto.payment.PixPaymentRequest;
+import com.jm.dto.payment.RecurringChargeResponse;
 import com.jm.dto.payment.RefundRequest;
-import com.jm.dto.payment.RecurringPaymentRequest;
+import com.jm.dto.payment.PaymentRecurringRequest;
+import com.jm.dto.payment.PixChargeResponse;
+import com.jm.entity.PaymentPlan;
 import com.jm.entity.Users;
 import com.jm.enums.PaymentStatus;
 import com.jm.enums.RecurringInterval;
 import com.jm.enums.RecurringStatus;
-import com.jm.services.payment.model.PixChargeResponse;
-import com.jm.services.payment.model.RecurringChargeResponse;
+import com.jm.execption.PaymentIntegrationException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,10 +38,11 @@ public class AsaasPaymentGateway {
     private final PaymentGatewayProperties properties;
     @Qualifier("asaasWebClient")
     private final WebClient webClient;
+    private final PaymentPlanService paymentPlanService;
 
     public PixChargeResponse createPixCharge(PixPaymentRequest request, Users customer) {
         assertConfigured();
-        String asaasCustomerId = extractString(request.getMetadata(), "asaasCustomerId");
+        String asaasCustomerId = "asaasCustomerId";
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("customer", asaasCustomerId);
@@ -51,10 +55,6 @@ public class AsaasPaymentGateway {
 
             if (StringUtils.hasText(properties.getAsaas().getPixKey())) {
                 payload.put("pixKey", properties.getAsaas().getPixKey());
-            }
-
-            if (request.getMetadata() != null) {
-                payload.put("metadata", request.getMetadata());
             }
 
             Map response = webClient.post().uri("/payments").contentType(MediaType.APPLICATION_JSON).bodyValue(payload)
@@ -73,29 +73,41 @@ public class AsaasPaymentGateway {
                     ? OffsetDateTime.parse(String.valueOf(pix.get("expirationDate")))
                     : OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(30);
 
-            return PixChargeResponse.builder().gatewayChargeId(gatewayId).pixKey(properties.getAsaas().getPixKey())
-                    .qrCodeImage(qrImage).payload(payloadString).status(mapPaymentStatus(status))
-                    .amount(request.getAmount()).expiresAt(expiresAt).build();
+            return PixChargeResponse.builder()
+                    .gatewayChargeId(gatewayId)
+                    .pixKey(properties.getAsaas().getPixKey())
+                    .qrCodeImage(qrImage)
+                    .payload(payloadString)
+                    .status(mapPaymentStatus(status))
+                    .amount(request.getAmount())
+                    .expiresAt(expiresAt)
+                    .build();
         } catch (WebClientResponseException ex) {
             log.error("Asaas PIX charge failed: {}", ex.getResponseBodyAsString(), ex);
             throw new PaymentIntegrationException("Unable to create Asaas PIX charge", ex);
         }
     }
 
-    public RecurringChargeResponse createSubscription(RecurringPaymentRequest request, Users customer) {
+    public RecurringChargeResponse createSubscription(PaymentRecurringRequest request, Map<String, Object> metadata,
+            Users customer) {
         assertConfigured();
-        String asaasCustomerId = extractString(request.getMetadata(), "asaasCustomerId");
+        String asaasCustomerId = extractString(metadata, "asaasCustomerId");
+        PaymentPlan plan = paymentPlanService.findActiveById(request.getPaymentPlanId());
         try {
             Map<String, Object> payload = new HashMap<>();
             payload.put("customer", asaasCustomerId);
             payload.put("billingType", "PIX");
-            payload.put("value", request.getAmount().setScale(2, RoundingMode.HALF_UP));
-            payload.put("cycle", mapInterval(request.getInterval()));
-            payload.put("description", "Recurring payment " + request.getPlanId());
+            payload.put("value", plan.getAmount().setScale(2, RoundingMode.HALF_UP));
+            payload.put("cycle", mapInterval(plan.getIntervals()));
+            payload.put("description",
+                    StringUtils.hasText(plan.getDescription()) ? plan.getDescription() : plan.getName());
             payload.put("chargeType", Boolean.TRUE.equals(request.getImmediateCharge()) ? "NEXT_DUE_DATE" : "FIXED");
             payload.put("startDate", LocalDate.now().toString());
             payload.put("endDate", (Object) null);
             payload.put("externalReference", customer.getId().toString());
+            if (StringUtils.hasText(plan.getAsaasPlanId())) {
+                payload.put("plan", plan.getAsaasPlanId());
+            }
 
             Map response = webClient.post().uri("/subscriptions").contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(payload).retrieve().bodyToMono(Map.class).block();
@@ -110,8 +122,13 @@ public class AsaasPaymentGateway {
                     ? LocalDate.parse(String.valueOf(response.get("nextDueDate")))
                     : null;
 
-            return RecurringChargeResponse.builder().subscriptionId(gatewayId).status(mapSubscriptionStatus(status))
-                    .interval(request.getInterval()).amount(request.getAmount()).nextBillingDate(nextDueDate).build();
+            return RecurringChargeResponse.builder()
+                    .subscriptionId(gatewayId)
+                    .status(mapSubscriptionStatus(status))
+                    .interval(plan.getIntervals())
+                    .amount(plan.getAmount())
+                    .nextBillingDate(nextDueDate)
+                    .build();
         } catch (WebClientResponseException ex) {
             log.error("Asaas subscription creation failed: {}", ex.getResponseBodyAsString(), ex);
             throw new PaymentIntegrationException("Unable to create Asaas subscription", ex);
@@ -139,30 +156,32 @@ public class AsaasPaymentGateway {
 
     private RecurringStatus mapSubscriptionStatus(String status) {
         return switch (status.toUpperCase()) {
-        case "ACTIVE", "AWAITING_CYCLE" -> RecurringStatus.ACTIVE;
-        case "SUSPENDED" -> RecurringStatus.PAUSED;
-        case "CANCELLED" -> RecurringStatus.CANCELLED;
-        case "FINISHED" -> RecurringStatus.EXPIRED;
-        default -> RecurringStatus.ACTIVE;
+            case "ACTIVE", "AWAITING_CYCLE" -> RecurringStatus.ACTIVE;
+            case "SUSPENDED" -> RecurringStatus.PAUSED;
+            case "CANCELLED" -> RecurringStatus.CANCELLED;
+            case "FINISHED" -> RecurringStatus.EXPIRED;
+            default -> RecurringStatus.ACTIVE;
         };
     }
 
     private PaymentStatus mapPaymentStatus(String status) {
         return switch (status.toUpperCase()) {
-        case "RECEIVED", "CONFIRMED" -> PaymentStatus.COMPLETED;
-        case "RECEIVED_IN_CASH", "RECEIVED_IN_PROTEST" -> PaymentStatus.COMPLETED;
-        case "PENDING", "AWAITING_RISK_ANALYSIS" -> PaymentStatus.PENDING;
-        case "OVERDUE", "REFUSED", "CANCELLED" -> PaymentStatus.FAILED;
-        default -> PaymentStatus.PENDING;
+            case "RECEIVED", "CONFIRMED" -> PaymentStatus.COMPLETED;
+            case "RECEIVED_IN_CASH", "RECEIVED_IN_PROTEST" -> PaymentStatus.COMPLETED;
+            case "PENDING", "AWAITING_RISK_ANALYSIS" -> PaymentStatus.PENDING;
+            case "OVERDUE", "REFUSED", "CANCELLED" -> PaymentStatus.FAILED;
+            default -> PaymentStatus.PENDING;
         };
     }
 
     private String mapInterval(RecurringInterval interval) {
         return switch (interval) {
-        case DAILY -> "DAILY";
-        case WEEKLY -> "WEEKLY";
-        case MONTHLY -> "MONTHLY";
-        case YEARLY -> "YEARLY";
+            case DAILY -> "DAILY";
+            case WEEKLY -> "WEEKLY";
+            case MONTHLY -> "MONTHLY";
+            case QUARTERLY -> "QUARTERLY";
+            case SEMI_ANNUAL -> "SEMIANNUAL";
+            case YEARLY -> "YEARLY";
         };
     }
 

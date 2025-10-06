@@ -4,8 +4,8 @@ import com.jm.dto.payment.WebhookEventRequest;
 import com.jm.entity.PaymentWebhook;
 import com.jm.enums.PaymentStatus;
 import com.jm.enums.RecurringStatus;
+import com.jm.repository.PaymentRecurringRepository;
 import com.jm.repository.PaymentWebhookRepository;
-import com.jm.repository.RecurringPaymentRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,24 +24,21 @@ public class PaymentWebhookService {
 
     private final PaymentWebhookRepository paymentWebhookRepository;
     private final PaymentService paymentService;
-    private final RecurringPaymentRepository recurringPaymentRepository;
+    private final PaymentRecurringRepository paymentRecurringRepository;
 
     @Transactional
-    public void handleWebhook(WebhookEventRequest request) {
-        String eventType = resolveEventType(request.getProvider(), request.getPayload());
-        PaymentWebhook webhook = PaymentWebhook.builder()
-                .eventType(eventType)
-                .payload(request.getPayload())
-                .processed(Boolean.FALSE)
+    public void handleWebhook(String provider, Map<String, Object> payload) {
+        String eventType = resolveEventType(provider, payload);
+        PaymentWebhook webhook = PaymentWebhook.builder().eventType(eventType).payload(payload).processed(Boolean.FALSE)
                 .build();
 
         webhook = paymentWebhookRepository.save(webhook);
 
         try {
-            switch (request.getProvider().toLowerCase()) {
-                case "stripe" -> handleStripe(eventType, request.getPayload());
-                case "asaas" -> handleAsaas(eventType, request.getPayload());
-                default -> log.warn("Webhook provider {} not supported", request.getProvider());
+            switch (provider.toLowerCase()) {
+            case "stripe" -> handleStripe(eventType, payload);
+            case "asaas" -> handleAsaas(eventType, payload);
+            default -> log.warn("Webhook provider {} not supported", provider);
             }
             webhook.setProcessed(Boolean.TRUE);
         } catch (Exception ex) {
@@ -66,11 +63,11 @@ public class PaymentWebhookService {
                 return;
             }
             PaymentStatus status = switch (eventType) {
-                case "payment_intent.succeeded" -> PaymentStatus.COMPLETED;
-                case "payment_intent.processing" -> PaymentStatus.PROCESSING;
-                case "payment_intent.payment_failed" -> PaymentStatus.FAILED;
-                case "charge.refunded" -> PaymentStatus.REFUNDED;
-                default -> PaymentStatus.PENDING;
+            case "payment_intent.succeeded" -> PaymentStatus.COMPLETED;
+            case "payment_intent.processing" -> PaymentStatus.PROCESSING;
+            case "payment_intent.payment_failed" -> PaymentStatus.FAILED;
+            case "charge.refunded" -> PaymentStatus.REFUNDED;
+            default -> PaymentStatus.PENDING;
             };
             paymentService.updatePaymentStatus(paymentIntentId, status, object);
         }
@@ -102,16 +99,15 @@ public class PaymentWebhookService {
             log.warn("Stripe subscription webhook without id");
             return;
         }
-        recurringPaymentRepository.findByGatewaySubscriptionId(subscriptionId).ifPresent(recurring -> {
+        paymentRecurringRepository.findByGatewaySubscriptionId(subscriptionId).ifPresent(recurring -> {
             String statusRaw = Optional.ofNullable(subscription.get("status")).map(Object::toString).orElse("active");
             recurring.setStatus(mapStripeSubscriptionStatus(statusRaw));
             Object periodEnd = subscription.get("current_period_end");
             if (periodEnd instanceof Number number) {
-                recurring.setNextBillingDate(Instant.ofEpochSecond(number.longValue())
-                        .atZone(ZoneOffset.UTC)
-                        .toLocalDate());
+                recurring.setNextBillingDate(
+                        Instant.ofEpochSecond(number.longValue()).atZone(ZoneOffset.UTC).toLocalDate());
             }
-            recurringPaymentRepository.save(recurring);
+            paymentRecurringRepository.save(recurring);
         });
     }
 
@@ -135,21 +131,21 @@ public class PaymentWebhookService {
 
     private PaymentStatus mapAsaasStatus(String status) {
         return switch (status.toUpperCase()) {
-            case "RECEIVED", "RECEIVED_IN_CASH", "CONFIRMED" -> PaymentStatus.COMPLETED;
-            case "PENDING", "AWAITING_RISK_ANALYSIS" -> PaymentStatus.PENDING;
-            case "REFUNDED" -> PaymentStatus.REFUNDED;
-            case "OVERDUE", "CANCELLED", "REJECTED" -> PaymentStatus.FAILED;
-            default -> PaymentStatus.PENDING;
+        case "RECEIVED", "RECEIVED_IN_CASH", "CONFIRMED" -> PaymentStatus.COMPLETED;
+        case "PENDING", "AWAITING_RISK_ANALYSIS" -> PaymentStatus.PENDING;
+        case "REFUNDED" -> PaymentStatus.REFUNDED;
+        case "OVERDUE", "CANCELLED", "REJECTED" -> PaymentStatus.FAILED;
+        default -> PaymentStatus.PENDING;
         };
     }
 
     private RecurringStatus mapStripeSubscriptionStatus(String value) {
         return switch (value) {
-            case "active", "trialing" -> RecurringStatus.ACTIVE;
-            case "past_due", "unpaid" -> RecurringStatus.PAUSED;
-            case "canceled" -> RecurringStatus.CANCELLED;
-            case "incomplete", "incomplete_expired" -> RecurringStatus.EXPIRED;
-            default -> RecurringStatus.ACTIVE;
+        case "active", "trialing" -> RecurringStatus.ACTIVE;
+        case "past_due", "unpaid" -> RecurringStatus.PAUSED;
+        case "canceled" -> RecurringStatus.CANCELLED;
+        case "incomplete", "incomplete_expired" -> RecurringStatus.EXPIRED;
+        default -> RecurringStatus.ACTIVE;
         };
     }
 }

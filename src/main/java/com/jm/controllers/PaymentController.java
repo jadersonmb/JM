@@ -7,12 +7,15 @@ import com.jm.dto.payment.PaymentIntentResponse;
 import com.jm.dto.payment.PaymentResponse;
 import com.jm.dto.payment.PixPaymentRequest;
 import com.jm.dto.payment.PixPaymentResponse;
-import com.jm.dto.payment.RecurringPaymentRequest;
-import com.jm.dto.payment.RecurringPaymentResponse;
+import com.jm.dto.payment.PaymentRecurringRequest;
+import com.jm.dto.payment.PaymentRecurringResponse;
 import com.jm.dto.payment.RefundRequest;
 import com.jm.services.payment.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -27,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequestMapping("/v1/api/payments")
 @RequiredArgsConstructor
 @Validated
 public class PaymentController {
@@ -50,7 +53,8 @@ public class PaymentController {
     }
 
     @PostMapping("/subscription")
-    public ResponseEntity<RecurringPaymentResponse> createSubscription(@Valid @RequestBody RecurringPaymentRequest request) {
+    public ResponseEntity<PaymentRecurringResponse> createSubscription(
+            @Valid @RequestBody PaymentRecurringRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createSubscription(request));
     }
 
@@ -60,12 +64,13 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PaymentResponse> getPayment(@PathVariable Long id) {
+    public ResponseEntity<PaymentResponse> getPayment(@PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.getPayment(id));
     }
 
     @PostMapping("/{id}/refund")
-    public ResponseEntity<PaymentResponse> refundPayment(@PathVariable Long id, @Valid @RequestBody RefundRequest request) {
+    public ResponseEntity<PaymentResponse> refundPayment(@PathVariable UUID id,
+            @Valid @RequestBody RefundRequest request) {
         return ResponseEntity.ok(paymentService.refundPayment(id, request));
     }
 }

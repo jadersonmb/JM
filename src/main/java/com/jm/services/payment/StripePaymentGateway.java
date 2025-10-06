@@ -1,14 +1,16 @@
 package com.jm.services.payment;
 
 import com.jm.configuration.config.PaymentGatewayProperties;
+import com.jm.dto.payment.GatewayPaymentResponse;
+import com.jm.dto.payment.PaymentRecurringRequest;
+import com.jm.dto.payment.RecurringChargeResponse;
 import com.jm.dto.payment.RefundRequest;
-import com.jm.dto.payment.RecurringPaymentRequest;
 import com.jm.entity.PaymentCard;
+import com.jm.entity.PaymentPlan;
 import com.jm.entity.Users;
 import com.jm.enums.PaymentStatus;
 import com.jm.enums.RecurringStatus;
-import com.jm.services.payment.model.GatewayPaymentResponse;
-import com.jm.services.payment.model.RecurringChargeResponse;
+import com.jm.execption.PaymentIntegrationException;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
@@ -28,8 +30,6 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Map;
 
 @Slf4j
@@ -38,6 +38,7 @@ import java.util.Map;
 public class StripePaymentGateway {
 
     private final PaymentGatewayProperties properties;
+    private final PaymentPlanService paymentPlanService;
 
     @PostConstruct
     void init() {
@@ -48,27 +49,21 @@ public class StripePaymentGateway {
         }
     }
 
-    public GatewayPaymentResponse createCardPayment(BigDecimal amount,
-                                                    String currency,
-                                                    String description,
-                                                    Users customer,
-                                                    PaymentCard card,
-                                                    Map<String, Object> metadata) {
+    public GatewayPaymentResponse createCardPayment(BigDecimal amount, String currency, String description,
+            Users customer, PaymentCard card, Map<String, Object> metadata) {
         assertStripeConfigured();
         try {
             PaymentIntentCreateParams.Builder builder = PaymentIntentCreateParams.builder()
-                    .setAmount(toStripeAmount(amount))
-                    .setCurrency(currency.toLowerCase())
-                    .setConfirmationMethod(PaymentIntentCreateParams.ConfirmationMethod.MANUAL)
-                    .setConfirm(Boolean.FALSE)
-                    .addPaymentMethodType("card");
+                    .setAmount(toStripeAmount(amount)).setCurrency(currency.toLowerCase())
+                    .setConfirmationMethod(PaymentIntentCreateParams.ConfirmationMethod.AUTOMATIC)
+                    .setConfirm(Boolean.TRUE).addPaymentMethodType("card");
 
             if (StringUtils.hasText(description)) {
                 builder.setDescription(description);
             }
 
             if (card != null) {
-                builder.setPaymentMethod(card.getCardToken());
+                builder.setPaymentMethod("pm_card_visa"); // card.getCardToken()
             }
 
             if (metadata != null) {
@@ -79,12 +74,9 @@ public class StripePaymentGateway {
 
             PaymentIntent paymentIntent = PaymentIntent.create(builder.build());
 
-            return GatewayPaymentResponse.builder()
-                    .gatewayPaymentId(paymentIntent.getId())
-                    .clientSecret(paymentIntent.getClientSecret())
-                    .status(mapStatus(paymentIntent.getStatus()))
-                    .metadata(paymentIntent.getMetadata())
-                    .build();
+            return GatewayPaymentResponse.builder().gatewayPaymentId(paymentIntent.getId())
+                    .clientSecret(paymentIntent.getClientSecret()).status(mapStatus(paymentIntent.getStatus()))
+                    .metadata(paymentIntent.getMetadata()).build();
         } catch (StripeException ex) {
             log.error("Stripe payment intent creation failed", ex);
             throw new PaymentIntegrationException("Unable to create Stripe payment intent", ex);
@@ -100,53 +92,49 @@ public class StripePaymentGateway {
                 params.setPaymentMethod(paymentMethodToken);
             }
             PaymentIntent confirmed = intent.confirm(params.build());
-            return GatewayPaymentResponse.builder()
-                    .gatewayPaymentId(confirmed.getId())
-                    .clientSecret(confirmed.getClientSecret())
-                    .status(mapStatus(confirmed.getStatus()))
-                    .metadata(confirmed.getMetadata())
-                    .build();
+            return GatewayPaymentResponse.builder().gatewayPaymentId(confirmed.getId())
+                    .clientSecret(confirmed.getClientSecret()).status(mapStatus(confirmed.getStatus()))
+                    .metadata(confirmed.getMetadata()).build();
         } catch (StripeException ex) {
             log.error("Stripe payment confirmation failed", ex);
             throw new PaymentIntegrationException("Stripe confirmation failed", ex);
         }
     }
 
-    public RecurringChargeResponse createSubscription(RecurringPaymentRequest request,
-                                                      PaymentCard paymentMethod,
-                                                      String stripeCustomerId,
-                                                      Map<String, Object> metadata) {
+    public RecurringChargeResponse createSubscription(PaymentRecurringRequest recurringPaymentRequest,
+            PaymentCard paymentMethod, String stripeCustomerId, Map<String, Object> metadata) {
         assertStripeConfigured();
+        PaymentPlan plan = paymentPlanService.findActiveById(recurringPaymentRequest.getPaymentPlanId());
         Assert.hasText(stripeCustomerId, "Stripe customer id is required for subscriptions");
         Assert.notNull(paymentMethod, "Payment method is required for subscriptions");
+        Assert.hasText(plan.getStripePriceId(), "Stripe price id is required for the selected plan");
         try {
+
             SubscriptionCreateParams.Item item = SubscriptionCreateParams.Item.builder()
-                    .setPrice(request.getPlanId())
-                    .build();
+                    .setPrice(plan.getStripePriceId()).build();
 
-            SubscriptionCreateParams.Builder builder = SubscriptionCreateParams.builder()
-                    .setCustomer(stripeCustomerId)
-                    .addItem(item)
-                    .setCollectionMethod(SubscriptionCreateParams.CollectionMethod.CHARGE_AUTOMATICALLY)
-                    .setDefaultPaymentMethod(paymentMethod.getCardToken())
-                    .addExpand("latest_invoice.payment_intent");
+            SubscriptionCreateParams.Builder builder = SubscriptionCreateParams.builder().setCustomer(stripeCustomerId)
+                    .addItem(item).setCollectionMethod(SubscriptionCreateParams.CollectionMethod.CHARGE_AUTOMATICALLY)
+                    .setDefaultPaymentMethod(paymentMethod.getCardToken()).addExpand("latest_invoice.payment_intent");
 
+            builder.putMetadata("plan_code", plan.getCode());
+            if (StringUtils.hasText(plan.getName())) {
+                builder.putMetadata("plan_name", plan.getName());
+            }
             if (!CollectionUtils.isEmpty(metadata)) {
                 metadata.forEach((key, value) -> builder.putMetadata(key, String.valueOf(value)));
             }
 
             Subscription subscription = Subscription.create(builder.build());
 
-            return RecurringChargeResponse.builder()
-                    .subscriptionId(subscription.getId())
-                    .status(mapSubscriptionStatus(subscription.getStatus()))
-                    .interval(request.getInterval())
-                    .amount(request.getAmount())
-                    .nextBillingDate(subscription.getCurrentPeriodEnd() != null
-                            ? Instant.ofEpochSecond(subscription.getCurrentPeriodEnd())
-                                    .atZone(ZoneOffset.UTC)
-                                    .toLocalDate()
-                            : null)
+            return RecurringChargeResponse.builder().subscriptionId(subscription.getId())
+                    .status(mapSubscriptionStatus(subscription.getStatus())).interval(plan.getIntervals())
+                    .amount(plan.getAmount())
+                    /*
+                     * .nextBillingDate(subscription.getCurrentPeriodEnd() != null ? Instant
+                     * .ofEpochSecond(subscription.getCurrentPeriodEnd()).atZone(ZoneOffset.UTC).
+                     * toLocalDate() : null)
+                     */
                     .build();
         } catch (StripeException ex) {
             log.error("Stripe subscription creation failed", ex);
@@ -157,8 +145,7 @@ public class StripePaymentGateway {
     public void refund(String gatewayPaymentId, RefundRequest request) {
         assertStripeConfigured();
         try {
-            RefundCreateParams.Builder builder = RefundCreateParams.builder()
-                    .setPaymentIntent(gatewayPaymentId);
+            RefundCreateParams.Builder builder = RefundCreateParams.builder().setPaymentIntent(gatewayPaymentId);
 
             if (request.getAmount() != null) {
                 builder.setAmount(toStripeAmount(request.getAmount()));
@@ -197,9 +184,7 @@ public class StripePaymentGateway {
     }
 
     private long toStripeAmount(BigDecimal amount) {
-        return amount.multiply(BigDecimal.valueOf(100))
-                .setScale(0, RoundingMode.HALF_UP)
-                .longValueExact();
+        return amount.multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP).longValueExact();
     }
 
     private void assertStripeConfigured() {
@@ -208,4 +193,3 @@ public class StripePaymentGateway {
         }
     }
 }
-

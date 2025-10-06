@@ -7,11 +7,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.UUID;
+
+import org.hibernate.annotations.Parameter;
 
 @Getter
 @Setter
@@ -23,8 +27,10 @@ import java.util.Map;
 public class PaymentWebhook {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = @Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.CustomVersionOneStrategy"))
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(name = "event_type", nullable = false, length = 100)
     private String eventType;

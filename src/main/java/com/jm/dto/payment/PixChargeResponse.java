@@ -1,4 +1,4 @@
-package com.jm.services.payment.model;
+package com.jm.dto.payment;
 
 import com.jm.enums.PaymentStatus;
 import lombok.Builder;

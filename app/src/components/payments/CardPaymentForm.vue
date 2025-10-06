@@ -1,28 +1,41 @@
 <template>
   <form class="flex flex-col gap-6" @submit.prevent="submitPayment">
-    <section class="grid gap-4 md:grid-cols-2">
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-medium text-slate-600">Amount ({{ currency }})</span>
-        <input
-          v-model.number="form.amount"
-          type="number"
-          min="1"
-          step="0.01"
-          placeholder="0.00"
-          class="input"
-          required
-        />
-      </label>
-      <label class="flex flex-col gap-1">
-        <span class="text-sm font-medium text-slate-600">Description</span>
-        <input
-          v-model="form.description"
-          type="text"
-          maxlength="140"
-          placeholder="What is this payment for?"
-          class="input"
-        />
-      </label>
+    <section class="space-y-3">
+      <header class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold text-slate-700">Select a plan</h3>
+        <span v-if="loadingPlans" class="text-xs text-slate-500">Loading plans...</span>
+      </header>
+      <p v-if="planError" class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        {{ planError }}
+      </p>
+      <div v-else>
+        <p v-if="!plans.length && !loadingPlans" class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+          No payment plans available. Configure plans in the admin area first.
+        </p>
+        <div v-else class="grid gap-3 md:grid-cols-2">
+          <button
+            v-for="plan in plans"
+            :key="plan.id"
+            type="button"
+            class="flex h-full flex-col justify-between rounded-2xl border px-4 py-4 text-left transition"
+            :class="
+              form.paymentPlanId === plan.id
+                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50'
+            "
+            @click="selectPlan(plan.id)"
+          >
+            <div class="space-y-2">
+              <p class="text-sm font-semibold">{{ plan.name }}</p>
+              <p class="text-xs text-slate-500">{{ plan.description || intervalLabel(plan.interval) }}</p>
+            </div>
+            <div class="mt-4">
+              <p class="text-2xl font-semibold text-slate-900">{{ formatCurrency(plan.amount, plan.currency) }}</p>
+              <p class="text-xs uppercase tracking-wide text-slate-500">{{ intervalLabel(plan.interval) }}</p>
+            </div>
+          </button>
+        </div>
+      </div>
     </section>
 
     <section class="space-y-3">
@@ -53,7 +66,10 @@
               class="h-4 w-4 text-emerald-500"
             />
             <div class="flex flex-col">
-              <span class="font-medium">{{ card.brand }} ···· {{ card.lastFour }}</span>
+              <div class="flex items-center gap-2">
+                <span :class="['rounded-full btn-primary w-10 h-8', brandMeta(card.brand).class]">{{ brandMeta(card.brand).label }}</span>
+                <span class="font-medium text-slate-700">**** {{ card.lastFour }}</span>
+              </div>
               <span class="text-xs text-slate-500">Expires {{ card.expiryMonth }}/{{ card.expiryYear }}</span>
             </div>
           </div>
@@ -129,7 +145,7 @@
           </label>
           <button type="button" class="btn-primary" :disabled="tokenizing || !canTokenize" @click="tokenizeCard">
             <span v-if="tokenizing" class="loader h-4 w-4" />
-            <span>{{ tokenizing ? 'Tokenizing…' : 'Tokenize card' }}</span>
+            <span>{{ tokenizing ? 'Tokenizing...' : 'Adding card' }}</span>
           </button>
         </div>
       </section>
@@ -141,14 +157,15 @@
       </p>
       <button type="submit" class="btn-primary" :disabled="!canSubmit || loading">
         <span v-if="loading" class="loader h-4 w-4" />
-        <span>{{ loading ? 'Processing…' : 'Create payment intent' }}</span>
+        <span>{{ loading ? 'Processing...' : 'Create payment' }}</span>
       </button>
     </footer>
   </form>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { listPaymentPlans } from '@/services/payments';
 
 const props = defineProps({
   cards: {
@@ -171,9 +188,12 @@ const props = defineProps({
 
 const emit = defineEmits(['create', 'tokenize']);
 
+const plans = ref([]);
+const loadingPlans = ref(false);
+const planError = ref('');
+
 const form = reactive({
-  amount: 0,
-  description: '',
+  paymentPlanId: null,
   cardId: null,
 });
 
@@ -190,6 +210,10 @@ const isAddingCard = ref(false);
 const formattedCardNumber = ref('');
 const formattedExpiry = ref('');
 
+const selectedPlan = computed(() => plans.value.find((plan) => plan.id === form.paymentPlanId) || null);
+const showCardSelector = computed(() => true);
+const canSubmit = computed(() => Boolean(selectedPlan.value) && Boolean(form.cardId));
+
 watch(
   () => props.cards,
   (value) => {
@@ -201,7 +225,38 @@ watch(
   { immediate: true },
 );
 
-const canSubmit = computed(() => form.amount > 0 && Boolean(form.cardId));
+function brandMeta(brand) {
+  const key = (brand || '').toLowerCase();
+  const map = {
+    visa: { label: 'Visa', class: 'bg-blue-100 text-blue-700 border border-blue-200' },
+    mastercard: { label: 'Mastercard', class: 'bg-orange-100 text-orange-700 border border-orange-200' },
+    americanexpress: { label: 'Amex', class: 'bg-teal-100 text-teal-700 border border-teal-200' },
+    amex: { label: 'Amex', class: 'bg-teal-100 text-teal-700 border border-teal-200' },
+  };
+  return map[key] || { label: brand || 'Card', class: 'bg-slate-100 text-slate-600 border border-slate-200' };
+}
+
+async function loadPlans() {
+  loadingPlans.value = true;
+  planError.value = '';
+  try {
+    const { data } = await listPaymentPlans();
+    plans.value = data ?? [];
+    if (plans.value.length) {
+      selectPlan(plans.value[0].id);
+    }
+  } catch (error) {
+    console.error('Failed to load payment plans', error);
+    planError.value = 'Unable to load payment plans. Please try again later.';
+  } finally {
+    loadingPlans.value = false;
+  }
+}
+
+function selectPlan(planId) {
+  form.paymentPlanId = planId;
+}
+
 const canTokenize = computed(
   () =>
     newCard.cardholder.length > 3 &&
@@ -212,11 +267,16 @@ const canTokenize = computed(
 );
 
 function submitPayment() {
-  if (!canSubmit.value) return;
+  if (!canSubmit.value || !selectedPlan.value) return;
   emit('create', {
-    amount: Number(form.amount),
-    description: form.description,
+    amount: Number(selectedPlan.value.amount),
+    description: selectedPlan.value.description || selectedPlan.value.name,
     paymentCardId: form.cardId,
+    metadata: {
+      paymentPlanId: selectedPlan.value.id,
+      paymentPlanCode: selectedPlan.value.code,
+      paymentPlanName: selectedPlan.value.name,
+    },
   });
 }
 
@@ -274,6 +334,29 @@ function tokenizeCard() {
   });
 }
 
+function intervalLabel(interval) {
+  const labels = {
+    MONTHLY: 'Billed monthly',
+    QUARTERLY: 'Billed every quarter',
+    SEMI_ANNUAL: 'Billed every six months',
+    YEARLY: 'Billed annually',
+    WEEKLY: 'Billed weekly',
+    DAILY: 'Billed daily',
+  };
+  return labels[interval] || interval;
+}
+
+function formatCurrency(amount, currencyCode) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: currencyCode || props.currency,
+  }).format(amount ?? 0);
+}
+
+onMounted(() => {
+  loadPlans();
+});
+
 defineExpose({ closeNewCard });
 </script>
 
@@ -287,4 +370,5 @@ defineExpose({ closeNewCard });
   opacity: 0;
 }
 </style>
+
 

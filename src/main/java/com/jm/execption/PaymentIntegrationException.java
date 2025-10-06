@@ -1,4 +1,4 @@
-package com.jm.services.payment;
+package com.jm.execption;
 
 public class PaymentIntegrationException extends RuntimeException {
 

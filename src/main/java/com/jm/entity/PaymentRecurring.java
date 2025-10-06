@@ -9,10 +9,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
-
+import org.hibernate.annotations.GenericGenerator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -20,19 +21,23 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "recurring_payments")
-public class RecurringPayment {
+@Table(name = "payments_recurring")
+public class PaymentRecurring {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(generator = "UUID")
+    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator", parameters = {
+            @org.hibernate.annotations.Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.CustomVersionOneStrategy") })
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private Users customer;
 
-    @Column(name = "plan_id", nullable = false, length = 100)
-    private String planId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_plan_id")
+    private PaymentPlan paymentPlan;
 
     @Column(name = "gateway_subscription_id", length = 100)
     private String gatewaySubscriptionId;
@@ -66,5 +71,3 @@ public class RecurringPayment {
         }
     }
 }
-
-

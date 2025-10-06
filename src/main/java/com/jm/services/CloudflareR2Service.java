@@ -60,8 +60,12 @@ public class CloudflareR2Service {
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
             ImageDTO imageDTO = imageService
-                    .save(ImageDTO.builder().fileName(fileName).url(publicUrl + "/" + userDTO.getId() + "/" + fileName)
-                            .userId(userDTO.getId()).fileKey(key).build());
+                    .save(ImageDTO.builder()
+                            .fileName(fileName)
+                            .url(publicUrl + "/" + userDTO.getId() + "/" + fileName)
+                            .userId(userDTO.getId())
+                            .fileKey(key)
+                            .build());
 
             imageDTO.setFileKey(key);
             return imageDTO;

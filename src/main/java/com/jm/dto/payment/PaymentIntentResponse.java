@@ -8,11 +8,12 @@ import lombok.Value;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Value
 @Builder
 public class PaymentIntentResponse {
-    Long id;
+    UUID id;
     String paymentId;
     PaymentStatus status;
     PaymentMethodType paymentMethod;

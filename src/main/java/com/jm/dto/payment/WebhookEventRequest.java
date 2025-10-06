@@ -4,8 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.Map;
-
 @Data
 public class WebhookEventRequest {
 
@@ -13,5 +11,5 @@ public class WebhookEventRequest {
     private String provider;
 
     @NotNull
-    private Map<String, Object> payload;
+    private String payload;
 }

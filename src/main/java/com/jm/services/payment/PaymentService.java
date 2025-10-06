@@ -2,31 +2,38 @@ package com.jm.services.payment;
 
 import com.jm.dto.payment.CardRequest;
 import com.jm.dto.payment.ConfirmPaymentRequest;
+import com.jm.dto.payment.GatewayPaymentResponse;
 import com.jm.dto.payment.PaymentFilterRequest;
 import com.jm.dto.payment.PaymentIntentRequest;
 import com.jm.dto.payment.PaymentIntentResponse;
 import com.jm.dto.payment.PaymentMethodResponse;
 import com.jm.dto.payment.PaymentResponse;
+import com.jm.dto.payment.PixChargeResponse;
 import com.jm.dto.payment.PixPaymentRequest;
 import com.jm.dto.payment.PixPaymentResponse;
-import com.jm.dto.payment.RecurringPaymentRequest;
-import com.jm.dto.payment.RecurringPaymentResponse;
+import com.jm.dto.payment.RecurringChargeResponse;
+import com.jm.dto.payment.PaymentRecurringRequest;
+import com.jm.entity.PaymentPlan;
+import com.jm.dto.payment.PaymentRecurringResponse;
 import com.jm.dto.payment.RefundRequest;
 import com.jm.entity.Payment;
 import com.jm.entity.PaymentCard;
-import com.jm.entity.RecurringPayment;
+import com.jm.entity.PaymentRecurring;
 import com.jm.entity.Users;
 import com.jm.enums.PaymentMethodType;
 import com.jm.enums.PaymentStatus;
 import com.jm.enums.RecurringStatus;
+import com.jm.execption.PaymentIntegrationException;
 import com.jm.repository.PaymentCardRepository;
 import com.jm.repository.PaymentRepository;
-import com.jm.repository.RecurringPaymentRepository;
-import com.jm.repository.UserRepository;
-import com.jm.services.payment.model.GatewayPaymentResponse;
-import com.jm.services.payment.model.PixChargeResponse;
-import com.jm.services.payment.model.RecurringChargeResponse;
+import com.jm.repository.PaymentRecurringRepository;
+import com.jm.services.UserService;
 import com.jm.speciation.PaymentSpecification;
+import com.stripe.StripeClient;
+import com.stripe.exception.StripeException;
+import com.stripe.param.TokenCreateParams;
+import com.stripe.model.Token;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +44,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,17 +61,22 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentCardRepository paymentCardRepository;
-    private final RecurringPaymentRepository recurringPaymentRepository;
-    private final UserRepository userRepository;
+    private final PaymentRecurringRepository recurringPaymentRepository;
+    private final UserService userService;
+    private final PaymentPlanService paymentPlanService;
     private final StripePaymentGateway stripePaymentGateway;
     private final AsaasPaymentGateway asaasPaymentGateway;
 
     public PaymentIntentResponse createPaymentIntent(PaymentIntentRequest request) {
         Users customer = fetchCustomer(request.getCustomerId());
-        Payment payment = Payment.builder().customer(customer).amount(request.getAmount())
+        Payment payment = Payment.builder()
+                .customer(customer)
+                .amount(request.getAmount())
                 .currency(StringUtils.hasText(request.getCurrency()) ? request.getCurrency() : "BRL")
-                .paymentMethod(request.getPaymentMethod()).paymentStatus(PaymentStatus.PENDING)
-                .description(request.getDescription()).metadata(copyMetadata(request.getMetadata())).build();
+                .paymentMethod(request.getPaymentMethod())
+                .paymentStatus(PaymentStatus.PENDING)
+                .description(request.getDescription())
+                .metadata(copyMetadata(request.getMetadata())).build();
 
         payment = paymentRepository.save(payment);
 
@@ -76,8 +88,10 @@ public class PaymentService {
 
             applyGatewayResult(payment, gateway);
         } else if (request.getPaymentMethod() == PaymentMethodType.PIX) {
-            PixPaymentRequest pixRequest = PixPaymentRequest.builder().amount(payment.getAmount())
-                    .description(payment.getDescription()).metadata(request.getMetadata()).build();
+            PixPaymentRequest pixRequest = PixPaymentRequest.builder()
+                    .amount(payment.getAmount())
+                    .description(payment.getDescription())
+                    .build();
             PixChargeResponse response = asaasPaymentGateway.createPixCharge(pixRequest, customer);
             payment.setPaymentId(response.getGatewayChargeId());
             payment.setPaymentStatus(response.getStatus());
@@ -110,20 +124,30 @@ public class PaymentService {
     }
 
     public PixPaymentResponse createPixPayment(PixPaymentRequest request) {
-        PaymentIntentResponse intent = createPaymentIntent(PaymentIntentRequest.builder().amount(request.getAmount())
-                .currency("BRL").customerId(request.getCustomerId()).description(request.getDescription())
-                .paymentMethod(PaymentMethodType.PIX).metadata(request.getMetadata()).build());
+        PaymentIntentResponse intent = createPaymentIntent(PaymentIntentRequest.builder()
+                .amount(request.getAmount())
+                .currency("BRL")
+                .customerId(request.getCustomerId())
+                .description(request.getDescription())
+                .paymentMethod(PaymentMethodType.PIX)
+                .build());
 
         Payment payment = paymentRepository.findById(intent.getId()).orElseThrow();
 
         Map<String, Object> metadata = payment.getMetadata();
-        return PixPaymentResponse.builder().id(payment.getId()).paymentId(payment.getPaymentId())
-                .pixKey((String) metadata.get("pixKey")).qrCodeImage((String) metadata.get("pixQrCode"))
-                .payload((String) metadata.get("pixPayload")).status(payment.getPaymentStatus())
-                .amount(payment.getAmount()).expiresAt(parseOffsetDateTime(metadata.get("expiresAt"))).build();
+        return PixPaymentResponse.builder()
+                .id(payment.getId())
+                .paymentId(payment.getPaymentId())
+                .pixKey((String) metadata.get("pixKey"))
+                .qrCodeImage((String) metadata.get("pixQrCode"))
+                .payload((String) metadata.get("pixPayload"))
+                .status(payment.getPaymentStatus())
+                .amount(payment.getAmount())
+                .expiresAt(parseOffsetDateTime(metadata.get("expiresAt")))
+                .build();
     }
 
-    public RecurringPaymentResponse createSubscription(RecurringPaymentRequest request) {
+    public PaymentRecurringResponse createSubscription(PaymentRecurringRequest request) {
         Users customer = fetchCustomer(request.getCustomerId());
         PaymentCard card = null;
         if (request.getPaymentMethod() != PaymentMethodType.PIX) {
@@ -132,34 +156,43 @@ public class PaymentService {
 
         RecurringChargeResponse gatewayResponse;
         if (request.getPaymentMethod() == PaymentMethodType.PIX) {
-            gatewayResponse = asaasPaymentGateway.createSubscription(request, customer);
+            gatewayResponse = asaasPaymentGateway.createSubscription(request, request.getMetadata(), customer);
         } else {
             String stripeCustomerId = extractStripeCustomerId(request.getMetadata());
             gatewayResponse = stripePaymentGateway.createSubscription(request, card, stripeCustomerId,
                     request.getMetadata());
         }
 
-        RecurringPayment recurringPayment = RecurringPayment.builder().customer(customer).paymentMethod(card)
-                .planId(request.getPlanId()).interval(request.getInterval()).amount(request.getAmount())
+        PaymentRecurring recurringPayment = PaymentRecurring.builder()
+                .customer(customer).paymentMethod(card)
+                .paymentPlan(fetchPaymentPlan(request.getPaymentPlanId()))
+                .interval(gatewayResponse.getInterval())
+                .amount(gatewayResponse.getAmount())
                 .gatewaySubscriptionId(gatewayResponse.getSubscriptionId())
-                .status(Optional.ofNullable(gatewayResponse.getStatus()).orElse(RecurringStatus.ACTIVE))
-                .nextBillingDate(gatewayResponse.getNextBillingDate()).build();
+                .status(Optional.ofNullable(gatewayResponse.getStatus())
+                        .orElse(RecurringStatus.ACTIVE))
+                .nextBillingDate(gatewayResponse.getNextBillingDate())
+                .build();
 
         recurringPayment = recurringPaymentRepository.save(recurringPayment);
 
-        return RecurringPaymentResponse.builder().id(recurringPayment.getId())
-                .subscriptionId(recurringPayment.getGatewaySubscriptionId()).status(recurringPayment.getStatus())
-                .interval(recurringPayment.getInterval()).amount(recurringPayment.getAmount())
-                .nextBillingDate(recurringPayment.getNextBillingDate()).build();
+        return PaymentRecurringResponse.builder()
+                .id(recurringPayment.getId())
+                .subscriptionId(recurringPayment.getGatewaySubscriptionId())
+                .status(recurringPayment.getStatus())
+                .interval(recurringPayment.getInterval())
+                .amount(recurringPayment.getAmount())
+                .nextBillingDate(recurringPayment.getNextBillingDate())
+                .build();
     }
 
-    public PaymentResponse getPayment(Long id) {
+    public PaymentResponse getPayment(UUID id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
         return toPaymentResponse(payment);
     }
 
-    public PaymentResponse refundPayment(Long id, RefundRequest request) {
+    public PaymentResponse refundPayment(UUID id, RefundRequest request) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
 
@@ -182,11 +215,12 @@ public class PaymentService {
     }
 
     public void updatePaymentStatus(String paymentId, PaymentStatus status, Map<String, Object> metadata) {
-        paymentRepository.findByPaymentId(paymentId).ifPresent(payment -> {
-            payment.setPaymentStatus(status);
-            payment.setMetadata(mergeMetadata(payment.getMetadata(), metadata));
-            paymentRepository.save(payment);
-        });
+        paymentRepository.findByPaymentId(paymentId)
+                .ifPresent(payment -> {
+                    payment.setPaymentStatus(status);
+                    payment.setMetadata(mergeMetadata(payment.getMetadata(), metadata));
+                    paymentRepository.save(payment);
+                });
     }
 
     public PaymentMethodResponse addCard(CardRequest request) {
@@ -199,21 +233,27 @@ public class PaymentService {
                 }
             });
         }
-        PaymentCard card = PaymentCard.builder().customer(customer).cardToken(request.getCardToken())
-                .brand(request.getBrand()).lastFour(request.getLastFour()).expiryMonth(request.getExpiryMonth())
-                .expiryYear(request.getExpiryYear()).defaultCard(Boolean.TRUE.equals(request.getDefaultCard())).build();
+        PaymentCard card = PaymentCard.builder()
+                .customer(customer)
+                .cardToken(request.getCardToken())
+                .brand(request.getBrand())
+                .lastFour(request.getLastFour())
+                .expiryMonth(request.getExpiryMonth())
+                .expiryYear(request.getExpiryYear())
+                .defaultCard(Boolean.TRUE.equals(request.getDefaultCard()))
+                .build();
         card = paymentCardRepository.save(card);
         return toPaymentMethodResponse(card);
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentMethodResponse> listCards(UUID customerId) {
+    public List<PaymentMethodResponse> listCards(UUID customerId) throws StripeException {
         Users customer = fetchCustomer(customerId);
         return paymentCardRepository.findByCustomerOrderByDefaultCardDescCreatedAtDesc(customer).stream()
                 .map(this::toPaymentMethodResponse).toList();
     }
 
-    public void deleteCard(Long cardId, UUID customerId) {
+    public void deleteCard(UUID cardId, UUID customerId) {
         Users customer = fetchCustomer(customerId);
         PaymentCard card = paymentCardRepository.findById(cardId).filter(
                 existing -> existing.getCustomer() != null && existing.getCustomer().getId().equals(customer.getId()))
@@ -221,17 +261,22 @@ public class PaymentService {
         paymentCardRepository.delete(card);
     }
 
-    private PaymentCard resolveCard(Users customer, Long cardId) {
-        if (cardId != null) {
+    private PaymentCard resolveCard(Users customer, UUID cardId) {
+        if (Objects.nonNull(cardId)) {
             return paymentCardRepository.findById(cardId)
                     .orElseThrow(() -> new EntityNotFoundException("Card not found"));
         }
+
         return paymentCardRepository.findFirstByCustomerAndDefaultCardIsTrue(customer)
                 .orElseThrow(() -> new EntityNotFoundException("Default card not configured"));
     }
 
     private Users fetchCustomer(UUID customerId) {
-        return userRepository.findById(customerId).orElseThrow(() -> new EntityNotFoundException("Customer not found"));
+        return userService.findEntityById(customerId);
+    }
+
+    private PaymentPlan fetchPaymentPlan(UUID paymentPlanId) {
+        return paymentPlanService.findActiveById(paymentPlanId);
     }
 
     private void applyGatewayResult(Payment payment, GatewayPaymentResponse gateway) {
@@ -263,25 +308,45 @@ public class PaymentService {
     }
 
     private PaymentIntentResponse toIntentResponse(Payment payment, String clientSecret) {
-        return PaymentIntentResponse.builder().id(payment.getId()).paymentId(payment.getPaymentId())
-                .status(payment.getPaymentStatus()).paymentMethod(payment.getPaymentMethod())
-                .amount(payment.getAmount()).currency(payment.getCurrency()).description(payment.getDescription())
-                .clientSecret(clientSecret).metadata(payment.getMetadata()).createdAt(payment.getCreatedAt())
+        return PaymentIntentResponse.builder()
+                .id(payment.getId())
+                .paymentId(payment.getPaymentId())
+                .status(payment.getPaymentStatus())
+                .paymentMethod(payment.getPaymentMethod())
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .description(payment.getDescription())
+                .clientSecret(clientSecret)
+                .metadata(payment.getMetadata())
+                .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt()).build();
     }
 
     private PaymentResponse toPaymentResponse(Payment payment) {
-        return PaymentResponse.builder().id(payment.getId()).paymentId(payment.getPaymentId())
-                .status(payment.getPaymentStatus()).paymentMethod(payment.getPaymentMethod())
-                .amount(payment.getAmount()).currency(payment.getCurrency()).description(payment.getDescription())
-                .metadata(payment.getMetadata()).createdAt(payment.getCreatedAt()).updatedAt(payment.getUpdatedAt())
+        return PaymentResponse.builder()
+                .id(payment.getId())
+                .paymentId(payment.getPaymentId())
+                .status(payment.getPaymentStatus())
+                .paymentMethod(payment.getPaymentMethod())
+                .amount(payment.getAmount())
+                .currency(payment.getCurrency())
+                .description(payment.getDescription())
+                .metadata(payment.getMetadata())
+                .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
                 .build();
     }
 
     private PaymentMethodResponse toPaymentMethodResponse(PaymentCard card) {
-        return PaymentMethodResponse.builder().id(card.getId()).brand(card.getBrand()).lastFour(card.getLastFour())
-                .expiryMonth(card.getExpiryMonth()).expiryYear(card.getExpiryYear()).defaultCard(card.getDefaultCard())
-                .createdAt(card.getCreatedAt()).build();
+        return PaymentMethodResponse.builder()
+                .id(card.getId())
+                .brand(card.getBrand())
+                .lastFour(card.getLastFour())
+                .expiryMonth(card.getExpiryMonth())
+                .expiryYear(card.getExpiryYear())
+                .defaultCard(card.getDefaultCard())
+                .createdAt(card.getCreatedAt())
+                .build();
     }
 
     private OffsetDateTime parseOffsetDateTime(Object value) {

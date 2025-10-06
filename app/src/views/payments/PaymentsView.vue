@@ -37,7 +37,7 @@
           <div class="flex justify-end">
             <button type="submit" class="btn-primary" :disabled="pixLoading">
               <span v-if="pixLoading" class="loader h-4 w-4"></span>
-              <span>{{ pixLoading ? 'Generating…' : 'Generate PIX' }}</span>
+              <span>{{ pixLoading ? 'Generating...' : 'Generate PIX' }}</span>
             </button>
           </div>
         </form>
@@ -56,6 +56,7 @@
 
     <div class="space-y-6">
       <PaymentsDataTable
+        v-if="isAdmin"
         :rows="payments"
         :loading="paymentsLoading"
         :pagination="pagination"
@@ -63,7 +64,7 @@
         :selected="selectedPayments"
         :filters="filters"
         @update:filters="updateFilters"
-        @update:selected="(value) => (selectedPayments.value = value)"
+        @update:selected="onUpdateSelected"
         @change:sort="changeSort"
         @change:page="changePage"
         @change:per-page="changePerPage"
@@ -75,12 +76,27 @@
       />
 
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Integration checklist</h2>
-        <ul class="mt-3 space-y-2 text-sm text-slate-600">
-          <li>- Configure <code class="font-mono">VITE_STRIPE_PUBLISHABLE_KEY</code> in the frontend and <code>payments.stripe.secret-key</code> in the backend.</li>
-          <li>- Provide <code>asaasCustomerId</code> metadata for PIX charges and <code>stripeCustomerId</code> for card subscriptions.</li>
-          <li>- Add webhook endpoints in Stripe and Asaas pointing to <code>/api/webhooks/payment</code>.</li>
-        </ul>
+        <h2 class="text-lg font-semibold text-slate-900">Atividade recente</h2>
+        <div v-if="paymentsLoading" class="mt-4 space-y-3">
+          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+          <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
+        </div>
+        <ol v-else class="mt-4 timeline">
+          <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
+            <span :class="['timeline-marker', item.statusClass]">
+              <component :is="item.icon" class="h-4 w-4" />
+            </span>
+            <div class="timeline-content">
+              <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
+              <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
+              <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
+            </div>
+          </li>
+          <li v-if="!timelineItems.length" class="timeline-empty">
+            <span class="text-sm text-slate-500">No recent activity yet.</span>
+          </li>
+        </ol>
       </section>
     </div>
   </div>
@@ -91,7 +107,7 @@
         <header class="flex items-start justify-between">
           <div>
             <h3 class="text-lg font-semibold text-slate-900">Payment details</h3>
-            <p class="text-sm text-slate-500">Gateway reference: {{ selectedPayment.paymentId ?? '—' }}</p>
+            <p class="text-sm text-slate-500">Gateway reference: {{ selectedPayment.paymentId ?? 'ï¿½' }}</p>
           </div>
           <button type="button" class="btn-ghost" @click="selectedPayment = null">Close</button>
         </header>
@@ -115,7 +131,7 @@
           <div class="md:col-span-2">
             <dt class="text-xs uppercase tracking-wide text-slate-500">Metadata</dt>
             <dd class="mt-1 max-h-40 overflow-auto rounded-xl bg-slate-50 p-3 font-mono text-xs text-slate-700">
-              {{ selectedPayment.metadata ? JSON.stringify(selectedPayment.metadata, null, 2) : '—' }}
+              {{ selectedPayment.metadata ? JSON.stringify(selectedPayment.metadata, null, 2) : 'ï¿½' }}
             </dd>
           </div>
         </dl>
@@ -134,6 +150,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { CheckCircleIcon, ClockIcon, XCircleIcon, ArrowPathRoundedSquareIcon, ArrowUturnLeftIcon } from '@heroicons/vue/24/outline';
 import PaymentMethodSelection from '@/components/payments/PaymentMethodSelection.vue';
 import CardPaymentForm from '@/components/payments/CardPaymentForm.vue';
 import PIXPayment from '@/components/payments/PIXPayment.vue';
@@ -182,7 +199,9 @@ const showRefundDialog = ref(false);
 const refundContext = ref(null);
 const selectedPayment = ref(null);
 
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
+
+const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
 const refundMessage = computed(() => {
   if (!refundContext.value) return 'Confirm refund?';
@@ -190,6 +209,23 @@ const refundMessage = computed(() => {
     return `Refund ${refundContext.value.ids.length} payments?`;
   }
   return `Refund payment ${refundContext.value.payment?.paymentId ?? refundContext.value.payment?.id}?`;
+});
+
+const timelineItems = computed(() => {
+  return payments.value
+    .slice()
+    .sort((a, b) => new Date(b.updatedAt ?? b.createdAt) - new Date(a.updatedAt ?? a.createdAt))
+    .map((payment) => {
+      const meta = timelineMeta(payment);
+      return {
+        id: payment.id,
+        title: meta.title,
+        description: meta.description,
+        icon: meta.icon,
+        statusClass: meta.className,
+        dateLabel: formatDate(payment.updatedAt ?? payment.createdAt),
+      };
+    });
 });
 
 watch(
@@ -235,6 +271,10 @@ function changePerPage(perPage) {
   pagination.perPage = perPage;
   pagination.page = 1;
   loadPayments();
+}
+
+function onUpdateSelected(value) {
+  selectedPayments.value = value ?? [];
 }
 
 async function loadCards() {
@@ -284,6 +324,10 @@ function sanitizeFilters(filtersObj) {
 
 async function handleCreateCardPayment(payload) {
   if (!auth.user?.id) return;
+  if (!payload.metadata?.paymentPlanId) {
+    notifications.push({ type: 'warning', title: 'Card payment', message: 'Select a plan before creating a payment.' });
+    return;
+  }
   intentLoading.value = true;
   try {
     const request = {
@@ -292,6 +336,7 @@ async function handleCreateCardPayment(payload) {
       description: payload.description,
       paymentMethod: 'CREDIT_CARD',
       paymentCardId: payload.paymentCardId,
+      metadata: payload.metadata,
     };
     const { data } = await createPaymentIntent(request);
     notifications.push({ type: 'success', title: 'Payment intent created', message: `Status: ${data.status}` });
@@ -379,7 +424,7 @@ async function updatePixStatus(paymentId) {
   try {
     const { data } = await getPayment(paymentId);
     pixPayment.value = mapPaymentToPix(data);
-    if (!['PENDING', 'PROCESSING'].includes(data.status ?? data.paymentStatus)) {
+    if (!['PENDING', 'PROCESSING'].includes((data.status ?? data.paymentStatus) ?? '')) {
       stopPixPolling();
       loadPayments();
     }
@@ -411,6 +456,10 @@ function mapPaymentToPix(payment) {
 
 async function handleCreateSubscription(payload) {
   if (!auth.user?.id) return;
+  if (!payload.paymentPlanId) {
+    notifications.push({ type: 'warning', title: 'Subscription', message: 'Select a payment plan before continuing.' });
+    return;
+  }
   if (payload.paymentMethod === 'PIX' && !payload.metadata?.asaasCustomerId) {
     notifications.push({ type: 'warning', title: 'Subscription', message: 'Asaas customer ID is required for PIX subscriptions.' });
     return;
@@ -423,11 +472,9 @@ async function handleCreateSubscription(payload) {
   try {
     const request = {
       customerId: auth.user.id,
-      planId: payload.planId,
+      paymentPlanId: payload.paymentPlanId,
       paymentMethodId: payload.paymentMethodId,
-      interval: payload.interval,
       paymentMethod: payload.paymentMethod,
-      amount: payload.amount,
       immediateCharge: payload.immediateCharge,
       metadata: {
         ...(payload.metadata?.stripeCustomerId ? { stripeCustomerId: payload.metadata.stripeCustomerId } : {}),
@@ -512,8 +559,52 @@ function formatCurrency(value) {
 }
 
 function formatDate(value) {
-  if (!value) return '—';
+  if (!value) return 'ï¿½';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function timelineMeta(payment) {
+  const status = (payment.status ?? '').toUpperCase();
+  const amount = formatCurrency(payment.amount);
+  const description = payment.description ? ` ${payment.description}` : '';
+
+  switch (status) {
+    case 'COMPLETED':
+      return {
+        title: 'Payment completed',
+        description: `${amount} captured.${description}`.trim(),
+        icon: CheckCircleIcon,
+        className: 'timeline-success',
+      };
+    case 'REFUNDED':
+      return {
+        title: 'Payment refunded',
+        description: `${amount} will be returned to the customer within a few days.${description}`.trim(),
+        icon: ArrowUturnLeftIcon,
+        className: 'timeline-info',
+      };
+    case 'FAILED':
+      return {
+        title: 'Payment failed',
+        description: `Attempted charge of ${amount}.${description}`.trim(),
+        icon: XCircleIcon,
+        className: 'timeline-danger',
+      };
+    case 'PROCESSING':
+      return {
+        title: 'Payment processing',
+        description: `Processing ${amount}. Awaiting confirmation.${description}`.trim(),
+        icon: ArrowPathRoundedSquareIcon,
+        className: 'timeline-warning',
+      };
+    default:
+      return {
+        title: 'Payment initiated',
+        description: `Initiated charge of ${amount}.${description}`.trim(),
+        icon: ClockIcon,
+        className: 'timeline-default',
+      };
+  }
 }
 
 onMounted(() => {
@@ -527,3 +618,87 @@ onBeforeUnmount(() => {
 });
 </script>
 
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.timeline {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+  list-style: none;
+  border-left: 1px solid #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 0 0 1.5rem 0.75rem;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -0.8rem;
+  top: 0.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 9999px;
+  border: 2px solid #cbd5f5;
+  background: #fff;
+  color: #64748b;
+}
+
+.timeline-success {
+  border-color: #6ee7b7 !important;
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+}
+
+.timeline-warning {
+  border-color: #fcd34d !important;
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.timeline-danger {
+  border-color: #fca5a5 !important;
+  background: #fef2f2 !important;
+  color: #b91c1c !important;
+}
+
+.timeline-info {
+  border-color: #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+
+.timeline-default {
+  border-color: #cbd5f5 !important;
+  background: #f8fafc !important;
+  color: #475569 !important;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-empty {
+  margin-left: -0.75rem;
+  padding-left: 0.75rem;
+  color: #64748b;
+}
+</style>
