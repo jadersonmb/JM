@@ -28,6 +28,14 @@ export function listPayments(params) {
   return api.get('/v1/api/payments', { params });
 }
 
+export function listSubscriptions(params) {
+  return api.get('/v1/api/payments/subscription', { params });
+}
+
+export function cancelSubscription(id) {
+  return api.delete(`/v1/api/payments/subscription/${id}`);
+}
+
 export function addCard(payload) {
   return api.post('/v1/api/payment-methods/card', payload);
 }

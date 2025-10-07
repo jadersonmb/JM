@@ -1,9 +1,9 @@
 <template>
   <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
     <header class="flex flex-col gap-2">
-      <h2 class="text-lg font-semibold text-slate-900">Select a payment method</h2>
+      <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.methodSelection.title') }}</h2>
       <p class="text-sm text-slate-500">
-        Toggle between card, PIX or recurring billing. Each option updates the form details on the right side.
+        {{ t('payments.methodSelection.subtitle') }}
       </p>
     </header>
     <div class="grid gap-3 sm:grid-cols-3">
@@ -33,6 +33,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import {
   CreditCardIcon,
   QrCodeIcon,
@@ -46,23 +47,25 @@ const props = defineProps({
   },
 });
 
+const { t } = useI18n();
+
 const options = computed(() => [
   {
     value: 'CARD',
-    label: 'Card Payment',
-    description: 'Accept Visa, Mastercard, Elo and international cards with 3-D secure.',
+    label: t('payments.methodSelection.options.card.label'),
+    description: t('payments.methodSelection.options.card.description'),
     icon: CreditCardIcon,
   },
   {
     value: 'PIX',
-    label: 'PIX Instant',
-    description: 'Generate QR codes and copy-and-paste keys with realtime confirmation.',
+    label: t('payments.methodSelection.options.pix.label'),
+    description: t('payments.methodSelection.options.pix.description'),
     icon: QrCodeIcon,
   },
   {
     value: 'RECURRING',
-    label: 'Recurring Billing',
-    description: 'Configure subscriptions with automated retries and dunning.',
+    label: t('payments.methodSelection.options.recurring.label'),
+    description: t('payments.methodSelection.options.recurring.description'),
     icon: ArrowPathRoundedSquareIcon,
   },
 ]);

@@ -1,5 +1,5 @@
 <template>
-  <div class="grid gap-6 xl:grid-cols-2">
+  <div v-if="isAdmin" class="grid gap-6 xl:grid-cols-2">
     <div class="space-y-6">
       <PaymentMethodSelection v-model="currentMethod" />
 
@@ -17,27 +17,39 @@
       <div v-else-if="currentMethod === 'PIX'" class="space-y-6">
         <form class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" @submit.prevent="handleCreatePix">
           <header class="space-y-1">
-            <h2 class="text-lg font-semibold text-slate-900">Generate PIX payment</h2>
-            <p class="text-sm text-slate-500">Provide the amount, description, and the Asaas customer identifier configured in your gateway.</p>
+            <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.pixForm.title') }}</h2>
+            <p class="text-sm text-slate-500">{{ t('payments.pixForm.description') }}</p>
           </header>
           <div class="grid gap-4 md:grid-cols-2">
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">Amount ({{ currency }})</span>
+              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.amountLabel', { currency }) }}</span>
               <input v-model.number="pixForm.amount" type="number" min="1" step="0.01" required class="input" />
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">PIX Asaas customer ID</span>
-              <input v-model="pixForm.asaasCustomerId" type="text" placeholder="cus_asaas_123" required class="input" />
+              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.customerLabel') }}</span>
+              <input
+                v-model="pixForm.asaasCustomerId"
+                type="text"
+                :placeholder="t('payments.pixForm.customerPlaceholder')"
+                required
+                class="input"
+              />
             </label>
           </div>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-slate-600">Description</span>
-            <input v-model="pixForm.description" type="text" maxlength="140" class="input" placeholder="PIX payment description" />
+            <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.descriptionLabel') }}</span>
+            <input
+              v-model="pixForm.description"
+              type="text"
+              maxlength="140"
+              class="input"
+              :placeholder="t('payments.pixForm.descriptionPlaceholder')"
+            />
           </label>
           <div class="flex justify-end">
             <button type="submit" class="btn-primary" :disabled="pixLoading">
               <span v-if="pixLoading" class="loader h-4 w-4"></span>
-              <span>{{ pixLoading ? 'Generating...' : 'Generate PIX' }}</span>
+              <span>{{ pixLoading ? t('payments.pixForm.generating') : t('payments.pixForm.generate') }}</span>
             </button>
           </div>
         </form>
@@ -56,7 +68,6 @@
 
     <div class="space-y-6">
       <PaymentsDataTable
-        v-if="isAdmin"
         :rows="payments"
         :loading="paymentsLoading"
         :pagination="pagination"
@@ -76,7 +87,7 @@
       />
 
       <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">Recenty Activity</h2>
+        <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
         <div v-if="paymentsLoading" class="mt-4 space-y-3">
           <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
           <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
@@ -94,11 +105,87 @@
             </div>
           </li>
           <li v-if="!timelineItems.length" class="timeline-empty">
-            <span class="text-sm text-slate-500">No recent activity yet.</span>
+            <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
           </li>
         </ol>
       </section>
     </div>
+  </div>
+
+  <div v-else class="grid gap-6 lg:grid-cols-2">
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <header class="space-y-1">
+        <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.subscription.title') }}</h2>
+        <p class="text-sm text-slate-500">{{ t('payments.subscription.subtitle') }}</p>
+      </header>
+      <div v-if="subscriptionsLoading" class="mt-4 space-y-3">
+        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+        <div class="h-5 w-1/2 animate-pulse rounded bg-slate-200"></div>
+      </div>
+      <div v-else-if="activeSubscription" class="mt-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-slate-700">{{ t('payments.subscription.statusLabel') }}</span>
+          <span :class="['px-2 py-1 text-xs font-semibold uppercase rounded-full', subscriptionBadgeClass(activeSubscription.status)]">
+            {{ subscriptionStatusLabel(activeSubscription.status) }}
+          </span>
+        </div>
+        <div class="grid gap-3 text-sm text-slate-600">
+          <div>
+            <p class="font-semibold text-slate-800">{{ t('payments.subscription.planLabel') }}</p>
+            <p>{{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}</p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p class="font-semibold text-slate-800">{{ t('payments.subscription.amountLabel') }}</p>
+              <p>{{ formatCurrency(activeSubscription.amount) }}</p>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-800">{{ t('payments.subscription.intervalLabel') }}</p>
+              <p>{{ subscriptionIntervalLabel(activeSubscription.interval) }}</p>
+            </div>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-800">{{ t('payments.subscription.nextBilling') }}</p>
+            <p>{{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}</p>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="btn-ghost text-rose-600" :disabled="cancelingSubscription" @click="handleCancelSubscription">
+            <span v-if="cancelingSubscription" class="loader h-4 w-4"></span>
+            <span>{{ cancelingSubscription ? t('payments.subscription.cancelling') : t('payments.subscription.cancel') }}</span>
+          </button>
+        </div>
+      </div>
+      <div v-else class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+        <p class="font-semibold text-slate-700">{{ t('payments.subscription.emptyTitle') }}</p>
+        <p class="mt-1 text-slate-500">{{ t('payments.subscription.emptyDescription') }}</p>
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
+      <div v-if="paymentsLoading" class="mt-4 space-y-3">
+        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+        <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
+      </div>
+      <ol v-else class="mt-4 timeline">
+        <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
+          <span :class="['timeline-marker', item.statusClass]">
+            <component :is="item.icon" class="h-4 w-4" />
+          </span>
+          <div class="timeline-content">
+            <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
+            <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
+            <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
+          </div>
+        </li>
+        <li v-if="!timelineItems.length" class="timeline-empty">
+          <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
+        </li>
+      </ol>
+    </section>
   </div>
 
   <transition name="fade">
@@ -106,30 +193,30 @@
       <div class="w-full max-w-2xl space-y-4 rounded-3xl bg-white p-6 shadow-2xl">
         <header class="flex items-start justify-between">
           <div>
-            <h3 class="text-lg font-semibold text-slate-900">Payment details</h3>
-            <p class="text-sm text-slate-500">Gateway reference: {{ selectedPayment.paymentId ?? '-' }}</p>
+            <h3 class="text-lg font-semibold text-slate-900">{{ t('payments.details.title') }}</h3>
+            <p class="text-sm text-slate-500">{{ t('payments.details.reference') }}: {{ selectedPayment.paymentId ?? '-' }}</p>
           </div>
-          <button type="button" class="btn-ghost" @click="selectedPayment = null">Close</button>
+          <button type="button" class="btn-ghost" @click="selectedPayment = null">{{ t('common.actions.close') }}</button>
         </header>
         <dl class="grid gap-4 md:grid-cols-2">
           <div>
-            <dt class="text-xs uppercase tracking-wide text-slate-500">Status</dt>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">{{ t('payments.details.status') }}</dt>
             <dd class="text-sm font-semibold">{{ selectedPayment.status }}</dd>
           </div>
           <div>
-            <dt class="text-xs uppercase tracking-wide text-slate-500">Method</dt>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">{{ t('payments.details.method') }}</dt>
             <dd class="text-sm text-slate-700">{{ selectedPayment.paymentMethod }}</dd>
           </div>
           <div>
-            <dt class="text-xs uppercase tracking-wide text-slate-500">Amount</dt>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">{{ t('payments.details.amount') }}</dt>
             <dd class="text-sm text-slate-700">{{ formatCurrency(selectedPayment.amount) }}</dd>
           </div>
           <div>
-            <dt class="text-xs uppercase tracking-wide text-slate-500">Created</dt>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">{{ t('payments.details.createdAt') }}</dt>
             <dd class="text-sm text-slate-700">{{ formatDate(selectedPayment.createdAt) }}</dd>
           </div>
           <div class="md:col-span-2">
-            <dt class="text-xs uppercase tracking-wide text-slate-500">Metadata</dt>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">{{ t('payments.details.metadata') }}</dt>
             <dd class="mt-1 max-h-40 overflow-auto rounded-xl bg-slate-50 p-3 font-mono text-xs text-slate-700">
               {{ selectedPayment.metadata ? JSON.stringify(selectedPayment.metadata, null, 2) : '-' }}
             </dd>
@@ -140,10 +227,11 @@
   </transition>
 
   <ConfirmDialog
+    v-if="isAdmin"
     v-model="showRefundDialog"
-    title="Refund payment"
+    :title="t('payments.refund.dialogTitle')"
     :message="refundMessage"
-    confirm-label="Refund"
+    :confirm-label="t('payments.refund.confirmLabel')"
     @confirm="executeRefund"
   />
 </template>
@@ -165,13 +253,17 @@ import {
   getPayment,
   listCards,
   listPayments,
+  listSubscriptions,
+  cancelSubscription,
   refundPayment,
 } from '@/services/payments';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
+import { useI18n } from 'vue-i18n';
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
+const { t, locale } = useI18n();
 
 const currency = 'BRL';
 const currentMethod = ref('CARD');
@@ -199,16 +291,30 @@ const showRefundDialog = ref(false);
 const refundContext = ref(null);
 const selectedPayment = ref(null);
 
+const subscriptions = ref([]);
+const subscriptionsLoading = ref(false);
+const cancelingSubscription = ref(false);
+
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
+const isClient = computed(() => !isAdmin.value);
+
+const activeSubscription = computed(() => {
+  return subscriptions.value.find((subscription) => {
+    const status = (subscription.status ?? '').toUpperCase();
+    return ['ACTIVE', 'PAUSED'].includes(status);
+  }) || subscriptions.value[0] || null;
+});
 
 const refundMessage = computed(() => {
-  if (!refundContext.value) return 'Confirm refund?';
+  if (!refundContext.value) return t('payments.refund.confirmDefault');
   if (refundContext.value.type === 'bulk') {
-    return `Refund ${refundContext.value.ids.length} payments?`;
+    return t('payments.refund.confirmBulk', { count: refundContext.value.ids.length });
   }
-  return `Refund payment ${refundContext.value.payment?.paymentId ?? refundContext.value.payment?.id}?`;
+  return t('payments.refund.confirmSingle', {
+    id: refundContext.value.payment?.paymentId ?? refundContext.value.payment?.id ?? '-'
+  });
 });
 
 const timelineItems = computed(() => {
@@ -234,6 +340,11 @@ watch(
     if (value) {
       loadCards();
       loadPayments();
+      if (isClient.value) {
+        loadSubscriptions();
+      } else {
+        subscriptions.value = [];
+      }
     }
   },
   { immediate: true },
@@ -244,6 +355,18 @@ watch(
   (value) => {
     if (value !== 'PIX') {
       stopPixPolling();
+    }
+  },
+);
+
+watch(
+  () => isAdmin.value,
+  (value) => {
+    if (!value && auth.user?.id) {
+      loadSubscriptions();
+    }
+    if (value) {
+      subscriptions.value = [];
     }
   },
 );
@@ -283,7 +406,11 @@ async function loadCards() {
     const { data } = await listCards(auth.user.id);
     cards.value = data ?? [];
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Cards', message: 'Unable to load payment methods.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.cardsTitle'),
+      message: t('payments.notifications.cardsLoadError'),
+    });
   }
 }
 
@@ -307,9 +434,30 @@ async function loadPayments() {
     pagination.from = data.numberOfElements ? data.number * data.size + 1 : 0;
     pagination.to = data.numberOfElements ? pagination.from + data.numberOfElements - 1 : 0;
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Payments', message: 'Unable to load payments.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.paymentsTitle'),
+      message: t('payments.notifications.paymentsLoadError'),
+    });
   } finally {
     paymentsLoading.value = false;
+  }
+}
+
+async function loadSubscriptions() {
+  if (!auth.user?.id || !isClient.value) return;
+  subscriptionsLoading.value = true;
+  try {
+    const { data } = await listSubscriptions({ customerId: auth.user.id });
+    subscriptions.value = data ?? [];
+  } catch (error) {
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: error?.response?.data?.message ?? t('payments.notifications.subscriptionLoadError'),
+    });
+  } finally {
+    subscriptionsLoading.value = false;
   }
 }
 
@@ -326,7 +474,11 @@ function sanitizeFilters(filtersObj) {
 async function handleCreateCardPayment(payload) {
   if (!auth.user?.id) return;
   if (!payload.metadata?.paymentPlanId) {
-    notifications.push({ type: 'warning', title: 'Card payment', message: 'Select a plan before creating a payment.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.cardTitle'),
+      message: t('payments.notifications.cardMissingPlan'),
+    });
     return;
   }
   intentLoading.value = true;
@@ -340,19 +492,54 @@ async function handleCreateCardPayment(payload) {
       metadata: payload.metadata,
     };
     const { data } = await createPaymentIntent(request);
-    notifications.push({ type: 'success', title: 'Payment intent created', message: `Status: ${data.status}` });
+    notifications.push({
+      type: 'success',
+      title: t('payments.notifications.intentTitle'),
+      message: t('payments.notifications.intentCreated', { status: data.status }),
+    });
     loadPayments();
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Payment intent', message: 'Unable to create payment intent.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.intentErrorTitle'),
+      message: t('payments.notifications.intentError'),
+    });
   } finally {
     intentLoading.value = false;
+  }
+}
+
+async function handleCancelSubscription() {
+  if (!activeSubscription.value?.id || cancelingSubscription.value) return;
+  cancelingSubscription.value = true;
+  try {
+    await cancelSubscription(activeSubscription.value.id);
+    notifications.push({
+      type: 'success',
+      title: t('payments.notifications.subscriptionCancelledTitle'),
+      message: t('payments.notifications.subscriptionCancelledMessage'),
+    });
+    await loadSubscriptions();
+    await loadPayments();
+  } catch (error) {
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: error?.response?.data?.message ?? t('payments.notifications.subscriptionCancelError'),
+    });
+  } finally {
+    cancelingSubscription.value = false;
   }
 }
 
 async function tokenizeCard(cardInput) {
   if (!auth.user?.id) return;
   if (!stripePublishableKey || !window.Stripe) {
-    notifications.push({ type: 'error', title: 'Stripe tokenization', message: 'Stripe.js is not loaded or publishable key is missing.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.tokenizationTitle'),
+      message: t('payments.notifications.stripeNotLoaded'),
+    });
     return;
   }
   tokenizing.value = true;
@@ -376,11 +563,19 @@ async function tokenizeCard(cardInput) {
       expiryYear: token.card.exp_year,
       defaultCard: cardInput.setDefault,
     });
-    notifications.push({ type: 'success', title: 'Card saved', message: 'Tokenized card added successfully.' });
+    notifications.push({
+      type: 'success',
+      title: t('payments.notifications.cardSavedTitle'),
+      message: t('payments.notifications.cardSavedMessage'),
+    });
     await loadCards();
     cardFormRef.value?.closeNewCard();
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Tokenization failed', message: error?.message ?? 'Unable to tokenize card.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.tokenizationFailedTitle'),
+      message: error?.message ?? t('payments.notifications.tokenizationFailedMessage'),
+    });
   } finally {
     tokenizing.value = false;
   }
@@ -389,7 +584,11 @@ async function tokenizeCard(cardInput) {
 async function handleCreatePix() {
   if (!auth.user?.id) return;
   if (!pixForm.amount || !pixForm.asaasCustomerId) {
-    notifications.push({ type: 'warning', title: 'PIX', message: 'Amount and Asaas customer ID are required.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.pixTitle'),
+      message: t('payments.notifications.pixMissingFields'),
+    });
     return;
   }
   pixLoading.value = true;
@@ -401,11 +600,19 @@ async function handleCreatePix() {
       metadata: { asaasCustomerId: pixForm.asaasCustomerId },
     });
     pixPayment.value = data;
-    notifications.push({ type: 'success', title: 'PIX generated', message: 'Share the PIX payload with the customer.' });
+    notifications.push({
+      type: 'success',
+      title: t('payments.notifications.pixSuccessTitle'),
+      message: t('payments.notifications.pixSuccessMessage'),
+    });
     startPixPolling(data.id);
     loadPayments();
   } catch (error) {
-    notifications.push({ type: 'error', title: 'PIX', message: 'Unable to generate PIX payment.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.pixTitle'),
+      message: t('payments.notifications.pixError'),
+    });
   } finally {
     pixLoading.value = false;
   }
@@ -430,7 +637,11 @@ async function updatePixStatus(paymentId) {
       loadPayments();
     }
   } catch (error) {
-    notifications.push({ type: 'error', title: 'PIX status', message: 'Unable to refresh PIX status.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.pixStatusTitle'),
+      message: t('payments.notifications.pixStatusError'),
+    });
   }
 }
 
@@ -458,15 +669,27 @@ function mapPaymentToPix(payment) {
 async function handleCreateSubscription(payload) {
   if (!auth.user?.id) return;
   if (!payload.paymentPlanId) {
-    notifications.push({ type: 'warning', title: 'Subscription', message: 'Select a payment plan before continuing.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: t('payments.notifications.subscriptionMissingPlan'),
+    });
     return;
   }
   if (payload.paymentMethod === 'PIX' && !payload.metadata?.asaasCustomerId) {
-    notifications.push({ type: 'warning', title: 'Subscription', message: 'Asaas customer ID is required for PIX subscriptions.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: t('payments.notifications.subscriptionMissingAsaas'),
+    });
     return;
   }
   if (payload.paymentMethod !== 'PIX' && !auth.user.id) {
-    notifications.push({ type: 'warning', title: 'Subscription', message: 'Stripe customer ID is required for card subscriptions.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: t('payments.notifications.subscriptionMissingStripe'),
+    });
     return;
   }
   recurringLoading.value = true;
@@ -483,10 +706,21 @@ async function handleCreateSubscription(payload) {
       },
     };
     const { data } = await createSubscription(request);
-    notifications.push({ type: 'success', title: 'Subscription created', message: `Gateway ID: ${data.subscriptionId}` });
+    notifications.push({
+      type: 'success',
+      title: t('payments.notifications.subscriptionCreatedTitle'),
+      message: t('payments.notifications.subscriptionCreatedMessage', { id: data.subscriptionId }),
+    });
     loadPayments();
+    if (isClient.value) {
+      await loadSubscriptions();
+    }
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Subscription', message: 'Unable to create recurring payment.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.subscriptionTitle'),
+      message: t('payments.notifications.subscriptionError'),
+    });
   } finally {
     recurringLoading.value = false;
   }
@@ -512,15 +746,27 @@ async function executeRefund() {
   try {
     if (refundContext.value.type === 'bulk') {
       await Promise.all(refundContext.value.ids.map((id) => refundPayment(id, {})));
-      notifications.push({ type: 'success', title: 'Refunds', message: 'Bulk refund scheduled.' });
+      notifications.push({
+        type: 'success',
+        title: t('payments.notifications.refundsTitle'),
+        message: t('payments.notifications.refundBulkMessage'),
+      });
     } else if (refundContext.value.payment) {
       await refundPayment(refundContext.value.payment.id, {});
-      notifications.push({ type: 'success', title: 'Refund', message: 'Payment refunded successfully.' });
+      notifications.push({
+        type: 'success',
+        title: t('payments.notifications.refundTitle'),
+        message: t('payments.notifications.refundSuccess'),
+      });
     }
     loadPayments();
     selectedPayments.value = [];
   } catch (error) {
-    notifications.push({ type: 'error', title: 'Refund', message: 'Unable to process refund.' });
+    notifications.push({
+      type: 'error',
+      title: t('payments.notifications.refundTitle'),
+      message: t('payments.notifications.refundError'),
+    });
   } finally {
     refundContext.value = null;
   }
@@ -528,10 +774,22 @@ async function executeRefund() {
 
 function exportCsv() {
   if (!payments.value.length) {
-    notifications.push({ type: 'warning', title: 'Export', message: 'No data available for export.' });
+    notifications.push({
+      type: 'warning',
+      title: t('payments.notifications.exportTitle'),
+      message: t('payments.notifications.exportEmpty'),
+    });
     return;
   }
-  const headers = ['ID', 'Gateway ID', 'Method', 'Status', 'Amount', 'Currency', 'Created At'];
+  const headers = [
+    t('payments.export.headers.id'),
+    t('payments.export.headers.gateway'),
+    t('payments.export.headers.method'),
+    t('payments.export.headers.status'),
+    t('payments.export.headers.amount'),
+    t('payments.export.headers.currency'),
+    t('payments.export.headers.createdAt'),
+  ];
   const rows = payments.value.map((item) => [
     item.id,
     item.paymentId,
@@ -555,56 +813,107 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 
+function currentLocaleTag() {
+  return locale.value === 'pt' ? 'pt-BR' : 'en-US';
+}
+
 function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(value ?? 0);
+  return new Intl.NumberFormat(currentLocaleTag(), { style: 'currency', currency }).format(value ?? 0);
 }
 
 function formatDate(value) {
   if (!value) return '';
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  try {
+    return new Intl.DateTimeFormat(currentLocaleTag(), { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  } catch (error) {
+    return value;
+  }
 }
 
 function timelineMeta(payment) {
   const status = (payment.status ?? '').toUpperCase();
   const amount = formatCurrency(payment.amount);
-  const description = payment.description ? ` ${payment.description}` : '';
+  const extraDetails = payment.description ? ` ${payment.description}` : '';
 
-  switch (status) {
-    case 'COMPLETED':
-      return {
-        title: 'Payment completed',
-        description: `${amount} captured.${description}`.trim(),
-        icon: CheckCircleIcon,
-        className: 'timeline-success',
-      };
-    case 'REFUNDED':
-      return {
-        title: 'Payment refunded',
-        description: `${amount} will be returned to the customer within a few days.${description}`.trim(),
-        icon: ArrowUturnLeftIcon,
-        className: 'timeline-info',
-      };
-    case 'FAILED':
-      return {
-        title: 'Payment failed',
-        description: `Attempted charge of ${amount}.${description}`.trim(),
-        icon: XCircleIcon,
-        className: 'timeline-danger',
-      };
-    case 'PROCESSING':
-      return {
-        title: 'Payment processing',
-        description: `Processing ${amount}. Awaiting confirmation.${description}`.trim(),
-        icon: ArrowPathRoundedSquareIcon,
-        className: 'timeline-warning',
-      };
+  const baseMeta = {
+    COMPLETED: {
+      title: t('payments.timeline.completed.title'),
+      description: t('payments.timeline.completed.description', { amount }),
+      icon: CheckCircleIcon,
+      className: 'timeline-success',
+    },
+    REFUNDED: {
+      title: t('payments.timeline.refunded.title'),
+      description: t('payments.timeline.refunded.description', { amount }),
+      icon: ArrowUturnLeftIcon,
+      className: 'timeline-info',
+    },
+    FAILED: {
+      title: t('payments.timeline.failed.title'),
+      description: t('payments.timeline.failed.description', { amount }),
+      icon: XCircleIcon,
+      className: 'timeline-danger',
+    },
+    PROCESSING: {
+      title: t('payments.timeline.processing.title'),
+      description: t('payments.timeline.processing.description', { amount }),
+      icon: ArrowPathRoundedSquareIcon,
+      className: 'timeline-warning',
+    },
+    RECURRING: {
+      title: t('payments.timeline.recurring.title'),
+      description: t('payments.timeline.recurring.description', { amount }),
+      icon: ArrowPathRoundedSquareIcon,
+      className: 'timeline-info',
+    },
+    DEFAULT: {
+      title: t('payments.timeline.default.title'),
+      description: t('payments.timeline.default.description', { amount }),
+      icon: ClockIcon,
+      className: 'timeline-default',
+    },
+  };
+
+  const meta = baseMeta[status] ?? baseMeta.DEFAULT;
+  return {
+    ...meta,
+    description: `${meta.description}${extraDetails}`.trim(),
+  };
+}
+
+function subscriptionStatusLabel(status) {
+  const key = (status ?? 'unknown').toLowerCase();
+  return t(`payments.subscription.status.${key}`);
+}
+
+function subscriptionBadgeClass(status) {
+  switch ((status ?? '').toUpperCase()) {
+    case 'ACTIVE':
+      return 'bg-emerald-100 text-emerald-700';
+    case 'PAUSED':
+      return 'bg-amber-100 text-amber-700';
+    case 'CANCELLED':
+      return 'bg-rose-100 text-rose-700';
+    case 'EXPIRED':
+      return 'bg-slate-200 text-slate-700';
     default:
-      return {
-        title: 'Payment initiated',
-        description: `Initiated charge of ${amount}.${description}`.trim(),
-        icon: ClockIcon,
-        className: 'timeline-default',
-      };
+      return 'bg-slate-200 text-slate-700';
+  }
+}
+
+function subscriptionIntervalLabel(interval) {
+  const key = (interval ?? 'unknown').toLowerCase();
+  return t(`payments.subscription.interval.${key}`);
+}
+
+function formatSubscriptionDate(value) {
+  if (!value) {
+    return t('payments.subscription.noNextBilling');
+  }
+  try {
+    return new Intl.DateTimeFormat(currentLocaleTag(), { dateStyle: 'medium' }).format(new Date(value));
+  } catch (error) {
+    return value;
   }
 }
 
