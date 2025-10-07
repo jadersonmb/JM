@@ -1,0 +1,101 @@
+spring:
+  application:
+    name: JM
+  datasource:
+    url: jdbc:mariadb://localhost:3306/jm?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    #username: 
+    #password: 
+    #url: {{SPRING_DATASOURCE_URL}}
+    #username: {{SPRING_DATASOURCE_USERNAME}}
+    #password: {{SPRING_DATASOURCE_PASSWORD}}
+    driver-class-name: org.mariadb.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  sql:
+    init:
+      mode: always
+google:
+  cloud:
+    connection-timeout: 60000
+    read-timeout: 60000
+    security-key-file: rising-daylight-435322-s8-c6f36cea5e36.json
+    bucketName: JM-media
+
+# API Configuration
+#deepseek:
+#  api:
+#    url: https://api.deepseek.com/v1/chat/completions
+#    key:
+
+# Gemini API
+#gemini:
+#  api:
+#    key:
+#    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key={apiKey}
+
+# WhatsApp API
+#whatsapp:
+#  phone:
+#    number:
+#      id:
+#  api:
+#    url: https://graph.facebook.com/v22.0/{phoneNumberId}/messages
+ #   token:
+
+# Cloudflare R2 Configuration
+#cloudflare:
+#  r2:
+#    account-id: SEU_ACCOUNT_ID
+#    access-key-id: SEU_ACCESS_KEY_ID
+#    secret-access-key: SEU_SECRET_ACCESS_KEY
+#    bucket-name: SEU_BUCKET_NAME
+#    public-url=https://pub-1234567890.r2.dev
+
+security:
+  oauth2:
+    client:
+      registration:
+        JM:
+          provider: JM
+          client-id: JM
+          client-secret: 4ICvE=Qejwort0LcRBQPC)Xna
+          authorization-grant-type: client_credentials
+          redirect-uri: https://oidcdebugger.com/debug
+          scope: posts:write
+      provider:
+        JM:
+          authorization-uri: http://localhost:8080/oauth2/authorize
+          token-uri: http://localhost:8080/oauth2/token
+          user-info-uri: http://localhost:8080/userinfo
+          user-name-attribute: sub
+
+opencv:
+  haarcascades-path: classpath:opencv/haarcascades/haarcascade_frontalface_alt.xml
+  show-video: true
+aw:
+  auth:
+    provider-uri: "http://localhost:8080"
+    jks:
+      keypass: administrator
+      storepass: administrator
+      alias: JM
+      path: keystore/JM.jks
+
+logging:
+  level:
+    org:
+      springframework:
+      security: 'DEBUG'
+      web: 'DEBUG'
+payments:
+  stripe:
+    secret-key: ${STRIPE_SECRET_KEY:}
+    publishable-key: ${STRIPE_PUBLISHABLE_KEY:}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  asaas:
+    api-key: ${ASAAS_API_KEY:}
+    pix-key: ${ASAAS_PIX_KEY:}
+    base-url: https://www.asaas.com/api/v3
+    webhook-token: ${ASAAS_WEBHOOK_TOKEN:}

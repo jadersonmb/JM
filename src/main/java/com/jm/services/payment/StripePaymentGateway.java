@@ -69,16 +69,18 @@ public class StripePaymentGateway {
         assertStripeConfigured();
         try {
             PaymentIntentCreateParams.Builder builder = PaymentIntentCreateParams.builder()
-                    .setAmount(toStripeAmount(amount)).setCurrency(currency.toLowerCase())
+                    .setAmount(toStripeAmount(amount))
+                    .setCurrency(currency.toLowerCase())
                     .setConfirmationMethod(PaymentIntentCreateParams.ConfirmationMethod.AUTOMATIC)
-                    .setConfirm(Boolean.TRUE).addPaymentMethodType("card");
+                    .setConfirm(Boolean.TRUE)
+                    .addPaymentMethodType("card");
 
             if (StringUtils.hasText(description)) {
                 builder.setDescription(description);
             }
 
             if (card != null) {
-                builder.setPaymentMethod("pm_card_visa"); /* card.getCardToken() */
+                builder.setPaymentMethod(card.getCardToken());
             }
 
             if (metadata != null) {
@@ -151,7 +153,7 @@ public class StripePaymentGateway {
             paymentPlanService.save(plan);
         }
 
-        findOrCreateStripeCustomer(customer, paymentMethod.getCardToken()); // paymentMethodStripe.getId()
+        findOrCreateStripeCustomer(customer, paymentMethod.getCardToken());
 
         Assert.hasText(customer.getStripeCustomerId(), "Stripe customer id is required for subscriptions");
         Assert.notNull(paymentMethod, "Payment method is required for subscriptions");

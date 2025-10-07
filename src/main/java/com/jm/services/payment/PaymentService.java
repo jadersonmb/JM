@@ -161,7 +161,8 @@ public class PaymentService {
         }
 
         PaymentRecurring recurringPayment = PaymentRecurring.builder()
-                .customer(customer).paymentMethod(card)
+                .customer(customer)
+                .paymentMethod(card)
                 .paymentPlan(fetchPaymentPlan(request.getPaymentPlanId()))
                 .interval(gatewayResponse.getInterval())
                 .amount(gatewayResponse.getAmount())

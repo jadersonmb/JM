@@ -36,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_payment_cards_default ON payment_cards (customer_
 CREATE TABLE IF NOT EXISTS payments_recurring (
     id CHAR(36) PRIMARY KEY,
     customer_id CHAR(36) NOT NULL,
+    plan_id CHAR(36) NOT NULL,
     gateway_subscription_id VARCHAR(100),
     payment_method_id CHAR(36),
     status ENUM('ACTIVE', 'PAUSED', 'CANCELLED', 'EXPIRED') NOT NULL DEFAULT 'ACTIVE',
@@ -47,8 +48,8 @@ CREATE TABLE IF NOT EXISTS payments_recurring (
     CONSTRAINT fk_payments_recurring_method FOREIGN KEY (payment_method_id) REFERENCES payment_cards (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_payments_recurring_customer ON payments_recurring (customer_id);
-CREATE INDEX IF NOT EXISTS idx_payments_recurring_status ON payments_recurring (status);
+CREATE INDEX idx_payments_recurring_customer ON payments_recurring (customer_id);
+CREATE INDEX idx_payments_recurring_status ON payments_recurring (status);
 
 CREATE TABLE IF NOT EXISTS payment_webhooks (
     id CHAR(36) PRIMARY KEY,
