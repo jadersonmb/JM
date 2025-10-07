@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -32,4 +33,9 @@ public class UserDTO {
     private Users.Type type;
     private String stripeCustomerId;
     private String asaasCustomerId;
+    private LocalDate birthDate;
+    private Integer age;
+    private String education;
+    private String occupation;
+    private String consultationGoal;
 }

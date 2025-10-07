@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import i18n from '@/plugins/i18n';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -29,37 +30,43 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: () => import('@/views/DashboardView.vue'),
-          meta: { title: 'Dashboard' },
+          meta: { titleKey: 'routes.dashboard' },
         },
         {
           path: 'users',
           name: 'users',
           component: () => import('@/views/users/UsersListView.vue'),
-          meta: { title: 'Users' },
+          meta: { titleKey: 'routes.users' },
+        },
+        {
+          path: 'anamnese',
+          name: 'anamnese',
+          component: () => import('@/views/anamnese/AnamneseWizard.vue'),
+          meta: { titleKey: 'routes.anamnese' },
         },
         {
           path: 'whatsapp',
           name: 'whatsapp-nutrition',
           component: () => import('@/views/whatsapp/WhatsAppNutritionView.vue'),
-          meta: { title: 'AI Nutrition' },
+          meta: { titleKey: 'routes.whatsappNutrition' },
         },
         {
           path: 'payments',
           name: 'payments',
           component: () => import('@/views/payments/PaymentsView.vue'),
-          meta: { title: 'Payments' },
+          meta: { titleKey: 'routes.payments' },
         },
         {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/settings/SettingsView.vue'),
-          meta: { title: 'Settings' },
+          meta: { titleKey: 'routes.settings' },
         },
         {
           path: 'profile',
           name: 'profile',
           component: () => import('@/views/profile/ProfileView.vue'),
-          meta: { title: 'Profile' },
+          meta: { titleKey: 'routes.profile' },
         },
       ],
     },
@@ -90,7 +97,10 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' };
   }
 
-  if (to.meta.title) {
+  if (to.meta.titleKey) {
+    const title = i18n.global.t(to.meta.titleKey);
+    document.title = `${title} - JM Admin`;
+  } else if (to.meta.title) {
     document.title = `${to.meta.title} - JM Admin`;
   } else {
     document.title = 'JM Admin';
