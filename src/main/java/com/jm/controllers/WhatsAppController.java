@@ -53,13 +53,15 @@ public class WhatsAppController {
     }
 
     @GetMapping("/messages")
-    public ResponseEntity<List<WhatsAppMessageFeedDTO>> listMessages(WhatsAppMessageDTO filter) {
-        return ResponseEntity.ok(whatsappNutritionService.getRecentMessagesWithFilter(filter));
+    public ResponseEntity<List<WhatsAppMessageFeedDTO>> listMessages(WhatsAppMessageDTO filter,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID userId) {
+        return ResponseEntity.ok(whatsappNutritionService.getRecentMessagesWithFilter(filter, userId));
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<NutritionDashboardDTO> getDashboard() {
-        return ResponseEntity.ok(whatsappNutritionService.getDashboard());
+    public ResponseEntity<NutritionDashboardDTO> getDashboard(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) UUID userId) {
+        return ResponseEntity.ok(whatsappNutritionService.getDashboard(userId));
     }
 
     @GetMapping(value = "/messages/{id}/image", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)

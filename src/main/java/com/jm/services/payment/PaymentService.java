@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -181,6 +182,8 @@ public class PaymentService {
                 .interval(recurringPayment.getInterval())
                 .amount(recurringPayment.getAmount())
                 .nextBillingDate(recurringPayment.getNextBillingDate())
+                .plan(Optional.ofNullable(recurringPayment.getPaymentPlan())
+                        .map(paymentPlanService::toResponse).orElse(null))
                 .build();
     }
 
@@ -204,6 +207,35 @@ public class PaymentService {
 
         paymentRepository.save(payment);
         return toPaymentResponse(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentRecurringResponse> listSubscriptions(UUID customerId) {
+        Users customer = fetchCustomer(customerId);
+        return recurringPaymentRepository.findByCustomer(customer).stream()
+                .map(this::toRecurringResponse)
+                .collect(Collectors.toList());
+    }
+
+    public void cancelSubscription(UUID subscriptionId) {
+        PaymentRecurring recurring = recurringPaymentRepository.findById(subscriptionId)
+                .orElseThrow(() -> new EntityNotFoundException("Recurring payment not found"));
+
+        String gatewaySubscriptionId = recurring.getGatewaySubscriptionId();
+        if (StringUtils.hasText(gatewaySubscriptionId)) {
+            try {
+                if (recurring.getPaymentMethod() != null) {
+                    stripePaymentGateway.cancelSubscription(gatewaySubscriptionId);
+                } else {
+                    asaasPaymentGateway.cancelSubscription(gatewaySubscriptionId);
+                }
+            } catch (Exception ex) {
+                throw new PaymentIntegrationException("Unable to cancel subscription", ex);
+            }
+        }
+
+        recurring.setStatus(RecurringStatus.CANCELLED);
+        recurringPaymentRepository.save(recurring);
     }
 
     @Transactional(readOnly = true)
@@ -325,6 +357,19 @@ public class PaymentService {
                 .metadata(payment.getMetadata())
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
+                .build();
+    }
+
+    private PaymentRecurringResponse toRecurringResponse(PaymentRecurring recurringPayment) {
+        return PaymentRecurringResponse.builder()
+                .id(recurringPayment.getId())
+                .subscriptionId(recurringPayment.getGatewaySubscriptionId())
+                .status(recurringPayment.getStatus())
+                .interval(recurringPayment.getInterval())
+                .amount(recurringPayment.getAmount())
+                .nextBillingDate(recurringPayment.getNextBillingDate())
+                .plan(Optional.ofNullable(recurringPayment.getPaymentPlan())
+                        .map(paymentPlanService::toResponse).orElse(null))
                 .build();
     }
 

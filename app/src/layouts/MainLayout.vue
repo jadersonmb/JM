@@ -33,12 +33,14 @@
 
       <div class="border-t border-slate-200 p-4">
         <div class="rounded-xl bg-slate-50 p-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Need help?</p>
-          <p class="mt-2 text-sm text-slate-600">Read the implementation guide to integrate the Java backend endpoints.
-          </p>
-          <a href="https://docs"
-            class="mt-3 inline-flex items-center text-xs font-semibold text-primary-600 hover:text-primary-500">View
-            documentation ?</a>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('layout.help.title') }}</p>
+          <p class="mt-2 text-sm text-slate-600">{{ t('layout.help.description') }}</p>
+          <a
+            href="https://docs"
+            class="mt-3 inline-flex items-center text-xs font-semibold text-primary-600 hover:text-primary-500"
+          >
+            {{ t('layout.help.action') }}
+          </a>
         </div>
       </div>
     </aside>
@@ -59,17 +61,30 @@
           </div>
 
           <div class="flex items-center gap-4">
-            <label class="hidden flex-col text-xs font-semibold uppercase tracking-wide text-slate-400 md:flex">
-              {{ t('preferences.language.label') }}
-              <select v-model="selectedLocale" class="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-primary-200 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
-                <option value="en">{{ t('preferences.language.english') }}</option>
-                <option value="pt">{{ t('preferences.language.portuguese') }}</option>
-              </select>
-            </label>
+            <div
+              class="hidden items-center gap-2 md:flex"
+              role="group"
+              :aria-label="t('preferences.language.label')"
+            >
+              <button
+                v-for="option in languageOptions"
+                :key="option.code"
+                type="button"
+                class="flex h-10 w-10 items-center justify-center rounded-full border text-xl transition"
+                :class="selectedLocale === option.code
+                  ? 'border-primary-300 bg-primary-50 text-primary-600'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'"
+                @click="selectedLocale = option.code"
+              >
+                <span aria-hidden="true">{{ option.flag }}</span>
+                <span class="sr-only">{{ option.label }}</span>
+              </button>
+            </div>
             <button type="button"
               class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-primary-200 hover:text-primary-600 md:flex"
               @click="router.push({ name: 'settings' })">
               <Cog6ToothIcon class="h-5 w-5" />
+              <span>{{ t('layout.settings') }}</span>
             </button>
 
             <div class="relative" ref="dropdownRef">
@@ -97,20 +112,20 @@
                     class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                     @click="router.push({ name: 'profile' })">
                     <UserCircleIcon class="h-5 w-5" />
-                    Profile
+                    {{ t('layout.profile') }}
                   </button>
                   <button type="button"
                     class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
                     @click="router.push({ name: 'settings' })">
                     <AdjustmentsHorizontalIcon class="h-5 w-5" />
-                    Settings
+                    {{ t('layout.settings') }}
                   </button>
                   <hr class="my-2 border-slate-100" />
                   <button type="button"
                     class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
                     @click="logout">
                     <ArrowRightOnRectangleIcon class="h-5 w-5" />
-                    Logout
+                    {{ t('layout.logout') }}
                   </button>
                 </div>
               </transition>
@@ -162,55 +177,65 @@ const dropdownRef = ref(null);
 const { t } = useI18n();
 const preferences = usePreferencesStore();
 
+const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
+
+const languageOptions = computed(() => [
+  { code: 'pt', label: t('preferences.language.portuguese'), flag: '🇧🇷' },
+  { code: 'en', label: t('preferences.language.english'), flag: '🇺🇸' },
+]);
+
 const selectedLocale = computed({
   get: () => preferences.locale,
   set: (value) => preferences.setLocale(value),
 });
 
-const navigation = computed(() => [
-  {
-    name: 'dashboard',
-    label: t('routes.dashboard'),
-    to: { name: 'dashboard' },
-    icon: Squares2X2Icon,
-    active: route.name === 'dashboard',
-  },
-  {
-    name: 'users',
-    label: t('routes.users'),
-    to: { name: 'users' },
-    icon: UserGroupIcon,
-    active: route.name === 'users',
-  },
-  {
-    name: 'anamnese',
-    label: t('menu.anamnese'),
-    to: { name: 'anamnese' },
-    icon: ClipboardDocumentListIcon,
-    active: route.name === 'anamnese',
-  },
-  {
-    name: 'whatsapp-nutrition',
-    label: t('routes.whatsappNutrition'),
-    to: { name: 'whatsapp-nutrition' },
-    icon: ChatBubbleLeftRightIcon,
-    active: route.name === 'whatsapp-nutrition',
-  },
-  {
-    name: 'payments',
-    label: t('routes.payments'),
-    to: { name: 'payments' },
-    icon: CreditCardIcon,
-    active: route.name === 'payments',
-  },
-  {
-    name: 'settings',
-    label: t('routes.settings'),
-    to: { name: 'settings' },
-    icon: RectangleStackIcon,
-    active: route.name === 'settings',
-  },
-]);
+const navigation = computed(() => {
+  const items = [
+    {
+      name: 'dashboard',
+      label: t('routes.dashboard'),
+      to: { name: 'dashboard' },
+      icon: Squares2X2Icon,
+      active: route.name === 'dashboard',
+    },
+    {
+      name: 'users',
+      label: t('routes.users'),
+      to: { name: 'users' },
+      icon: UserGroupIcon,
+      active: route.name === 'users',
+    },
+    {
+      name: 'anamnese',
+      label: t('menu.anamnese'),
+      to: { name: 'anamnese' },
+      icon: ClipboardDocumentListIcon,
+      active: route.name === 'anamnese',
+    },
+    {
+      name: 'whatsapp-nutrition',
+      label: t('routes.whatsappNutrition'),
+      to: { name: 'whatsapp-nutrition' },
+      icon: ChatBubbleLeftRightIcon,
+      active: route.name === 'whatsapp-nutrition',
+    },
+    {
+      name: 'payments',
+      label: t('routes.payments'),
+      to: { name: 'payments' },
+      icon: CreditCardIcon,
+      active: route.name === 'payments',
+    },
+    {
+      name: 'settings',
+      label: t('routes.settings'),
+      to: { name: 'settings' },
+      icon: RectangleStackIcon,
+      active: route.name === 'settings',
+    },
+  ];
+  return isAdmin.value ? items : items.filter((item) => item.name !== 'users');
+});
 
 const currentTitle = computed(() => {
   if (route.meta.titleKey) {
@@ -258,7 +283,11 @@ const toggleDropdown = () => {
 
 const logout = () => {
   auth.logout();
-  notifications.push({ type: 'info', title: 'Signed out', message: 'You have been logged out.' });
+  notifications.push({
+    type: 'info',
+    title: t('layout.logoutNotification.title'),
+    message: t('layout.logoutNotification.message'),
+  });
   router.push({ name: 'login' });
 };
 </script>

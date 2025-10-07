@@ -208,6 +208,17 @@ public class StripePaymentGateway {
         }
     }
 
+    public void cancelSubscription(String subscriptionId) throws StripeException {
+        assertStripeConfigured();
+        try {
+            Subscription subscription = Subscription.retrieve(subscriptionId);
+            subscription.cancel();
+        } catch (StripeException ex) {
+            log.error("Stripe subscription cancellation failed", ex);
+            throw ex;
+        }
+    }
+
     private PaymentStatus mapStatus(String stripeStatus) {
         return switch (stripeStatus) {
             case "requires_payment_method", "requires_confirmation", "requires_action" -> PaymentStatus.PENDING;
