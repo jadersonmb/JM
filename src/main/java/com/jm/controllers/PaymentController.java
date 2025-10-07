@@ -11,6 +11,8 @@ import com.jm.dto.payment.PaymentRecurringRequest;
 import com.jm.dto.payment.PaymentRecurringResponse;
 import com.jm.dto.payment.RefundRequest;
 import com.jm.services.payment.PaymentService;
+import com.stripe.exception.StripeException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -54,7 +56,7 @@ public class PaymentController {
 
     @PostMapping("/subscription")
     public ResponseEntity<PaymentRecurringResponse> createSubscription(
-            @Valid @RequestBody PaymentRecurringRequest request) {
+            @Valid @RequestBody PaymentRecurringRequest request) throws StripeException {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createSubscription(request));
     }
 

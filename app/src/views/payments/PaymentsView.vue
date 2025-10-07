@@ -465,7 +465,7 @@ async function handleCreateSubscription(payload) {
     notifications.push({ type: 'warning', title: 'Subscription', message: 'Asaas customer ID is required for PIX subscriptions.' });
     return;
   }
-  if (payload.paymentMethod !== 'PIX' && !payload.metadata?.stripeCustomerId) {
+  if (payload.paymentMethod !== 'PIX' && !auth.user.id) {
     notifications.push({ type: 'warning', title: 'Subscription', message: 'Stripe customer ID is required for card subscriptions.' });
     return;
   }

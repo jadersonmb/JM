@@ -27,6 +27,10 @@ public class PaymentPlanService {
                 .orElseThrow(() -> new EntityNotFoundException("Payment plan not found or inactive"));
     }
 
+    public PaymentPlan save(PaymentPlan plan) {
+        return paymentPlanRepository.save(plan);
+    }
+
     public PaymentPlanResponse toResponse(PaymentPlan plan) {
         return PaymentPlanResponse.builder()
                 .id(plan.getId())

@@ -25,6 +25,8 @@ public class UserMapper {
                 .street(entity.getStreet())
                 .type(entity.getType())
                 .avatarUrl(entity.getAvatarUrl())
+                .stripeCustomerId(entity.getStripeCustomerId())
+                .asaasCustomerId(entity.getAsaasCustomerId())
                 .build();
     }
 
@@ -47,6 +49,8 @@ public class UserMapper {
                 .password(userDTO.getPassword())
                 .type(userDTO.getType())
                 .avatarUrl(userDTO.getAvatarUrl())
+                .stripeCustomerId(userDTO.getStripeCustomerId())
+                .asaasCustomerId(userDTO.getAsaasCustomerId())
                 .build();
     }
 

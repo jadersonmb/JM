@@ -29,14 +29,12 @@ import com.jm.repository.PaymentRepository;
 import com.jm.repository.PaymentRecurringRepository;
 import com.jm.services.UserService;
 import com.jm.speciation.PaymentSpecification;
-import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
-import com.stripe.param.TokenCreateParams;
-import com.stripe.model.Token;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -147,7 +145,7 @@ public class PaymentService {
                 .build();
     }
 
-    public PaymentRecurringResponse createSubscription(PaymentRecurringRequest request) {
+    public PaymentRecurringResponse createSubscription(PaymentRecurringRequest request) throws StripeException {
         Users customer = fetchCustomer(request.getCustomerId());
         PaymentCard card = null;
         if (request.getPaymentMethod() != PaymentMethodType.PIX) {
@@ -158,8 +156,7 @@ public class PaymentService {
         if (request.getPaymentMethod() == PaymentMethodType.PIX) {
             gatewayResponse = asaasPaymentGateway.createSubscription(request, request.getMetadata(), customer);
         } else {
-            String stripeCustomerId = extractStripeCustomerId(request.getMetadata());
-            gatewayResponse = stripePaymentGateway.createSubscription(request, card, stripeCustomerId,
+            gatewayResponse = stripePaymentGateway.createSubscription(request, card, customer,
                     request.getMetadata());
         }
 
@@ -298,13 +295,6 @@ public class PaymentService {
 
     private Map<String, Object> copyMetadata(Map<String, Object> metadata) {
         return metadata == null ? new HashMap<>() : new HashMap<>(metadata);
-    }
-
-    private String extractStripeCustomerId(Map<String, Object> metadata) {
-        if (metadata == null || !metadata.containsKey("stripeCustomerId")) {
-            throw new PaymentIntegrationException("stripeCustomerId metadata is required to create subscriptions");
-        }
-        return String.valueOf(metadata.get("stripeCustomerId"));
     }
 
     private PaymentIntentResponse toIntentResponse(Payment payment, String clientSecret) {

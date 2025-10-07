@@ -11,26 +11,36 @@ import com.jm.entity.Users;
 import com.jm.enums.PaymentStatus;
 import com.jm.enums.RecurringStatus;
 import com.jm.execption.PaymentIntegrationException;
+import com.jm.mappers.UserMapper;
+import com.jm.services.UserService;
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
+import com.stripe.model.Customer;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.Price;
+import com.stripe.model.Product;
 import com.stripe.model.Refund;
 import com.stripe.model.Subscription;
+import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
+import com.stripe.param.PriceCreateParams;
+import com.stripe.param.ProductCreateParams;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.SubscriptionCreateParams;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -39,6 +49,11 @@ public class StripePaymentGateway {
 
     private final PaymentGatewayProperties properties;
     private final PaymentPlanService paymentPlanService;
+    private final UserService userService;
+    private final UserMapper userMapper;
+
+    @Value("${payments.stripe.secret-key}")
+    private String stripeSecretKey;
 
     @PostConstruct
     void init() {
@@ -108,30 +123,50 @@ public class StripePaymentGateway {
     }
 
     public RecurringChargeResponse createSubscription(PaymentRecurringRequest recurringPaymentRequest,
-            PaymentCard paymentMethod, String stripeCustomerId, Map<String, Object> metadata) {
+            PaymentCard paymentMethod, Users customer, Map<String, Object> metadata) throws StripeException {
         assertStripeConfigured();
         PaymentPlan plan = paymentPlanService.findActiveById(recurringPaymentRequest.getPaymentPlanId());
-        Assert.hasText(stripeCustomerId, "Stripe customer id is required for subscriptions");
+
+        if (Objects.isNull(plan.getStripePriceId())) {
+            ProductCreateParams productParams = ProductCreateParams.builder()
+                    .setName(plan.getName())
+                    .setDescription(plan.getDescription())
+                    .putMetadata("plan_code", plan.getIntervals().name())
+                    .build();
+
+            Product productPlanStripe = Product.create(productParams);
+
+            PriceCreateParams priceParams = PriceCreateParams.builder()
+                    .setProduct(productPlanStripe.getId())
+                    .setCurrency(plan.getCurrency())
+                    .setUnitAmount(plan.getAmount().multiply(BigDecimal.valueOf(100)).longValue())
+                    .setRecurring(PriceCreateParams.Recurring.builder()
+                            .setInterval(PriceCreateParams.Recurring.Interval.MONTH) /* Modificar para pegar do plan */
+                            .build())
+                    .putMetadata("plan_code", plan.getIntervals().name())
+                    .build();
+
+            Price price = Price.create(priceParams);
+            plan.setStripePriceId(price.getId());
+            paymentPlanService.save(plan);
+        }
+
+        findOrCreateStripeCustomer(customer, paymentMethod.getCardToken()); // paymentMethodStripe.getId()
+
+        Assert.hasText(customer.getStripeCustomerId(), "Stripe customer id is required for subscriptions");
         Assert.notNull(paymentMethod, "Payment method is required for subscriptions");
         Assert.hasText(plan.getStripePriceId(), "Stripe price id is required for the selected plan");
         try {
 
-            SubscriptionCreateParams.Item item = SubscriptionCreateParams.Item.builder()
-                    .setPrice(plan.getStripePriceId()).build();
+            SubscriptionCreateParams params = SubscriptionCreateParams.builder()
+                    .setCustomer(customer.getStripeCustomerId())
+                    .addItem(
+                            SubscriptionCreateParams.Item.builder()
+                                    .setPrice(plan.getStripePriceId())
+                                    .build())
+                    .build();
 
-            SubscriptionCreateParams.Builder builder = SubscriptionCreateParams.builder().setCustomer(stripeCustomerId)
-                    .addItem(item).setCollectionMethod(SubscriptionCreateParams.CollectionMethod.CHARGE_AUTOMATICALLY)
-                    .setDefaultPaymentMethod(paymentMethod.getCardToken()).addExpand("latest_invoice.payment_intent");
-
-            builder.putMetadata("plan_code", plan.getCode());
-            if (StringUtils.hasText(plan.getName())) {
-                builder.putMetadata("plan_name", plan.getName());
-            }
-            if (!CollectionUtils.isEmpty(metadata)) {
-                metadata.forEach((key, value) -> builder.putMetadata(key, String.valueOf(value)));
-            }
-
-            Subscription subscription = Subscription.create(builder.build());
+            Subscription subscription = Subscription.create(params);
 
             return RecurringChargeResponse.builder()
                     .subscriptionId(subscription.getId())
@@ -199,5 +234,29 @@ public class StripePaymentGateway {
         if (!StringUtils.hasText(properties.getStripe().getSecretKey())) {
             throw new PaymentIntegrationException("Stripe secret key is not configured");
         }
+    }
+
+    private Customer findOrCreateStripeCustomer(Users customer, String paymentMethodId) throws StripeException {
+
+        if (customer.getStripeCustomerId() != null) {
+            return Customer.retrieve(customer.getStripeCustomerId());
+        }
+
+        CustomerCreateParams customerParams = CustomerCreateParams.builder()
+                .setEmail(customer.getEmail())
+                .setName(customer.getName())
+                .setPaymentMethod(paymentMethodId)
+                .setInvoiceSettings(
+                        CustomerCreateParams.InvoiceSettings.builder()
+                                .setDefaultPaymentMethod(paymentMethodId)
+                                .build())
+                .build();
+
+        Customer customerStripe = Customer.create(customerParams);
+
+        customer.setStripeCustomerId(customerStripe.getId());
+        userService.updateUser(userMapper.toDTO(customer));
+
+        return customerStripe;
     }
 }

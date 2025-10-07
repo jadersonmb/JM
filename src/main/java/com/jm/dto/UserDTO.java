@@ -30,4 +30,6 @@ public class UserDTO {
     private String password;
     private String avatarUrl;
     private Users.Type type;
+    private String stripeCustomerId;
+    private String asaasCustomerId;
 }

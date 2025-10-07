@@ -46,6 +46,9 @@ public class Users {
         private String country;
         private String avatarUrl;
 
+        private String stripeCustomerId;
+        private String asaasCustomerId;
+
         @OneToMany(mappedBy = "users", cascade = CascadeType.ALL)
         private List<Image> imagens = new ArrayList<>();
 
