@@ -27,6 +27,11 @@ public class UserMapper {
                 .avatarUrl(entity.getAvatarUrl())
                 .stripeCustomerId(entity.getStripeCustomerId())
                 .asaasCustomerId(entity.getAsaasCustomerId())
+                .birthDate(entity.getBirthDate())
+                .age(entity.getAge())
+                .education(entity.getEducation())
+                .occupation(entity.getOccupation())
+                .consultationGoal(entity.getConsultationGoal())
                 .build();
     }
 
@@ -51,6 +56,11 @@ public class UserMapper {
                 .avatarUrl(userDTO.getAvatarUrl())
                 .stripeCustomerId(userDTO.getStripeCustomerId())
                 .asaasCustomerId(userDTO.getAsaasCustomerId())
+                .birthDate(userDTO.getBirthDate())
+                .age(userDTO.getAge())
+                .education(userDTO.getEducation())
+                .occupation(userDTO.getOccupation())
+                .consultationGoal(userDTO.getConsultationGoal())
                 .build();
     }
 

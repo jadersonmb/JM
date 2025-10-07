@@ -18,7 +18,7 @@
       </div>
 
       <nav class="flex-1 space-y-2 overflow-y-auto px-4 pb-10">
-        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Menu</p>
+        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('menu.title') }}</p>
         <RouterLink v-for="item in navigation" :key="item.name" :to="item.to"
           class="group mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition" :class="[
             item.active
@@ -59,6 +59,13 @@
           </div>
 
           <div class="flex items-center gap-4">
+            <label class="hidden flex-col text-xs font-semibold uppercase tracking-wide text-slate-400 md:flex">
+              {{ t('preferences.language.label') }}
+              <select v-model="selectedLocale" class="mt-1 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-primary-200 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
+                <option value="en">{{ t('preferences.language.english') }}</option>
+                <option value="pt">{{ t('preferences.language.portuguese') }}</option>
+              </select>
+            </label>
             <button type="button"
               class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-primary-200 hover:text-primary-600 md:flex"
               @click="router.push({ name: 'settings' })">
@@ -129,6 +136,7 @@ import {
   ChevronDownIcon,
   Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
+  ClipboardDocumentListIcon,
   RectangleStackIcon,
   Squares2X2Icon,
   UserGroupIcon,
@@ -139,6 +147,8 @@ import {
 import AppLogo from '@/components/AppLogo.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
+import { useI18n } from 'vue-i18n';
+import { usePreferencesStore } from '@/stores/preferences';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -149,46 +159,66 @@ const mobileNavOpen = ref(false);
 const menuOpen = ref(false);
 const dropdownRef = ref(null);
 
+const { t } = useI18n();
+const preferences = usePreferencesStore();
+
+const selectedLocale = computed({
+  get: () => preferences.locale,
+  set: (value) => preferences.setLocale(value),
+});
+
 const navigation = computed(() => [
   {
     name: 'dashboard',
-    label: 'Dashboard',
+    label: t('routes.dashboard'),
     to: { name: 'dashboard' },
     icon: Squares2X2Icon,
     active: route.name === 'dashboard',
   },
   {
     name: 'users',
-    label: 'Users',
+    label: t('routes.users'),
     to: { name: 'users' },
     icon: UserGroupIcon,
     active: route.name === 'users',
   },
   {
+    name: 'anamnese',
+    label: t('menu.anamnese'),
+    to: { name: 'anamnese' },
+    icon: ClipboardDocumentListIcon,
+    active: route.name === 'anamnese',
+  },
+  {
     name: 'whatsapp-nutrition',
-    label: 'AI Nutrition',
+    label: t('routes.whatsappNutrition'),
     to: { name: 'whatsapp-nutrition' },
     icon: ChatBubbleLeftRightIcon,
     active: route.name === 'whatsapp-nutrition',
   },
   {
     name: 'payments',
-    label: 'Payments',
+    label: t('routes.payments'),
     to: { name: 'payments' },
     icon: CreditCardIcon,
     active: route.name === 'payments',
   },
   {
     name: 'settings',
-    label: 'Settings',
+    label: t('routes.settings'),
     to: { name: 'settings' },
     icon: RectangleStackIcon,
     active: route.name === 'settings',
   },
 ]);
 
-const currentTitle = computed(() => route.meta.title ?? 'Overview');
-const currentSection = computed(() => (route.name === 'dashboard' ? 'Overview' : 'Workspace'));
+const currentTitle = computed(() => {
+  if (route.meta.titleKey) {
+    return t(route.meta.titleKey);
+  }
+  return route.meta.title ?? 'Overview';
+});
+const currentSection = computed(() => (route.name === 'dashboard' ? t('routes.dashboard') : t('menu.title')));
 
 const handleClickOutside = (event) => {
   if (!menuOpen.value) return;
@@ -210,6 +240,15 @@ watch(
   () => {
     mobileNavOpen.value = false;
     menuOpen.value = false;
+  },
+);
+
+watch(
+  () => preferences.locale,
+  () => {
+    if (route.meta.titleKey) {
+      document.title = `${t(route.meta.titleKey)} - JM Admin`;
+    }
   },
 );
 
