@@ -199,8 +199,10 @@ public class WhatsAppNutritionService {
             return null;
         }
         String normalizedName = normalizeCategoryName(best.name);
-        return foodCategoryRepository.findByNameIgnoreCase(normalizedName)
-                .orElseGet(() -> foodCategoryRepository.save(FoodCategory.builder().name(normalizedName)
+        return foodCategoryRepository
+                .findByNameIgnoreCase(normalizedName)
+                .orElseGet(() -> foodCategoryRepository.save(FoodCategory.builder()
+                        .name(normalizedName.substring(0, 1).toUpperCase() + normalizedName.substring(1))
                         .description("Categoria identificada automaticamente").build()));
     }
 
