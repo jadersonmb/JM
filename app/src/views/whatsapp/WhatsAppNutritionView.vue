@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-6">
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-2xl font-semibold text-slate-900">{{ t('whatsappNutrition.title') }}</h2>
+        <h2 class="text-2xl font-semibold text-slate-900 text-blue-600 font-bold">{{ t('whatsappNutrition.title') }}</h2>
         <p class="text-sm text-slate-500">{{ t('whatsappNutrition.subtitle') }}</p>
       </div>
       <button class="btn-secondary" @click="refreshData" :disabled="loading">
@@ -15,7 +15,7 @@
       <section class="rounded-2xl bg-white p-6 shadow-sm">
         <header class="mb-4 flex items-center justify-between">
           <div>
-            <h3 class="text-lg font-semibold text-slate-900">{{ t('whatsappNutrition.feed.title') }}</h3>
+            <h3 class="text-lg font-semibold text-slate-900 font-bold">{{ t('whatsappNutrition.feed.title') }}</h3>
             <p class="text-xs text-slate-500">{{ t('whatsappNutrition.feed.description') }}</p>
           </div>
           <span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">
@@ -29,7 +29,7 @@
         <div v-else-if="!feed.length" class="flex h-64 items-center justify-center text-sm text-slate-500">
           {{ t('whatsappNutrition.feed.empty') }}
         </div>
-        <ul v-else class="space-y-4 overflow-y-auto pr-2" style="max-height: 750px;">
+        <ul v-else class="space-y-4 overflow-y-auto pr-2 max-h-auto">
           <li v-for="item in feed" :key="item.id" class="flex gap-4 rounded-xl border border-slate-200 p-4">
             <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
               <img

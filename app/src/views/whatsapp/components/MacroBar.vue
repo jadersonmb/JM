@@ -21,6 +21,6 @@ const props = defineProps({
 });
 
 const computedWidth = computed(() => `${Math.min(Math.max(props.percentage ?? 0, 0), 100)}%`);
-const formattedAmount = computed(() => `${props.amount.toFixed(1)} g (${Math.min(Math.max(props.percentage ?? 0, 0), 100).toFixed(0)}%)`);
+const formattedAmount = computed(() => `${props.amount} g (${Math.min(Math.max(props.percentage ?? 0, 0), 100).toFixed(0)}%)`);
 </script>
 

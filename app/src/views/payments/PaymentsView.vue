@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAdmin" class="grid gap-6 xl:grid-cols-2">
+  <div v-if="isAdmin || activeSubscription.status === 'CANCELLED'" class="grid gap-6 xl:grid-cols-2">
     <div class="space-y-6">
       <PaymentMethodSelection v-model="currentMethod" />
 
@@ -68,6 +68,7 @@
 
     <div class="space-y-6">
       <PaymentsDataTable
+        v-if="isAdmin"
         :rows="payments"
         :loading="paymentsLoading"
         :pagination="pagination"
@@ -151,7 +152,7 @@
           </div>
         </div>
         <div class="flex justify-end">
-          <button type="button" class="btn-ghost text-rose-600" :disabled="cancelingSubscription" @click="handleCancelSubscription">
+          <button type="button" class="btn-secondary text-rose-600" :disabled="cancelingSubscription" @click="handleCancelSubscription">
             <span v-if="cancelingSubscription" class="loader h-4 w-4"></span>
             <span>{{ cancelingSubscription ? t('payments.subscription.cancelling') : t('payments.subscription.cancel') }}</span>
           </button>

@@ -76,15 +76,15 @@
                   : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'"
                 @click="selectedLocale = option.code"
               >
-                <span aria-hidden="true">{{ option.flag }}</span>
-                <span class="sr-only">{{ option.label }}</span>
+                <img aria-hidden="true" :src="option.url" :alt="option.code"/>
+                <span class="sr-only">{{ option.label  }}</span>
               </button>
             </div>
             <button type="button"
               class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-primary-200 hover:text-primary-600 md:flex"
               @click="router.push({ name: 'settings' })">
               <Cog6ToothIcon class="h-5 w-5" />
-              <span>{{ t('layout.settings') }}</span>
+              <!-- <span>{{ t('layout.settings') }}</span> -->
             </button>
 
             <div class="relative" ref="dropdownRef">
@@ -164,6 +164,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import { useI18n } from 'vue-i18n';
 import { usePreferencesStore } from '@/stores/preferences';
+import BR from '@/assets/bandeira-do-brasil.png';
+import EUA from '@/assets/estados-unidos-da-america.png';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -180,8 +182,8 @@ const preferences = usePreferencesStore();
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
 const languageOptions = computed(() => [
-  { code: 'pt', label: t('preferences.language.portuguese'), flag: '🇧🇷' },
-  { code: 'en', label: t('preferences.language.english'), flag: '🇺🇸' },
+  { code: 'pt', label: t('preferences.language.portuguese'), flag: 'BR', url: BR },
+  { code: 'en', label: t('preferences.language.english'), flag: 'US', url: EUA },
 ]);
 
 const selectedLocale = computed({

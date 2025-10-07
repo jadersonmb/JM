@@ -159,7 +159,7 @@ export default {
       intervalLabel: 'Intervalo',
       nextBilling: 'Próxima cobrança',
       cancelling: 'Cancelando…',
-      cancel: 'Cancelar assinatura',
+      cancel: 'Cancelar',
       emptyTitle: 'Nenhuma assinatura ainda',
       emptyDescription: 'Você não possui assinaturas ativas.',
       status: {
@@ -395,8 +395,8 @@ export default {
         items: {
           colesterol: 'Colesterol',
           hipertensao: 'Hipertensão',
-          diabetes1: 'Diabetes tipo 1',
-          diabetes2: 'Diabetes tipo 2',
+          diabetes1: 'Diabetes tipo (1)',
+          diabetes2: 'Diabetes tipo (2)',
           trigliceridemia: 'Trigliceridemia',
           anemia: 'Anemia',
           intestinal: 'Intestinal',
@@ -489,7 +489,7 @@ export default {
       refreshing: 'Atualizando…',
     },
     feed: {
-      title: 'Feed do WhatsApp',
+      title: 'Feed',
       description: 'Últimas imagens e mensagens capturadas pelo seu bot.',
       count: '{count} itens',
       loading: 'Carregando feed…',

@@ -1,8 +1,8 @@
 <template>
-  <div class="mx-auto max-w-6xl">
+  <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-slate-900">{{ t('anamnese.title') }}</h1>
+        <h1 class="text-2xl font-semibold text-slate-900 text-blue-600 font-bold">{{ t('anamnese.title') }}</h1>
         <p class="mt-1 max-w-3xl text-sm text-slate-500">
           {{ t('anamnese.subtitle') }}
         </p>
@@ -50,8 +50,8 @@
                 <td class="px-4 py-3 text-slate-500">{{ item.telefone || t('common.placeholders.empty') }}</td>
                 <td class="px-4 py-3 text-slate-500">{{ item.objetivoConsulta || t('common.placeholders.empty') }}</td>
                 <td class="px-4 py-3 text-right">
-                  <button type="button" class="btn-ghost text-primary-600" @click="selectAnamnese(item)">
-                    {{ t('anamnese.admin.view') }}
+                  <button type="button" class="btn-ghost text-primary-600 btn-primary" @click="selectAnamnese(item)">
+                    <PencilIcon class="h-4 w-4" />
                   </button>
                 </td>
               </tr>
@@ -65,43 +65,43 @@
         <section v-if="shouldShowSummary" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.summary.title') }}</h2>
-              <p class="text-sm text-slate-500">{{ t('anamnese.summary.subtitle') }}</p>
+              <h2 class="text-lg font-semibold text-slate-900 font-bold">{{ t('anamnese.summary.title') }}</h2>
+              <!-- <p class="text-sm text-slate-500">{{ t('anamnese.summary.subtitle') }}</p> -->
             </div>
             <div class="flex flex-wrap gap-2">
               <button type="button" class="btn-secondary" @click="editSelectedAnamnese">
                 {{ t('common.actions.edit') }}
               </button>
-              <button
+              <!--<button
                 v-if="isAdmin"
                 type="button"
                 class="btn-ghost text-primary-600"
                 @click="startNewAnamnese"
               >
                 {{ t('anamnese.summary.newRecord') }}
-              </button>
+              </button> -->
             </div>
           </header>
 
           <dl class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.patient') }}</dt>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.patient') }}</dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('paciente') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.phone') }}</dt>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.phone') }}</dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('telefone') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.goal') }}</dt>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.goal') }}</dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('objetivoConsulta') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.diagnosis') }}</dt>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.diagnosis') }}</dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('diagnostico') }}</dd>
             </div>
             <div class="sm:col-span-2">
-              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.diet') }}</dt>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.diet') }}</dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('resumoDieta') }}</dd>
             </div>
           </dl>
@@ -212,6 +212,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import AnamneseService from '@/services/AnamneseService';
 import { useI18n } from 'vue-i18n';
+import { PencilIcon } from '@heroicons/vue/24/outline';
 
 const STORAGE_KEY = 'jm_anamnese_wizard_draft';
 
