@@ -3,8 +3,8 @@
     <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.steps.personal.title') }}</h2>
     <p class="mt-1 text-sm text-slate-500">{{ t('anamnese.steps.personal.description') }}</p>
 
-    <div v-if="isAdmin" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div class="md:col-span-2">
+    <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div class="md:col-span-2" v-if="isAdmin">
         <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.selectLabel') }}</label>
         <select v-model="selectedUserId" :disabled="loading"
           class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
@@ -60,14 +60,14 @@
       </div>
     </div>
 
-    <div v-else class="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
+   <!-- <div v-else class="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
       {{ t('common.adminOnly') }}
-    </div>
+    </div> -->
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, isShallow, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getUsers } from '@/services/users';
 

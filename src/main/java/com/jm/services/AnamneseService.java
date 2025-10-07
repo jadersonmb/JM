@@ -34,6 +34,7 @@ public class AnamneseService {
     private final AnamneseMapper mapper;
     private final MessageSource messageSource;
     private final UserRepository userRepository;
+
     public AnamneseService(AnamneseRepository repository, AnamneseMapper mapper, MessageSource messageSource,
             UserRepository userRepository) {
         this.repository = repository;
@@ -77,7 +78,7 @@ public class AnamneseService {
         Anamnese saved = repository.save(entity);
         userRepository.save(user);
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage("anamnese.saved", new Object[]{""}, locale);
+        String message = messageSource.getMessage("anamnese.saved", new Object[] { "" }, locale);
         logger.debug("{} - {}", message, saved.getId());
         return mapper.toDTO(saved);
     }
@@ -91,8 +92,10 @@ public class AnamneseService {
         if (dto.getId() == null) {
             ProblemType problemType = ProblemType.INVALID_BODY;
             Locale locale = LocaleContextHolder.getLocale();
-            String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, locale);
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), messageDetails);
+            String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                    locale);
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                    messageDetails);
         }
 
         repository.findById(dto.getId()).orElseThrow(this::anamneseNotFound);
@@ -104,23 +107,26 @@ public class AnamneseService {
         Anamnese entity = repository.findById(id).orElseThrow(this::anamneseNotFound);
         repository.delete(entity);
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage("anamnese.deleted", new Object[]{""}, locale);
+        String message = messageSource.getMessage("anamnese.deleted", new Object[] { "" }, locale);
         logger.debug("{} - {}", message, id);
     }
 
     private JMException anamneseNotFound() {
         ProblemType problemType = ProblemType.ANAMNESE_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, locale);
-        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), messageDetails);
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" }, locale);
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
     }
 
     private Users resolveUser(AnamneseDTO dto) {
         if (dto == null || dto.getUserId() == null) {
             ProblemType problemType = ProblemType.INVALID_BODY;
             Locale locale = LocaleContextHolder.getLocale();
-            String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, locale);
-            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), messageDetails);
+            String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                    locale);
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                    messageDetails);
         }
         return userRepository.findById(dto.getUserId()).orElseThrow(this::userNotFound);
     }
@@ -152,7 +158,8 @@ public class AnamneseService {
     private JMException userNotFound() {
         ProblemType problemType = ProblemType.USER_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();
-        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""}, locale);
-        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), messageDetails);
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" }, locale);
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
     }
 }
