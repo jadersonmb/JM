@@ -11,6 +11,7 @@ import org.hibernate.annotations.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -49,8 +50,18 @@ public class Users {
         private String stripeCustomerId;
         private String asaasCustomerId;
 
+        private LocalDate birthDate;
+        private Integer age;
+        private String education;
+        private String occupation;
+        @Column(length = 1000)
+        private String consultationGoal;
+
         @OneToMany(mappedBy = "users", cascade = CascadeType.ALL)
         private List<Image> imagens = new ArrayList<>();
+
+        @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+        private List<Anamnese> anamneses = new ArrayList<>();
 
         public enum Type {
                 ADMIN, CLIENT;

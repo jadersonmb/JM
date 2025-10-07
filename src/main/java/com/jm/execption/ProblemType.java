@@ -12,6 +12,7 @@ public enum ProblemType {
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
     PERSON_NOT_FOUND("/person-not-found", "Person not found", "person_not.found"),
+    ANAMNESE_NOT_FOUND("/anamnese-not-found", "Anamnese not found", "anamnese.not-found"),
     CPF_ALREADY_FOUND("/cpf-found", "CPF already found", "cpf_already_found"),
     CELL_PHONE_ALREADY_found("/cellphone-found", "CellPhone already found", "cellphone_already_found"),
     DATE_INVALED("/date-invalid", "Date Invalid", "date_invalid"),
