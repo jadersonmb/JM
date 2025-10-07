@@ -154,6 +154,16 @@ public class AsaasPaymentGateway {
         }
     }
 
+    public void cancelSubscription(String subscriptionId) {
+        assertConfigured();
+        try {
+            webClient.delete().uri("/subscriptions/{id}", subscriptionId).retrieve().toBodilessEntity().block();
+        } catch (WebClientResponseException ex) {
+            log.error("Asaas subscription cancellation failed: {}", ex.getResponseBodyAsString(), ex);
+            throw new PaymentIntegrationException("Unable to cancel Asaas subscription", ex);
+        }
+    }
+
     private RecurringStatus mapSubscriptionStatus(String status) {
         return switch (status.toUpperCase()) {
             case "ACTIVE", "AWAITING_CYCLE" -> RecurringStatus.ACTIVE;

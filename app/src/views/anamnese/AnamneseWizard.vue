@@ -7,63 +7,191 @@
           {{ t('anamnese.subtitle') }}
         </p>
       </div>
-      <div class="text-sm font-medium text-slate-500">
+      <div v-if="viewMode === 'form'" class="text-sm font-medium text-slate-500">
         {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
       </div>
     </div>
 
-    <div class="mt-6 h-2 rounded-full bg-slate-200">
-      <div class="h-2 rounded-full bg-primary-500 transition-all" :style="{ width: `${progress}%` }"></div>
-    </div>
+    <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]' : ''">
+      <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.admin.listTitle') }}</h2>
+            <p class="text-sm text-slate-500">{{ t('anamnese.admin.listSubtitle') }}</p>
+          </div>
+          <button type="button" class="btn-secondary" :disabled="anamnesesLoading" @click="startNewAnamnese">
+            <span v-if="anamnesesLoading" class="loader h-4 w-4"></span>
+            <span v-else>{{ t('anamnese.admin.new') }}</span>
+          </button>
+        </header>
 
-    <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-      <button v-for="(step, index) in steps" :key="step.id" type="button"
-        class="flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition"
-        :class="[
-          index < currentStepIndex
-            ? 'border-primary-200 bg-primary-50 text-primary-600'
-            : index === currentStepIndex
-              ? 'border-primary-300 bg-white text-primary-600 shadow-sm'
-              : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'
-        ]"
-        @click="goToStep(index)"
-        :disabled="index > currentStepIndex + 1">
-        <span
-          class="flex h-8 w-8 items-center justify-center rounded-full border text-sm"
-          :class="index <= currentStepIndex ? 'border-primary-500 bg-primary-500 text-white' : 'border-slate-200 text-slate-500'">
-          {{ index + 1 }}
-        </span>
-        <div>
-          <p>{{ step.title }}</p>
-          <p class="text-xs font-normal text-slate-400">{{ step.description }}</p>
+        <div v-if="anamnesesLoading" class="mt-4 space-y-2">
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
         </div>
-      </button>
-    </div>
+        <div v-else-if="anamneses.length" class="mt-4 overflow-hidden rounded-2xl border border-slate-200">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-4 py-3 text-left">{{ t('anamnese.admin.columns.patient') }}</th>
+                <th class="px-4 py-3 text-left">{{ t('anamnese.admin.columns.phone') }}</th>
+                <th class="px-4 py-3 text-left">{{ t('anamnese.admin.columns.goal') }}</th>
+                <th class="px-4 py-3 text-right">{{ t('anamnese.admin.columns.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <tr
+                v-for="item in anamneses"
+                :key="item.id"
+                :class="selectedAnamneseId === item.id ? 'bg-primary-50/50' : ''"
+              >
+                <td class="px-4 py-3 font-semibold text-slate-700">{{ item.paciente || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ item.telefone || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 text-slate-500">{{ item.objetivoConsulta || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 text-right">
+                  <button type="button" class="btn-ghost text-primary-600" @click="selectAnamnese(item)">
+                    {{ t('anamnese.admin.view') }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="mt-4 text-sm text-slate-500">{{ t('anamnese.admin.empty') }}</p>
+      </section>
 
-    <div class="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <component :is="currentStep.component" v-bind="currentStepProps" />
-    </div>
+      <div class="space-y-6">
+        <section v-if="shouldShowSummary" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.summary.title') }}</h2>
+              <p class="text-sm text-slate-500">{{ t('anamnese.summary.subtitle') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="btn-secondary" @click="editSelectedAnamnese">
+                {{ t('common.actions.edit') }}
+              </button>
+              <button
+                v-if="isAdmin"
+                type="button"
+                class="btn-ghost text-primary-600"
+                @click="startNewAnamnese"
+              >
+                {{ t('anamnese.summary.newRecord') }}
+              </button>
+            </div>
+          </header>
 
-    <div class="mt-6 flex flex-col justify-between gap-4 sm:flex-row">
-      <div class="flex gap-3">
-        <button type="button" class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600 disabled:opacity-40"
-          :disabled="currentStepIndex === 0" @click="previousStep">
-          {{ t('common.actions.back') }}
-        </button>
-        <button type="button" class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50" @click="exportPdf">
-          {{ t('common.actions.exportPdf') }}
-        </button>
-      </div>
-      <div class="flex gap-3">
-        <button type="button" class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50"
-          @click="nextStep" :disabled="currentStepIndex === steps.length - 1">
-          {{ t('common.actions.next') }}
-        </button>
-        <button type="button" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:opacity-50"
-          :disabled="saving" @click="saveAnamnese">
-          <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-          <span>{{ saving ? t('common.actions.saving') : t('common.actions.save') }}</span>
-        </button>
+          <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.patient') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('paciente') }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.phone') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('telefone') }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.goal') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('objetivoConsulta') }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.diagnosis') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('diagnostico') }}</dd>
+            </div>
+            <div class="sm:col-span-2">
+              <dt class="text-xs uppercase tracking-wide text-slate-400">{{ t('anamnese.summary.fields.diet') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('resumoDieta') }}</dd>
+            </div>
+          </dl>
+        </section>
+
+        <div v-if="viewMode === 'form'" class="space-y-6">
+          <div class="h-2 rounded-full bg-slate-200">
+            <div class="h-2 rounded-full bg-primary-500 transition-all" :style="{ width: `${progress}%` }"></div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <button
+              v-for="(step, index) in steps"
+              :key="step.id"
+              type="button"
+              class="flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition"
+              :class="[
+                index < currentStepIndex
+                  ? 'border-primary-200 bg-primary-50 text-primary-600'
+                  : index === currentStepIndex
+                    ? 'border-primary-300 bg-white text-primary-600 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'
+              ]"
+              @click="goToStep(index)"
+              :disabled="index > currentStepIndex + 1"
+            >
+              <span
+                class="flex h-8 w-8 items-center justify-center rounded-full border text-sm"
+                :class="index <= currentStepIndex ? 'border-primary-500 bg-primary-500 text-white' : 'border-slate-200 text-slate-500'"
+              >
+                {{ index + 1 }}
+              </span>
+              <div>
+                <p>{{ step.title }}</p>
+                <p class="text-xs font-normal text-slate-400">{{ step.description }}</p>
+              </div>
+            </button>
+          </div>
+
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <component :is="currentStep.component" v-bind="currentStepProps" />
+          </div>
+
+          <div class="flex flex-col justify-between gap-4 sm:flex-row">
+            <div class="flex flex-wrap gap-3">
+              <button
+                type="button"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600 disabled:opacity-40"
+                :disabled="currentStepIndex === 0"
+                @click="previousStep"
+              >
+                {{ t('common.actions.back') }}
+              </button>
+              <button
+                v-if="canCancelEditing"
+                type="button"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600"
+                @click="showSummary"
+              >
+                {{ t('common.actions.cancel') }}
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50"
+                @click="exportPdf"
+              >
+                {{ t('common.actions.exportPdf') }}
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <button
+                type="button"
+                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50"
+                @click="nextStep"
+                :disabled="currentStepIndex === steps.length - 1"
+              >
+                {{ t('common.actions.next') }}
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:opacity-50"
+                :disabled="saving"
+                @click="saveAnamnese"
+              >
+                <span v-if="saving" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                <span>{{ saving ? t('common.actions.saving') : t('common.actions.save') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -93,10 +221,18 @@ const { t } = useI18n();
 
 const saving = ref(false);
 const currentStepIndex = ref(0);
+const viewMode = ref('form');
+
+const anamneses = ref([]);
+const anamnesesLoading = ref(false);
+const selectedAnamnese = ref(null);
+
+const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
+const isClient = computed(() => !isAdmin.value);
 
 const createInitialForm = () => ({
   id: null,
-  userId: auth.user?.id ?? null,
+  userId: isAdmin.value ? null : auth.user?.id ?? null,
   paciente: '',
   endereco: '',
   dataNascimento: '',
@@ -230,8 +366,6 @@ const steps = computed(() => [
   },
 ]);
 
-const isAdmin = computed(() => auth.user?.type === 'ADMIN');
-
 const currentStep = computed(() => steps.value[currentStepIndex.value] ?? steps.value[0]);
 const currentStepProps = computed(() => currentStep.value?.getProps?.() ?? {});
 const progress = computed(() => {
@@ -241,6 +375,10 @@ const progress = computed(() => {
   return ((currentStepIndex.value + 1) / steps.value.length) * 100;
 });
 
+const selectedAnamneseId = computed(() => selectedAnamnese.value?.id ?? null);
+const shouldShowSummary = computed(() => viewMode.value === 'summary' && Boolean(selectedAnamnese.value));
+const canCancelEditing = computed(() => viewMode.value === 'form' && Boolean(selectedAnamnese.value));
+
 const sanitizePayload = (data) => {
   const plain = JSON.parse(JSON.stringify(data));
   plain.examesBioquimicos = (plain.examesBioquimicos || []).map(({ __key, ...item }) => item);
@@ -249,7 +387,7 @@ const sanitizePayload = (data) => {
 };
 
 const saveDraft = () => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || viewMode.value !== 'form') return;
   const snapshot = {
     step: currentStepIndex.value,
     form: sanitizePayload(form),
@@ -260,37 +398,68 @@ const saveDraft = () => {
 const rehydrateList = (items = []) => items.map((item) => ({ ...item, __key: generateKey() }));
 
 const loadDraft = () => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || selectedAnamnese.value) return;
   const raw = window.localStorage.getItem(STORAGE_KEY);
   if (!raw) return;
   try {
     const parsed = JSON.parse(raw);
-    const base = createInitialForm();
-    Object.keys(base).forEach((key) => {
-      if (key === 'examesBioquimicos' || key === 'refeicoes24h') {
-        return;
-      }
-      form[key] = parsed.form?.[key] ?? base[key];
-    });
-    form.examesBioquimicos = rehydrateList(parsed.form?.examesBioquimicos || []);
-    form.refeicoes24h = rehydrateList(parsed.form?.refeicoes24h || []);
+    hydrateFormFromAnamnese(parsed.form ?? createInitialForm());
     currentStepIndex.value = parsed.step ?? 0;
   } catch (error) {
     window.localStorage.removeItem(STORAGE_KEY);
   }
 };
 
-const resetForm = () => {
+const hydrateFormFromAnamnese = (data) => {
   const base = createInitialForm();
   Object.keys(base).forEach((key) => {
-    form[key] = base[key];
+    if (key === 'examesBioquimicos' || key === 'refeicoes24h') {
+      return;
+    }
+    form[key] = data?.[key] ?? base[key];
   });
-  form.examesBioquimicos = [];
-  form.refeicoes24h = [];
+  form.examesBioquimicos = rehydrateList(data?.examesBioquimicos || []);
+  form.refeicoes24h = rehydrateList(data?.refeicoes24h || []);
+};
+
+const summaryField = (key) => {
+  const value = selectedAnamnese.value?.[key];
+  return value && String(value).trim().length ? value : t('common.placeholders.empty');
+};
+
+const selectAnamnese = (item) => {
+  selectedAnamnese.value = item;
+  hydrateFormFromAnamnese(item);
+  viewMode.value = 'summary';
   currentStepIndex.value = 0;
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(STORAGE_KEY);
+};
+
+const editSelectedAnamnese = () => {
+  if (!selectedAnamnese.value) {
+    startNewAnamnese();
+    return;
   }
+  hydrateFormFromAnamnese(selectedAnamnese.value);
+  viewMode.value = 'form';
+  currentStepIndex.value = 0;
+};
+
+const startNewAnamnese = () => {
+  selectedAnamnese.value = null;
+  hydrateFormFromAnamnese(createInitialForm());
+  viewMode.value = 'form';
+  currentStepIndex.value = 0;
+  if (isClient.value && auth.user?.id) {
+    form.userId = auth.user.id;
+  }
+};
+
+const showSummary = () => {
+  if (selectedAnamnese.value) {
+    hydrateFormFromAnamnese(selectedAnamnese.value);
+  }
+  viewMode.value = 'summary';
+  currentStepIndex.value = 0;
 };
 
 const notifyValidation = (messageKey) => {
@@ -353,6 +522,49 @@ const exportPdf = () => {
   });
 };
 
+const loadAnamneses = async () => {
+  if (isClient.value && !auth.user?.id) {
+    return;
+  }
+  anamnesesLoading.value = true;
+  try {
+    const params = { size: 50 };
+    if (isClient.value && auth.user?.id) {
+      params.userId = auth.user.id;
+    }
+    const { data } = await AnamneseService.listAll(params);
+    const items = data?.content ?? data ?? [];
+    anamneses.value = items;
+    if (isClient.value) {
+      const existing = items[0] ?? null;
+      if (existing) {
+        selectedAnamnese.value = existing;
+        hydrateFormFromAnamnese(existing);
+        viewMode.value = 'summary';
+        currentStepIndex.value = 0;
+      } else if (viewMode.value === 'summary') {
+        startNewAnamnese();
+      }
+    } else if (selectedAnamnese.value) {
+      const match = items.find((item) => item.id === selectedAnamnese.value.id);
+      if (match) {
+        selectedAnamnese.value = match;
+        if (viewMode.value === 'summary') {
+          hydrateFormFromAnamnese(match);
+        }
+      }
+    }
+  } catch (error) {
+    notifications.push({
+      type: 'error',
+      title: t('anamnese.notifications.loadTitle'),
+      message: error.response?.data?.message ?? t('anamnese.notifications.loadMessage'),
+    });
+  } finally {
+    anamnesesLoading.value = false;
+  }
+};
+
 const saveAnamnese = async () => {
   if (!validateStep(steps.value.length - 1)) {
     currentStepIndex.value = steps.value.findIndex((step) => step.id === 'diagnostico');
@@ -361,37 +573,51 @@ const saveAnamnese = async () => {
   saving.value = true;
   try {
     const payload = sanitizePayload(form);
-    await AnamneseService.create(payload);
+    const response = form.id
+      ? await AnamneseService.update(payload)
+      : await AnamneseService.create(payload);
+    const saved = response.data ?? payload;
     notifications.push({
       type: 'success',
       title: t('notifications.success.title'),
       message: t('notifications.success.message'),
     });
-    resetForm();
+    selectedAnamnese.value = saved;
+    hydrateFormFromAnamnese(saved);
+    viewMode.value = 'summary';
+    window.localStorage.removeItem(STORAGE_KEY);
+    await loadAnamneses();
   } catch (error) {
-    // Erros são tratados pelo interceptor global
+    // handled globally
   } finally {
     saving.value = false;
   }
 };
 
 watch(form, saveDraft, { deep: true });
-watch(currentStepIndex, saveDraft);
+watch(currentStepIndex, () => {
+  if (viewMode.value === 'form') {
+    saveDraft();
+  }
+});
 
 watch(
   () => auth.user?.id,
   (id) => {
-    if (!form.userId && id) {
-      form.userId = id;
+    if (isClient.value) {
+      form.userId = id ?? null;
+    }
+    if (id) {
+      void loadAnamneses();
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
   () => auth.user,
   (user) => {
-    if (!user || isAdmin.value) {
+    if (!user || isAdmin.value || selectedAnamnese.value) {
       return;
     }
     if (!form.paciente) {
@@ -419,10 +645,13 @@ watch(
       form.objetivoConsulta = user.consultationGoal;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
-onMounted(() => {
-  loadDraft();
+onMounted(async () => {
+  await loadAnamneses();
+  if (!selectedAnamnese.value) {
+    loadDraft();
+  }
 });
 </script>

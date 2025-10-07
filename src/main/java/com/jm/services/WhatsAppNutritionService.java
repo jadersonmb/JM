@@ -11,12 +11,14 @@ import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
 import com.jm.entity.FoodCategory;
 import com.jm.entity.NutritionAnalysis;
+import com.jm.entity.Users;
 import com.jm.entity.WhatsAppMessage;
 import com.jm.repository.FoodCategoryRepository;
 import com.jm.repository.NutritionAnalysisRepository;
 import com.jm.repository.WhatsAppMessageRepository;
 import com.jm.speciation.WhatsAppSpecification;
 
+import com.jm.execption.JMException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -309,8 +312,18 @@ public class WhatsAppNutritionService {
     }
 
     @Transactional(readOnly = true)
-    public List<WhatsAppMessageFeedDTO> getRecentMessagesWithFilter(WhatsAppMessageDTO filter) {
+    public List<WhatsAppMessageFeedDTO> getRecentMessagesWithFilter(WhatsAppMessageDTO filter, UUID userId) {
         List<WhatsAppMessage> messages = messageRepository.findAll(WhatsAppSpecification.search(filter));
+
+        Optional<String> normalizedPhone = resolveUserPhone(userId);
+        if (normalizedPhone.isPresent()) {
+            String expected = normalizedPhone.get();
+            messages = messages.stream()
+                    .filter(message -> phoneMatches(expected, message.getFromPhone())
+                            || phoneMatches(expected, message.getToPhone()))
+                    .collect(Collectors.toList());
+        }
+
         return messages.stream().map(this::toFeedDto).collect(Collectors.toList());
     }
 
@@ -352,8 +365,18 @@ public class WhatsAppNutritionService {
     }
 
     @Transactional(readOnly = true)
-    public NutritionDashboardDTO getDashboard() {
+    public NutritionDashboardDTO getDashboard(UUID userId) {
         List<NutritionAnalysis> analyses = nutritionAnalysisRepository.findTop20ByOrderByCreatedAtDesc();
+
+        Optional<String> normalizedPhone = resolveUserPhone(userId);
+        if (normalizedPhone.isPresent()) {
+            String expected = normalizedPhone.get();
+            analyses = analyses.stream()
+                    .filter(analysis -> analysis.getMessage() != null
+                            && phoneMatches(expected, analysis.getMessage().getFromPhone()))
+                    .collect(Collectors.toList());
+        }
+
         double totalCalories = analyses.stream().mapToDouble(a -> optionalDouble(a.getCalories())).sum();
         double totalProtein = analyses.stream().mapToDouble(a -> optionalDouble(a.getProtein())).sum();
         double totalCarbs = analyses.stream().mapToDouble(a -> optionalDouble(a.getCarbs())).sum();
@@ -423,6 +446,37 @@ public class WhatsAppNutritionService {
 
     private double optionalDouble(BigDecimal value) {
         return value == null ? 0.0 : value.doubleValue();
+    }
+
+    private Optional<String> resolveUserPhone(UUID userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        try {
+            Users user = userService.findEntityById(userId);
+            if (!StringUtils.hasText(user.getPhoneNumber())) {
+                return Optional.empty();
+            }
+            return Optional.of(normalizePhone(user.getPhoneNumber()));
+        } catch (JMException ex) {
+            logger.warn("Unable to resolve user {} for nutrition assistant filter", userId, ex);
+            return Optional.empty();
+        }
+    }
+
+    private String normalizePhone(String phone) {
+        return phone == null ? null : phone.replaceAll("\\D", "");
+    }
+
+    private boolean phoneMatches(String expected, String candidate) {
+        if (!StringUtils.hasText(expected) || !StringUtils.hasText(candidate)) {
+            return false;
+        }
+        String normalizedCandidate = normalizePhone(candidate);
+        if (!StringUtils.hasText(normalizedCandidate)) {
+            return false;
+        }
+        return normalizedCandidate.equals(expected) || normalizedCandidate.endsWith(expected);
     }
 
     @Transactional(readOnly = true)
