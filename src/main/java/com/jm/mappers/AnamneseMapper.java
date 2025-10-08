@@ -152,9 +152,11 @@ public interface AnamneseMapper {
         if (user.getState() != null && !user.getState().isBlank()) {
             parts.add(user.getState());
         }
-        if (user.getCountry() != null && !user.getCountry().isBlank()) {
-            parts.add(user.getCountry());
-        }
+        /*
+         * if (user.getCountry() != null && !user.getCountry().isBlank()) {
+         * parts.add(user.getCountry());
+         * }
+         */
         return String.join(", ", parts);
     }
 

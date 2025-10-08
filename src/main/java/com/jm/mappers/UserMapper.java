@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserMapper {
 
+    private CountryMapper countryMapper = new CountryMapperImpl() {
+    };
+
     public UserDTO toDTO(Users entity) {
         if (entity == null) {
             return null;
@@ -17,7 +20,6 @@ public class UserMapper {
                 .email(entity.getEmail())
                 .lastName(entity.getLastName())
                 .city(entity.getCity())
-                .country(entity.getCountry())
                 .documentNumber(entity.getDocumentNumber())
                 .phoneNumber(entity.getPhoneNumber())
                 .postalCode(entity.getPostalCode())
@@ -32,6 +34,7 @@ public class UserMapper {
                 .education(entity.getEducation())
                 .occupation(entity.getOccupation())
                 .consultationGoal(entity.getConsultationGoal())
+                .countryDTO(countryMapper.toDTO(entity.getCountry()))
                 .build();
     }
 
@@ -45,7 +48,6 @@ public class UserMapper {
                 .email(userDTO.getEmail())
                 .lastName(userDTO.getLastName())
                 .city(userDTO.getCity())
-                .country(userDTO.getCountry())
                 .documentNumber(userDTO.getDocumentNumber())
                 .phoneNumber(userDTO.getPhoneNumber())
                 .postalCode(userDTO.getPostalCode())

@@ -1,10 +1,12 @@
 package com.jm.services;
 
 import com.jm.dto.UserDTO;
+import com.jm.entity.Country;
 import com.jm.entity.Users;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.UserMapper;
+import com.jm.repository.CountryRepository;
 import com.jm.repository.UserRepository;
 import com.jm.speciation.UserSpeciation;
 import org.slf4j.Logger;
@@ -27,13 +29,15 @@ public class UserService {
     private final UserMapper mapper;
     private final MessageSource messageSource;
     private final PasswordEncoder passwordEncoder;
+    private final CountryRepository countriesRepository;
 
     public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, CountryRepository countriesRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
         this.passwordEncoder = passwordEncoder;
+        this.countriesRepository = countriesRepository;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -42,6 +46,7 @@ public class UserService {
 
     public UserDTO createUser(UserDTO dto) {
         Users entity = mapper.toEntity(dto);
+        entity.setCountry(countriesRepository.findById(dto.getCountryId()).orElse(null));
         if (!StringUtils.hasText(entity.getPassword()) && dto.getId() != null) {
             repository.findById(dto.getId()).ifPresent(existing -> entity.setPassword(existing.getPassword()));
         }

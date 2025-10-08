@@ -27,7 +27,8 @@ public class UserDTO {
     private String city;
     private String state;
     private String postalCode;
-    private String country;
+    private UUID countryId;
+    private CountryDTO countryDTO;
     private String password;
     private String avatarUrl;
     private Users.Type type;

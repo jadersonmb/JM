@@ -10,6 +10,7 @@ import org.hibernate.annotations.Parameter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.time.LocalDate;
 
@@ -44,7 +45,9 @@ public class Users {
         private String city;
         private String state;
         private String postalCode;
-        private String country;
+        @OneToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "country_id", referencedColumnName = "id", nullable = false, unique = true)
+        private Country country;
         private String avatarUrl;
 
         private String stripeCustomerId;

@@ -2,202 +2,6 @@
   <div class="space-y-8">
     <section class="card space-y-6">
       <header>
-        <h2 class="text-xl font-semibold text-slate-900">{{ t('settings.sections.profile.title') }}</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ t('settings.sections.profile.subtitle') }}</p>
-      </header>
-
-      <form class="space-y-6" @submit.prevent="saveProfile">
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="first-name">
-              {{ t('settings.profile.fields.firstName.label') }}
-            </label>
-            <input
-              id="first-name"
-              v-model="userForm.name"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.firstName.placeholder')"
-              autocomplete="given-name"
-              required
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="last-name">
-              {{ t('settings.profile.fields.lastName.label') }}
-            </label>
-            <input
-              id="last-name"
-              v-model="userForm.lastName"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.lastName.placeholder')"
-              autocomplete="family-name"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="email">
-              {{ t('settings.profile.fields.email.label') }}
-            </label>
-            <input
-              id="email"
-              v-model="userForm.email"
-              type="email"
-              class="input"
-              autocomplete="email"
-              disabled
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="phone">
-              {{ t('settings.profile.fields.phone.label') }}
-            </label>
-            <input
-              id="phone"
-              v-model="userForm.phoneNumber"
-              type="tel"
-              class="input"
-              :placeholder="t('settings.profile.fields.phone.placeholder')"
-              autocomplete="tel"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="document">
-              {{ t('settings.profile.fields.document.label') }}
-            </label>
-            <input
-              id="document"
-              v-model="userForm.documentNumber"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.document.placeholder')"
-              autocomplete="off"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="avatar">
-              {{ t('settings.profile.fields.avatar.label') }}
-            </label>
-            <input
-              id="avatar"
-              v-model="userForm.avatarUrl"
-              type="url"
-              class="input"
-              :placeholder="t('settings.profile.fields.avatar.placeholder')"
-              autocomplete="off"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-3">
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="city">
-              {{ t('settings.profile.fields.city.label') }}
-            </label>
-            <input
-              id="city"
-              v-model="userForm.city"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.city.placeholder')"
-              autocomplete="address-level2"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="state">
-              {{ t('settings.profile.fields.state.label') }}
-            </label>
-            <input
-              id="state"
-              v-model="userForm.state"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.state.placeholder')"
-              autocomplete="address-level1"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="postal-code">
-              {{ t('settings.profile.fields.postalCode.label') }}
-            </label>
-            <input
-              id="postal-code"
-              v-model="userForm.postalCode"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.postalCode.placeholder')"
-              autocomplete="postal-code"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-        </div>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="street">
-              {{ t('settings.profile.fields.street.label') }}
-            </label>
-            <input
-              id="street"
-              v-model="userForm.street"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.street.placeholder')"
-              autocomplete="street-address"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-          <div>
-            <label class="mb-1 block text-sm font-semibold text-slate-700" for="country">
-              {{ t('settings.profile.fields.country.label') }}
-            </label>
-            <input
-              id="country"
-              v-model="userForm.country"
-              type="text"
-              class="input"
-              :placeholder="t('settings.profile.fields.country.placeholder')"
-              autocomplete="country-name"
-              :disabled="loadingUser || savingUser"
-            />
-          </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
-          <button
-            type="button"
-            class="btn-secondary"
-            @click="resetProfile"
-            :disabled="savingUser || loadingUser || !isUserDirty"
-          >
-            {{ t('settings.common.actions.revert') }}
-          </button>
-          <button type="submit" class="btn-primary" :disabled="savingUser || !isUserDirty">
-            <span v-if="savingUser" class="flex items-center gap-2">
-              <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-              {{ t('settings.common.actions.saving') }}
-            </span>
-            <span v-else>{{ t('settings.profile.actions.save') }}</span>
-          </button>
-        </div>
-      </form>
-    </section>
-
-    <section class="card space-y-6">
-      <header>
         <h2 class="text-xl font-semibold text-slate-900">{{ t('settings.sections.preferences.title') }}</h2>
         <p class="mt-1 text-sm text-slate-500">{{ t('settings.sections.preferences.subtitle') }}</p>
       </header>
@@ -295,7 +99,6 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
-import { getUser, updateUser } from '@/services/users';
 import { getUserSettings, updateUserSettings } from '@/services/settings';
 import {
   MoonIcon,
@@ -310,26 +113,8 @@ import { useI18n } from 'vue-i18n';
 const auth = useAuthStore();
 const notifications = useNotificationStore();
 const { t } = useI18n();
-
-const loadingUser = ref(false);
-const savingUser = ref(false);
 const loadingSettings = ref(false);
 const savingSettings = ref(false);
-
-const emptyUser = () => ({
-  id: '',
-  name: '',
-  lastName: '',
-  email: '',
-  phoneNumber: '',
-  documentNumber: '',
-  avatarUrl: '',
-  street: '',
-  city: '',
-  state: '',
-  postalCode: '',
-  country: '',
-});
 
 const emptySettings = () => ({
   id: null,
@@ -344,10 +129,7 @@ const emptySettings = () => ({
   timezone: 'America/Sao_Paulo',
 });
 
-const userForm = reactive(emptyUser());
 const settings = reactive(emptySettings());
-
-const initialUser = ref(structuredCloneIfPossible(emptyUser()));
 const initialSettings = ref(structuredCloneIfPossible(emptySettings()));
 
 const languageOptions = computed(() => [
@@ -402,9 +184,6 @@ const toggleOptions = computed(() => [
   },
 ]);
 
-const isUserDirty = computed(() =>
-  JSON.stringify(userForm) !== JSON.stringify(initialUser.value ?? {})
-);
 
 const isSettingsDirty = computed(() =>
   JSON.stringify(settings) !== JSON.stringify(initialSettings.value ?? {})
@@ -430,31 +209,11 @@ function structuredCloneIfPossible(value) {
   }
 }
 
-const mapUserData = (data) => ({
-  ...emptyUser(),
-  ...data,
-});
-
 const mapSettingsData = (data) => ({
   ...emptySettings(),
   ...data,
   userId: auth.user?.id ?? data?.userId ?? null,
 });
-
-const loadUser = async () => {
-  if (!auth.user?.id) {
-    return;
-  }
-  loadingUser.value = true;
-  try {
-    const { data } = await getUser(auth.user.id);
-    const mapped = mapUserData(data ?? {});
-    Object.assign(userForm, mapped);
-    initialUser.value = structuredCloneIfPossible(mapped);
-  } finally {
-    loadingUser.value = false;
-  }
-};
 
 const loadSettings = async () => {
   if (!auth.user?.id) {
@@ -468,31 +227,6 @@ const loadSettings = async () => {
     initialSettings.value = structuredCloneIfPossible(mapped);
   } finally {
     loadingSettings.value = false;
-  }
-};
-
-const saveProfile = async () => {
-  if (!auth.user?.id || !isUserDirty.value) {
-    return;
-  }
-  savingUser.value = true;
-  try {
-    const payload = { ...userForm };
-    const { data } = await updateUser(payload);
-    const mapped = mapUserData(data ?? payload);
-    Object.assign(userForm, mapped);
-    initialUser.value = structuredCloneIfPossible(mapped);
-    auth.user = { ...(auth.user ?? {}), ...mapped };
-    if (typeof auth.persist === 'function') {
-      auth.persist();
-    }
-    notifications.push({
-      type: 'success',
-      title: t('settings.profile.toast.title'),
-      message: t('settings.profile.toast.message'),
-    });
-  } finally {
-    savingUser.value = false;
   }
 };
 
@@ -518,13 +252,6 @@ const saveSettings = async () => {
   }
 };
 
-const resetProfile = () => {
-  if (!initialUser.value) {
-    return;
-  }
-  Object.assign(userForm, structuredCloneIfPossible(initialUser.value));
-};
-
 const resetSettings = () => {
   if (!initialSettings.value) {
     return;
@@ -541,6 +268,6 @@ const toggleSetting = (key) => {
 };
 
 onMounted(async () => {
-  await Promise.all([loadUser(), loadSettings()]);
+  await Promise.all([loadSettings()]);
 });
 </script>
