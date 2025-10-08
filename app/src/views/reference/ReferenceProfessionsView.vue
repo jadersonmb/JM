@@ -38,17 +38,17 @@
 
       <template #filters>
         <div>
-          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
             {{ t('common.actions.search') }}
           </label>
           <div class="relative mt-1">
             <MagnifyingGlassIcon
-              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
             />
             <input
               v-model="filters.search"
               type="search"
-              class="w-full rounded-xl border border-slate-200 px-10 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500"
+              class="w-full rounded-xl border border-slate-200 px-10 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
               :placeholder="t('common.actions.search')"
             />
           </div>

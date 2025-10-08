@@ -2,8 +2,8 @@
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.title') }}</h1>
-        <p class="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
+        <h1 class="text-2xl font-semibold text-blue-600 font-bold">{{ t('anamnese.title') }}</h1>
+        <p class="mt-1 max-w-3xl text-sm text-slate-500">
           {{ t('anamnese.subtitle') }}
         </p>
       </div>
@@ -135,8 +135,8 @@
                 {{ index + 1 }}
               </span>
               <div>
-                <p class="dark:text-slate-100">{{ step.title }}</p>
-                <p class="text-xs font-normal text-slate-400 dark:text-slate-500">{{ step.description }}</p>
+                <p class="">{{ step.title }}</p>
+                <p class="text-xs font-normal text-slate-400">{{ step.description }}</p>
               </div>
             </button>
           </div>

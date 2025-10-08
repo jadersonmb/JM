@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-6">
     <header class="space-y-1">
-      <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+      <h1 class="text-2xl font-semibold text-slate-900">
         {{ t('reference.title') }}
       </h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
+      <p class="text-sm text-slate-500">
         {{ t('reference.countries.subtitle') }}
       </p>
     </header>
@@ -17,7 +17,7 @@
         class="rounded-full px-4 py-2 text-sm font-semibold transition"
         :class="isActive(link.name)
           ? 'bg-primary-600 text-white shadow-sm'
-          : 'border border-slate-200 text-slate-600 hover:border-primary-300 hover:text-primary-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-primary-400'
+          : 'border border-slate-200 text-slate-600 hover:border-primary-300 hover:text-primary-600'
         "
       >
         {{ link.label }}

@@ -27,23 +27,23 @@
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.country') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.country') }}</label>
         <select v-model="selectedCountryId" :disabled="referenceLoading.general"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.name }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.city') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.city') }}</label>
         <select v-model="selectedCityId" :disabled="!selectedCountryId || referenceLoading.cities"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.birthDate') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.birthDate') }}</label>
         <input v-model="form.dataNascimento" type="date"
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
       </div>
@@ -60,17 +60,17 @@
           class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.education') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.education') }}</label>
         <select v-model="selectedEducationLevelId" :disabled="referenceLoading.general"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="level in educationLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.occupation') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.occupation') }}</label>
         <select v-model="selectedProfessionId" :disabled="referenceLoading.general"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="profession in professions" :key="profession.id" :value="profession.id">{{ profession.name }}</option>
         </select>

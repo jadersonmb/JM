@@ -1,13 +1,13 @@
 <template>
   <transition name="modal">
     <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-10">
-      <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
-        <header class="flex items-start justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+      <div class="w-full max-w-xl rounded-3xl bg-white shadow-2xl">
+        <header class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h3>
-            <p v-if="description" class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ description }}</p>
+            <h3 class="text-lg font-semibold text-slate-900">{{ title }}</h3>
+            <p v-if="description" class="mt-1 text-sm text-slate-500">{{ description }}</p>
           </div>
-          <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+          <button type="button" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             @click="close">
             <XMarkIcon class="h-5 w-5" />
           </button>
@@ -15,7 +15,7 @@
 
         <form class="grid gap-5 px-6 py-6" @submit.prevent="handleSubmit">
           <div v-for="field in normalizedFields" :key="field.key" class="space-y-1">
-            <label :for="field.key" class="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            <label :for="field.key" class="block text-sm font-medium text-slate-700">
               {{ field.label }}
               <span v-if="field.required" class="text-red-500">*</span>
             </label>
@@ -32,7 +32,7 @@
                 :rows="field.rows || 3" :required="field.required" />
             </template>
             <template v-else-if="field.type === 'checkbox'">
-              <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <label class="inline-flex items-center gap-2 text-sm text-slate-600">
                 <input :id="field.key" v-model="form[field.key]" type="checkbox"
                   class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
                 {{ field.checkboxLabel || field.label }}
@@ -43,10 +43,10 @@
                 :type="field.type === 'number' ? 'number' : field.type || 'text'"
                 class="input" :required="field.required" :min="field.min" :max="field.max" :step="field.step" />
             </template>
-            <p v-if="field.helper" class="text-xs text-slate-400 dark:text-slate-500">{{ field.helper }}</p>
+            <p v-if="field.helper" class="text-xs text-slate-400">{{ field.helper }}</p>
           </div>
 
-          <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5 dark:border-slate-700">
+          <div class="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
             <button type="button" class="btn-secondary" @click="close">{{ cancelLabel }}</button>
             <button type="submit" class="btn-primary" :disabled="submitting">
               <span v-if="submitting" class="flex items-center gap-2">

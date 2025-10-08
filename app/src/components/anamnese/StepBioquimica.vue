@@ -14,9 +14,9 @@
       <div v-for="(exame, index) in form.examesBioquimicos" :key="exame.__key || exame.id || index" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.biochemistry.fields.name') }} <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.biochemistry.fields.name') }} <span class="text-red-500">*</span></label>
             <input v-model="exame.nomeExame" type="text" required :list="`biochemical-exams-${index}`"
-              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+              class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200" />
             <datalist :id="`biochemical-exams-${index}`">
               <option v-for="option in biochemicalExams" :key="option.id ?? option.code ?? option.name" :value="option.name">
                 {{ option.code ? `${option.name} (${option.code})` : option.name }}

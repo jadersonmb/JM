@@ -12,7 +12,7 @@
       <div class="flex h-20 items-center justify-between px-6">
         <AppLogo />
         <button
-          class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300 lg:hidden"
+          class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 lg:hidden"
           @click="mobileNavOpen = false"
         >
           <XMarkIcon class="h-6 w-6" />
@@ -20,23 +20,23 @@
       </div>
 
       <nav class="flex-1 space-y-3 overflow-y-auto px-4 pb-10">
-        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
           {{ t('menu.title') }}
         </p>
         <div v-for="item in navigation" :key="item.name" class="mt-1">
           <template v-if="item.children?.length">
             <button
               type="button"
-              class="group flex w-full items-center justify-between rounded-xl border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+              class="group flex w-full items-center justify-between rounded-xl border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
               @click="toggleGroup(item.name)"
             >
               <span class="flex items-center gap-3">
                 <component :is="item.icon" class="h-5 w-5"
-                  :class="item.active ? 'text-primary-500' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-300'" />
+                  :class="item.active ? 'text-primary-500' : 'text-slate-400 group-hover:text-slate-500'" />
                 {{ item.label }}
               </span>
               <ChevronDownIcon
-                class="h-4 w-4 text-slate-400 transition-transform dark:text-slate-500"
+                class="h-4 w-4 text-slate-400 transition-transform"
                 :class="isGroupExpanded(item) ? 'rotate-180 text-primary-500' : ''"
               />
             </button>
@@ -48,8 +48,8 @@
                   :to="child.to"
                   class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition"
                   :class="child.active
-                    ? 'bg-primary-50 text-primary-600 shadow-sm dark:bg-primary-500/20 dark:text-primary-200'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'"
+                    ? 'bg-primary-50 text-primary-600 shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
                   @click="mobileNavOpen = false"
                 >
                   <span>{{ child.label }}</span>
@@ -62,12 +62,12 @@
               :to="item.to"
               class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition"
               :class="item.active
-                ? 'bg-primary-50 text-primary-600 shadow-sm dark:bg-primary-500/20 dark:text-primary-200'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'"
+                ? 'bg-primary-50 text-primary-600 shadow-sm'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
               @click="mobileNavOpen = false"
             >
               <component :is="item.icon" class="h-5 w-5"
-                :class="item.active ? 'text-primary-600 dark:text-primary-300' : 'text-slate-400 group-hover:text-slate-500 dark:text-slate-500 dark:group-hover:text-slate-300'" />
+                :class="item.active ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-500'" />
               <span>{{ item.label }}</span>
             </RouterLink>
           </template>
@@ -120,7 +120,7 @@
                 @click="selectedLocale = option.code"
               >
                 <img aria-hidden="true" :src="option.url" :alt="option.code"/>
-                <span class="sr-only">{{ option.label  }}</span>
+                <span class="sr-only">{{ option.label }}</span>
               </button>
             </div>
             <button type="button"
