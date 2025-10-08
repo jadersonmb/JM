@@ -8,6 +8,137 @@ export default {
     settings: 'Configurações',
     profile: 'Perfil',
   },
+  settings: {
+    sections: {
+      profile: {
+        title: 'Configurações do perfil',
+        subtitle: 'Gerencie os dados pessoais utilizados em notificações e recibos.',
+      },
+      preferences: {
+        title: 'Preferências da conta',
+        subtitle: 'Personalize idioma, fuso horário e alertas recebidos.',
+      },
+    },
+    common: {
+      actions: {
+        revert: 'Reverter',
+        saving: 'Salvando...',
+      },
+    },
+    profile: {
+      fields: {
+        firstName: {
+          label: 'Nome',
+          placeholder: 'Seu nome',
+        },
+        lastName: {
+          label: 'Sobrenome',
+          placeholder: 'Seu sobrenome',
+        },
+        email: {
+          label: 'E-mail',
+        },
+        phone: {
+          label: 'Telefone',
+          placeholder: '(11) 99999-9999',
+        },
+        document: {
+          label: 'Documento',
+          placeholder: 'CPF ou outro documento',
+        },
+        avatar: {
+          label: 'Avatar (URL)',
+          placeholder: 'https://...',
+        },
+        city: {
+          label: 'Cidade',
+          placeholder: 'São Paulo',
+        },
+        state: {
+          label: 'Estado',
+          placeholder: 'SP',
+        },
+        postalCode: {
+          label: 'CEP',
+          placeholder: '00000-000',
+        },
+        street: {
+          label: 'Endereço',
+          placeholder: 'Rua, número e complemento',
+        },
+        country: {
+          label: 'País',
+          placeholder: 'Brasil',
+        },
+      },
+      actions: {
+        save: 'Salvar alterações',
+      },
+      toast: {
+        title: 'Perfil atualizado',
+        message: 'Suas informações pessoais foram salvas com sucesso.',
+      },
+    },
+    preferences: {
+      fields: {
+        language: {
+          label: 'Idioma',
+        },
+        timezone: {
+          label: 'Fuso horário',
+        },
+      },
+      sections: {
+        notifications: 'Notificações e exibição',
+      },
+      toggles: {
+        darkMode: {
+          label: 'Tema escuro',
+          description: 'Ativa o modo escuro por padrão em todos os dispositivos.',
+        },
+        emailNotifications: {
+          label: 'Notificações por e-mail',
+          description: 'Receba alertas e atualizações importantes no seu e-mail.',
+        },
+        whatsappNotifications: {
+          label: 'Notificações por WhatsApp',
+          description: 'Seja avisado diretamente pelo WhatsApp para ações urgentes.',
+        },
+        pushNotifications: {
+          label: 'Notificações push',
+          description: 'Exibe alertas no navegador ou aplicativo quando houver novidades.',
+        },
+        securityAlerts: {
+          label: 'Alertas de segurança',
+          description: 'Informe-me sempre que acessos suspeitos forem detectados.',
+        },
+        productUpdates: {
+          label: 'Novidades do produto',
+          description: 'Saiba quando lançarmos recursos e integrações relevantes.',
+        },
+      },
+      actions: {
+        save: 'Salvar preferências',
+      },
+      toast: {
+        title: 'Preferências atualizadas',
+        message: 'Suas configurações personalizadas foram salvas.',
+      },
+    },
+    options: {
+      languages: {
+        ptBR: 'Português (Brasil)',
+        enUS: 'English (United States)',
+        esES: 'Español (España)',
+      },
+      timezones: {
+        americaSaoPaulo: 'America/São Paulo (GMT-03)',
+        americaNewYork: 'America/New York (GMT-05)',
+        europeLisbon: 'Europe/Lisbon (GMT+01)',
+        utc: 'UTC (Tempo Universal Coordenado)',
+      },
+    },
+  },
   menu: {
     title: 'Menu',
     anamnese: 'Anamnese Nutricional',
