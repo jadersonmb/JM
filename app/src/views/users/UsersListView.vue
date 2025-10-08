@@ -186,7 +186,7 @@ const filters = reactive({
   professionId: '',
   sortField: 'name',
   sortDirection: 'desc',
-  page: 1,
+  page: 0,
   perPage: 10,
 });
 
@@ -210,7 +210,7 @@ watch(searchInput, (value) => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     filters.search = value;
-    filters.page = 1;
+    filters.page = 0;
     fetchUsers();
   }, 300);
 });
@@ -225,7 +225,7 @@ watch(
     filters.professionId,
   ],
   () => {
-    filters.page = 1;
+    filters.page = 0;
     fetchUsers();
   }
 );

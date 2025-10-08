@@ -52,7 +52,7 @@ public class UserController {
         logger.debug("REST request to update User : {}", userDTO);
 
         UserDTO userSaveDTO = userService.findById(userDTO.getId());
-        if(Objects.nonNull(userSaveDTO.getId())) {
+        if (Objects.nonNull(userSaveDTO.getId())) {
             BeanUtils.copyProperties(userDTO, userSaveDTO, "id");
             UserDTO updated = userService.createUser(userSaveDTO);
             return ResponseEntity.ok(updated);
@@ -60,7 +60,14 @@ public class UserController {
         return ResponseEntity.ok(userSaveDTO);
     }
 
-    @ExceptionHandler({JMException.class})
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        logger.debug("REST request to delete User : {}", id);
+        userService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler({ JMException.class })
     public ResponseEntity<?> Exception(JMException ex) {
         Problem problem = createProblemBuild(ex.getStatus(), ex.getDetails(), ex.getType(), ex.getTitle())
                 .build();

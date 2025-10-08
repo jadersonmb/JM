@@ -136,4 +136,9 @@ public class UserService {
                 ? professionRepository.findById(dto.getProfessionId()).orElse(null)
                 : null);
     }
+
+    public void delete(UUID id) {
+        Users entity = repository.findById(id).orElseThrow(this::userNotFound);
+        repository.delete(entity);
+    }
 }
