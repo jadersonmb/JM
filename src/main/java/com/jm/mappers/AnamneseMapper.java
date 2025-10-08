@@ -46,13 +46,19 @@ public class AnamneseMapper {
         if (entity.getUser() != null) {
             Users user = entity.getUser();
             dto.setUserId(user.getId());
+            dto.setCountryId(user.getCountry() != null ? user.getCountry().getId() : null);
+            dto.setCountryName(user.getCountry() != null ? user.getCountry().getName() : null);
+            dto.setCityId(user.getCity() != null ? user.getCity().getId() : null);
+            dto.setCityName(user.getCity() != null ? user.getCity().getName() : null);
+            dto.setEducationLevelId(user.getEducationLevel() != null ? user.getEducationLevel().getId() : null);
+            dto.setProfessionId(user.getProfession() != null ? user.getProfession().getId() : null);
             dto.setPaciente(buildFullName(user));
             dto.setEndereco(buildAddress(user));
             dto.setDataNascimento(user.getBirthDate());
             dto.setIdade(user.getAge());
             dto.setTelefone(user.getPhoneNumber());
-            dto.setEscolaridade(user.getEducationLevel() != null ? user.getEducationLevel().getName() : null);
-            dto.setProfissao(user.getProfession() != null ? user.getProfession().getName() : null);
+            dto.setEscolaridade(user.getEducationLevel() != null ? user.getEducationLevel().getName() : dto.getEscolaridade());
+            dto.setProfissao(user.getProfession() != null ? user.getProfession().getName() : dto.getProfissao());
             dto.setObjetivoConsulta(user.getConsultationGoal());
         }
 

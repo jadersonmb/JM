@@ -1,8 +1,7 @@
 package com.jm.mappers;
 
-import com.jm.dto.CountryDTO;
-import com.jm.entity.Country;
-
+import com.jm.dto.ProfessionDTO;
+import com.jm.entity.Profession;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
@@ -12,13 +11,12 @@ import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         builder = @Builder(disableBuilder = true))
-public interface CountryMapper {
+public interface ProfessionMapper {
 
-    CountryDTO toDTO(Country entity);
+    ProfessionDTO toDTO(Profession entity);
 
-    Country toEntity(CountryDTO dto);
+    Profession toEntity(ProfessionDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromDto(CountryDTO dto, @MappingTarget Country entity);
-
+    void updateEntityFromDto(ProfessionDTO dto, @MappingTarget Profession entity);
 }

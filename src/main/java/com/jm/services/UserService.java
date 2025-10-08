@@ -55,23 +55,22 @@ public class UserService {
     }
 
     public UserDTO createUser(UserDTO dto) {
-        Users entity = mapper.toEntity(dto);
-        entity.setCountry(
-                dto.getCountryId() != null ? countriesRepository.findById(dto.getCountryId()).orElse(null) : null);
-        entity.setCity(dto.getCityId() != null ? cityRepository.findById(dto.getCityId()).orElse(null) : null);
-        entity.setEducationLevel(dto.getEducationLevelId() != null
-                ? educationLevelRepository.findById(dto.getEducationLevelId()).orElse(null)
-                : null);
-        entity.setProfession(dto.getProfessionId() != null
-                ? professionRepository.findById(dto.getProfessionId()).orElse(null)
-                : null);
-        if (!StringUtils.hasText(entity.getPassword()) && dto.getId() != null) {
-            repository.findById(dto.getId()).ifPresent(existing -> entity.setPassword(existing.getPassword()));
+        Users entity;
+        if (dto.getId() != null) {
+            entity = repository.findById(dto.getId()).orElseThrow(this::userNotFound);
+            mapper.updateEntityFromDto(dto, entity);
+        } else {
+            entity = mapper.toEntity(dto);
         }
+
+        applyReferenceData(entity, dto);
+
         encodePasswordIfPresent(entity, dto.getPassword());
+
         if (entity.getType() == null) {
             entity.setType(Users.Type.CLIENT);
         }
+
         Users saved = repository.save(entity);
         logger.debug("User {} saved with id {}", saved.getEmail(), saved.getId());
         return mapper.toDTO(saved);
@@ -123,5 +122,18 @@ public class UserService {
         if (StringUtils.hasText(rawPassword)) {
             entity.setPassword(passwordEncoder.encode(rawPassword));
         }
+    }
+
+    private void applyReferenceData(Users entity, UserDTO dto) {
+        entity.setCountry(dto.getCountryId() != null
+                ? countriesRepository.findById(dto.getCountryId()).orElse(null)
+                : null);
+        entity.setCity(dto.getCityId() != null ? cityRepository.findById(dto.getCityId()).orElse(null) : null);
+        entity.setEducationLevel(dto.getEducationLevelId() != null
+                ? educationLevelRepository.findById(dto.getEducationLevelId()).orElse(null)
+                : null);
+        entity.setProfession(dto.getProfessionId() != null
+                ? professionRepository.findById(dto.getProfessionId()).orElse(null)
+                : null);
     }
 }

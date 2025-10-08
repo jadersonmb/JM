@@ -16,6 +16,7 @@ public class CityDTO {
 
     private UUID id;
     private UUID countryId;
+    private String countryName;
     private String stateCode;
     private String stateName;
     private String cityCode;
@@ -25,4 +26,6 @@ public class CityDTO {
     private Integer population;
     private String timezone;
     private Boolean capital;
+    private Boolean active;
+    private String language;
 }

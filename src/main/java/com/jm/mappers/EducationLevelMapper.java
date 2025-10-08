@@ -1,8 +1,7 @@
 package com.jm.mappers;
 
-import com.jm.dto.CountryDTO;
-import com.jm.entity.Country;
-
+import com.jm.dto.EducationLevelDTO;
+import com.jm.entity.EducationLevel;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
@@ -12,13 +11,12 @@ import org.mapstruct.ReportingPolicy;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         builder = @Builder(disableBuilder = true))
-public interface CountryMapper {
+public interface EducationLevelMapper {
 
-    CountryDTO toDTO(Country entity);
+    EducationLevelDTO toDTO(EducationLevel entity);
 
-    Country toEntity(CountryDTO dto);
+    EducationLevel toEntity(EducationLevelDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-    void updateEntityFromDto(CountryDTO dto, @MappingTarget Country entity);
-
+    void updateEntityFromDto(EducationLevelDTO dto, @MappingTarget EducationLevel entity);
 }
