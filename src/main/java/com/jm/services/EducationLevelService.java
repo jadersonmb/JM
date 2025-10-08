@@ -22,10 +22,10 @@ public class EducationLevelService {
     public List<EducationLevelDTO> findAll(String language) {
         Map<UUID, EducationLevel> accumulator = new LinkedHashMap<>();
         if (StringUtils.hasText(language)) {
-            repository.findByLanguageIgnoreCaseOrLanguageIsNullOrderBySortOrderAscNameAsc(language)
+            repository.findByLanguageIgnoreCaseOrLanguageIsNullOrderByNameAsc(language)
                     .forEach(level -> accumulator.put(level.getId(), level));
         } else {
-            repository.findAllByOrderBySortOrderAscNameAsc()
+            repository.findAllByOrderByNameAsc()
                     .forEach(level -> accumulator.put(level.getId(), level));
         }
         return accumulator.values().stream()
@@ -39,7 +39,6 @@ public class EducationLevelService {
                 .code(entity.getCode())
                 .name(entity.getName())
                 .description(entity.getDescription())
-                .sortOrder(entity.getSortOrder())
                 .build();
     }
 }

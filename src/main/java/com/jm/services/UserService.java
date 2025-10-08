@@ -56,7 +56,8 @@ public class UserService {
 
     public UserDTO createUser(UserDTO dto) {
         Users entity = mapper.toEntity(dto);
-        entity.setCountry(dto.getCountryId() != null ? countriesRepository.findById(dto.getCountryId()).orElse(null) : null);
+        entity.setCountry(
+                dto.getCountryId() != null ? countriesRepository.findById(dto.getCountryId()).orElse(null) : null);
         entity.setCity(dto.getCityId() != null ? cityRepository.findById(dto.getCityId()).orElse(null) : null);
         entity.setEducationLevel(dto.getEducationLevelId() != null
                 ? educationLevelRepository.findById(dto.getEducationLevelId()).orElse(null)

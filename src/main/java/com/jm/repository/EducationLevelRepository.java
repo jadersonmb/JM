@@ -10,7 +10,7 @@ import java.util.UUID;
 @Repository
 public interface EducationLevelRepository extends JpaRepository<EducationLevel, UUID> {
 
-    List<EducationLevel> findByLanguageIgnoreCaseOrLanguageIsNullOrderBySortOrderAscNameAsc(String language);
+    List<EducationLevel> findByLanguageIgnoreCaseOrLanguageIsNullOrderByNameAsc(String language);
 
-    List<EducationLevel> findAllByOrderBySortOrderAscNameAsc();
+    List<EducationLevel> findAllByOrderByNameAsc();
 }
