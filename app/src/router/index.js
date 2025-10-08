@@ -68,6 +68,38 @@ const router = createRouter({
           component: () => import('@/views/profile/ProfileView.vue'),
           meta: { titleKey: 'routes.profile' },
         },
+        {
+          path: 'references',
+          component: () => import('@/views/reference/ReferenceLayout.vue'),
+          meta: { titleKey: 'routes.references', requiresAdmin: true },
+          children: [
+            { path: '', redirect: { name: 'reference-countries' } },
+            {
+              path: 'countries',
+              name: 'reference-countries',
+              component: () => import('@/views/reference/ReferenceCountriesView.vue'),
+              meta: { titleKey: 'routes.referenceCountries', requiresAdmin: true },
+            },
+            {
+              path: 'cities',
+              name: 'reference-cities',
+              component: () => import('@/views/reference/ReferenceCitiesView.vue'),
+              meta: { titleKey: 'routes.referenceCities', requiresAdmin: true },
+            },
+            {
+              path: 'education-levels',
+              name: 'reference-education-levels',
+              component: () => import('@/views/reference/ReferenceEducationLevelsView.vue'),
+              meta: { titleKey: 'routes.referenceEducationLevels', requiresAdmin: true },
+            },
+            {
+              path: 'professions',
+              name: 'reference-professions',
+              component: () => import('@/views/reference/ReferenceProfessionsView.vue'),
+              meta: { titleKey: 'routes.referenceProfessions', requiresAdmin: true },
+            },
+          ],
+        },
       ],
     },
     {
@@ -95,6 +127,13 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return { name: 'dashboard' };
+  }
+
+  if (to.matched.some((record) => record.meta.requiresAdmin)) {
+    const isAdmin = (auth.user?.type ?? '').toUpperCase() === 'ADMIN';
+    if (!isAdmin) {
+      return { name: 'dashboard' };
+    }
   }
 
   if (to.meta.titleKey) {

@@ -19,6 +19,12 @@ public class AnamneseDTO {
 
     private UUID id;
     private UUID userId;
+    private UUID countryId;
+    private String countryName;
+    private UUID cityId;
+    private String cityName;
+    private UUID educationLevelId;
+    private UUID professionId;
 
     // Dados pessoais
     private String paciente;

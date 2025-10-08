@@ -2,22 +2,22 @@
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-slate-900 text-blue-600 font-bold">{{ t('anamnese.title') }}</h1>
-        <p class="mt-1 max-w-3xl text-sm text-slate-500">
+        <h1 class="text-2xl font-semibold text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.title') }}</h1>
+        <p class="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">
           {{ t('anamnese.subtitle') }}
         </p>
       </div>
-      <div v-if="viewMode === 'form'" class="text-sm font-medium text-slate-500">
+      <div v-if="viewMode === 'form'" class="text-sm font-medium text-slate-500 dark:text-slate-300">
         {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
       </div>
     </div>
 
     <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]' : ''">
-      <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.admin.listTitle') }}</h2>
-            <p class="text-sm text-slate-500">{{ t('anamnese.admin.listSubtitle') }}</p>
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('anamnese.admin.listTitle') }}</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('anamnese.admin.listSubtitle') }}</p>
           </div>
           <button type="button" class="btn-secondary" :disabled="anamnesesLoading" @click="startNewAnamnese">
             <span v-if="anamnesesLoading" class="loader h-4 w-4"></span>
@@ -26,13 +26,13 @@
         </header>
 
         <div v-if="anamnesesLoading" class="mt-4 space-y-2">
-          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
-          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
-          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200"></div>
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700"></div>
+          <div class="h-10 w-full animate-pulse rounded-xl bg-slate-200 dark:bg-slate-700"></div>
         </div>
-        <div v-else-if="anamneses.length" class="mt-4 overflow-hidden rounded-2xl border border-slate-200">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <div v-else-if="anamneses.length" class="mt-4 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+          <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
               <tr>
                 <th class="px-4 py-3 text-left">{{ t('anamnese.admin.columns.patient') }}</th>
                 <th class="px-4 py-3 text-left">{{ t('anamnese.admin.columns.phone') }}</th>
@@ -40,15 +40,15 @@
                 <th class="px-4 py-3 text-right">{{ t('anamnese.admin.columns.actions') }}</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 bg-white">
+            <tbody class="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
               <tr
                 v-for="item in anamneses"
                 :key="item.id"
-                :class="selectedAnamneseId === item.id ? 'bg-primary-50/50' : ''"
+                :class="selectedAnamneseId === item.id ? 'bg-primary-50/50 dark:bg-primary-500/20' : ''"
               >
-                <td class="px-4 py-3 font-semibold text-slate-700">{{ item.paciente || t('common.placeholders.empty') }}</td>
-                <td class="px-4 py-3 text-slate-500">{{ item.telefone || t('common.placeholders.empty') }}</td>
-                <td class="px-4 py-3 text-slate-500">{{ item.objetivoConsulta || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 font-semibold text-slate-700 dark:text-slate-200">{{ item.paciente || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ item.telefone || t('common.placeholders.empty') }}</td>
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ item.objetivoConsulta || t('common.placeholders.empty') }}</td>
                 <td class="px-4 py-3 text-right">
                   <button type="button" class="btn-ghost text-primary-600 btn-primary" @click="selectAnamnese(item)">
                     <PencilIcon class="h-4 w-4" />
@@ -58,14 +58,14 @@
             </tbody>
           </table>
         </div>
-        <p v-else class="mt-4 text-sm text-slate-500">{{ t('anamnese.admin.empty') }}</p>
+        <p v-else class="mt-4 text-sm text-slate-500 dark:text-slate-400">{{ t('anamnese.admin.empty') }}</p>
       </section>
 
       <div class="space-y-6">
-        <section v-if="shouldShowSummary" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section v-if="shouldShowSummary" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 class="text-lg font-semibold text-slate-900 font-bold">{{ t('anamnese.summary.title') }}</h2>
+              <h2 class="text-lg font-semibold text-slate-900 font-bold dark:text-slate-100">{{ t('anamnese.summary.title') }}</h2>
               <!-- <p class="text-sm text-slate-500">{{ t('anamnese.summary.subtitle') }}</p> -->
             </div>
             <div class="flex flex-wrap gap-2">
@@ -85,30 +85,30 @@
 
           <dl class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.patient') }}</dt>
-              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('paciente') }}</dd>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.summary.fields.patient') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ summaryField('paciente') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.phone') }}</dt>
-              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('telefone') }}</dd>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.summary.fields.phone') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ summaryField('telefone') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.goal') }}</dt>
-              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('objetivoConsulta') }}</dd>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.summary.fields.goal') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ summaryField('objetivoConsulta') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.diagnosis') }}</dt>
-              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('diagnostico') }}</dd>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.summary.fields.diagnosis') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ summaryField('diagnostico') }}</dd>
             </div>
             <div class="sm:col-span-2">
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">{{ t('anamnese.summary.fields.diet') }}</dt>
-              <dd class="mt-1 text-sm text-slate-700">{{ summaryField('resumoDieta') }}</dd>
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold dark:text-blue-300">{{ t('anamnese.summary.fields.diet') }}</dt>
+              <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ summaryField('resumoDieta') }}</dd>
             </div>
           </dl>
         </section>
 
         <div v-if="viewMode === 'form'" class="space-y-6">
-          <div class="h-2 rounded-full bg-slate-200">
+          <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800">
             <div class="h-2 rounded-full bg-primary-500 transition-all" :style="{ width: `${progress}%` }"></div>
           </div>
 
@@ -120,28 +120,28 @@
               class="flex items-center gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition"
               :class="[
                 index < currentStepIndex
-                  ? 'border-primary-200 bg-primary-50 text-primary-600'
+                  ? 'border-primary-200 bg-primary-50 text-primary-600 dark:border-primary-400 dark:bg-primary-500/20 dark:text-primary-200'
                   : index === currentStepIndex
-                    ? 'border-primary-300 bg-white text-primary-600 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'
+                    ? 'border-primary-300 bg-white text-primary-600 shadow-sm dark:border-primary-400 dark:bg-slate-900 dark:text-primary-200'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-primary-400 dark:hover:text-primary-200'
               ]"
               @click="goToStep(index)"
               :disabled="index > currentStepIndex + 1"
             >
               <span
                 class="flex h-8 w-8 items-center justify-center rounded-full border text-sm"
-                :class="index <= currentStepIndex ? 'border-primary-500 bg-primary-500 text-white' : 'border-slate-200 text-slate-500'"
+                :class="index <= currentStepIndex ? 'border-primary-500 bg-primary-500 text-white dark:border-primary-400' : 'border-slate-200 text-slate-500 dark:border-slate-600 dark:text-slate-300'"
               >
                 {{ index + 1 }}
               </span>
               <div>
-                <p>{{ step.title }}</p>
-                <p class="text-xs font-normal text-slate-400">{{ step.description }}</p>
+                <p class="dark:text-slate-100">{{ step.title }}</p>
+                <p class="text-xs font-normal text-slate-400 dark:text-slate-500">{{ step.description }}</p>
               </div>
             </button>
           </div>
 
-          <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
             <component :is="currentStep.component" v-bind="currentStepProps" />
           </div>
 
@@ -149,7 +149,7 @@
             <div class="flex flex-wrap gap-3">
               <button
                 type="button"
-                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600 disabled:opacity-40"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600 disabled:opacity-40 dark:border-slate-600 dark:text-slate-300 dark:hover:border-primary-400 dark:hover:text-primary-200"
                 :disabled="currentStepIndex === 0"
                 @click="previousStep"
               >
@@ -158,14 +158,14 @@
               <button
                 v-if="canCancelEditing"
                 type="button"
-                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-primary-200 hover:text-primary-600 dark:border-slate-600 dark:text-slate-300 dark:hover:border-primary-400 dark:hover:text-primary-200"
                 @click="showSummary"
               >
                 {{ t('common.actions.cancel') }}
               </button>
               <button
                 type="button"
-                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50"
+                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-200 dark:hover:bg-primary-500/10"
                 @click="exportPdf"
               >
                 {{ t('common.actions.exportPdf') }}
@@ -174,7 +174,7 @@
             <div class="flex flex-wrap gap-3">
               <button
                 type="button"
-                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50"
+                class="inline-flex items-center rounded-xl border border-primary-200 px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300 hover:bg-primary-50 dark:border-primary-400 dark:text-primary-200 dark:hover:bg-primary-500/10"
                 @click="nextStep"
                 :disabled="currentStepIndex === steps.length - 1"
               >
@@ -212,13 +212,21 @@ import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import AnamneseService from '@/services/AnamneseService';
 import { useI18n } from 'vue-i18n';
+import {
+  getCountries,
+  getCities,
+  getEducationLevels,
+  getProfessions,
+  getPathologies,
+  getBiochemicalExams,
+} from '@/services/reference';
 import { PencilIcon } from '@heroicons/vue/24/outline';
 
 const STORAGE_KEY = 'jm_anamnese_wizard_draft';
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const saving = ref(false);
 const currentStepIndex = ref(0);
@@ -228,12 +236,32 @@ const anamneses = ref([]);
 const anamnesesLoading = ref(false);
 const selectedAnamnese = ref(null);
 
+const referenceLoading = reactive({
+  general: false,
+  cities: false,
+});
+
+const referenceData = reactive({
+  countries: [],
+  cities: [],
+  educationLevels: [],
+  professions: [],
+  pathologies: [],
+  biochemicalExams: [],
+});
+
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const isClient = computed(() => !isAdmin.value);
+
+const referenceParams = computed(() => ({ language: locale.value }));
 
 const createInitialForm = () => ({
   id: null,
   userId: isAdmin.value ? null : auth.user?.id ?? null,
+  countryId: null,
+  cityId: null,
+  educationLevelId: null,
+  professionId: null,
   paciente: '',
   endereco: '',
   dataNascimento: '',
@@ -307,7 +335,15 @@ const steps = computed(() => [
     title: t('anamnese.steps.personal.title'),
     description: t('anamnese.steps.personal.description'),
     component: StepDadosPessoais,
-    getProps: () => ({ form, isAdmin: isAdmin.value }),
+    getProps: () => ({
+      form,
+      isAdmin: isAdmin.value,
+      countries: referenceData.countries,
+      cities: referenceData.cities,
+      educationLevels: referenceData.educationLevels,
+      professions: referenceData.professions,
+      loadingReference: referenceLoading,
+    }),
   },
   {
     id: 'clinica',
@@ -335,7 +371,7 @@ const steps = computed(() => [
     title: t('anamnese.steps.biochemistry.title'),
     description: t('anamnese.steps.biochemistry.description'),
     component: StepBioquimica,
-    getProps: () => ({ form }),
+    getProps: () => ({ form, biochemicalExams: referenceData.biochemicalExams }),
   },
   {
     id: 'habitos',
@@ -384,6 +420,12 @@ const sanitizePayload = (data) => {
   const plain = JSON.parse(JSON.stringify(data));
   plain.examesBioquimicos = (plain.examesBioquimicos || []).map(({ __key, ...item }) => item);
   plain.refeicoes24h = (plain.refeicoes24h || []).map(({ __key, ...item }) => item);
+  plain.userId = plain.userId || null;
+  ['countryId', 'cityId', 'educationLevelId', 'professionId'].forEach((key) => {
+    if (!plain[key]) {
+      plain[key] = null;
+    }
+  });
   return plain;
 };
 
@@ -421,6 +463,7 @@ const hydrateFormFromAnamnese = (data) => {
   });
   form.examesBioquimicos = rehydrateList(data?.examesBioquimicos || []);
   form.refeicoes24h = rehydrateList(data?.refeicoes24h || []);
+  loadCitiesReference(form.countryId, true);
 };
 
 const summaryField = (key) => {
@@ -523,6 +566,56 @@ const exportPdf = () => {
   });
 };
 
+const loadReferenceData = async () => {
+  referenceLoading.general = true;
+  try {
+    const params = referenceParams.value;
+    const [countriesResponse, educationResponse, professionResponse, pathologiesResponse, biochemicalResponse] =
+      await Promise.all([
+        getCountries(params),
+        getEducationLevels(params),
+        getProfessions(params),
+        getPathologies(params),
+        getBiochemicalExams(params),
+      ]);
+    referenceData.countries = countriesResponse.data ?? [];
+    referenceData.educationLevels = educationResponse.data ?? [];
+    referenceData.professions = professionResponse.data ?? [];
+    referenceData.pathologies = pathologiesResponse.data ?? [];
+    referenceData.biochemicalExams = biochemicalResponse.data ?? [];
+  } catch (error) {
+    console.error('Failed to load reference data for anamnesis', error);
+  } finally {
+    referenceLoading.general = false;
+  }
+};
+
+const loadCitiesReference = async (countryId, preserveSelection = false) => {
+  if (!countryId) {
+    referenceData.cities = [];
+    if (!preserveSelection) {
+      form.cityId = null;
+    }
+    return;
+  }
+  referenceLoading.cities = true;
+  try {
+    const { data } = await getCities(countryId, referenceParams.value);
+    referenceData.cities = data ?? [];
+    if (!preserveSelection && form.cityId && !referenceData.cities.some((city) => city.id === form.cityId)) {
+      form.cityId = null;
+    }
+  } catch (error) {
+    console.error('Failed to load cities for anamnesis', error);
+    referenceData.cities = [];
+    if (!preserveSelection) {
+      form.cityId = null;
+    }
+  } finally {
+    referenceLoading.cities = false;
+  }
+};
+
 const loadAnamneses = async () => {
   if (isClient.value && !auth.user?.id) {
     return;
@@ -603,6 +696,84 @@ watch(currentStepIndex, () => {
 });
 
 watch(
+  () => form.countryId,
+  (newId, oldId) => {
+    if (newId === oldId) {
+      return;
+    }
+    loadCitiesReference(newId, true);
+  },
+);
+
+watch(
+  () => referenceData.cities,
+  (list) => {
+    if (form.cityId && !list.some((city) => city.id === form.cityId)) {
+      form.cityId = null;
+    }
+  },
+  { deep: true },
+);
+
+const syncEducationFromReference = () => {
+  if (!form.educationLevelId) {
+    return;
+  }
+  const match = referenceData.educationLevels.find((item) => item.id === form.educationLevelId);
+  if (match) {
+    form.escolaridade = match.name;
+  }
+};
+
+const syncProfessionFromReference = () => {
+  if (!form.professionId) {
+    return;
+  }
+  const match = referenceData.professions.find((item) => item.id === form.professionId);
+  if (match) {
+    form.profissao = match.name;
+  }
+};
+
+watch(
+  () => form.educationLevelId,
+  () => {
+    syncEducationFromReference();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => form.professionId,
+  () => {
+    syncProfessionFromReference();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => referenceData.educationLevels,
+  () => syncEducationFromReference(),
+  { deep: true },
+);
+
+watch(
+  () => referenceData.professions,
+  () => syncProfessionFromReference(),
+  { deep: true },
+);
+
+watch(
+  () => locale.value,
+  async () => {
+    await loadReferenceData();
+    if (form.countryId) {
+      await loadCitiesReference(form.countryId, true);
+    }
+  },
+);
+
+watch(
   () => auth.user?.id,
   (id) => {
     if (isClient.value) {
@@ -628,13 +799,29 @@ watch(
       form.telefone = user.phoneNumber || '';
     }
     if (!form.endereco) {
-      form.endereco = [user.street, user.city, user.state, user.country].filter((part) => part && part.length).join(', ');
+      const countryName = user.countryDTO?.name || user.countryName || user.country || '';
+      const cityName = user.cityName || (typeof user.city === 'string' ? user.city : '');
+      form.endereco = [user.street, cityName, user.state, countryName]
+        .filter((part) => part && String(part).length)
+        .join(', ');
     }
     if (!form.dataNascimento && user.birthDate) {
       form.dataNascimento = user.birthDate;
     }
     if (form.idade == null && typeof user.age === 'number') {
       form.idade = user.age;
+    }
+    if (!form.countryId && user.countryId) {
+      form.countryId = user.countryId;
+    }
+    if (!form.cityId && user.cityId) {
+      form.cityId = user.cityId;
+    }
+    if (!form.educationLevelId && user.educationLevelId) {
+      form.educationLevelId = user.educationLevelId;
+    }
+    if (!form.professionId && user.professionId) {
+      form.professionId = user.professionId;
     }
     if (!form.escolaridade && user.education) {
       form.escolaridade = user.education;
@@ -650,6 +837,10 @@ watch(
 );
 
 onMounted(async () => {
+  await loadReferenceData();
+  if (form.countryId) {
+    await loadCitiesReference(form.countryId, true);
+  }
   await loadAnamneses();
   if (!selectedAnamnese.value) {
     loadDraft();

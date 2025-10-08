@@ -2,88 +2,43 @@ package com.jm.mappers;
 
 import com.jm.dto.UserDTO;
 import com.jm.entity.Users;
-import org.springframework.stereotype.Component;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Builder;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
 
-@Component
-public class UserMapper {
+@Mapper(componentModel = "spring", uses = { CountryMapper.class }, unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        builder = @Builder(disableBuilder = true))
+public interface UserMapper {
 
-    private CountryMapper countryMapper = new CountryMapperImpl() {
-    };
+    @Mapping(target = "cityId", source = "city.id")
+    @Mapping(target = "cityName", source = "city.name")
+    @Mapping(target = "countryId", source = "country.id")
+    @Mapping(target = "countryDTO", source = "country")
+    @Mapping(target = "educationLevelId", source = "educationLevel.id")
+    @Mapping(target = "educationLevelName", source = "educationLevel.name")
+    @Mapping(target = "professionId", source = "profession.id")
+    @Mapping(target = "professionName", source = "profession.name")
+    UserDTO toDTO(Users entity);
 
-    public UserDTO toDTO(Users entity) {
-        if (entity == null) {
-            return null;
-        }
+    @Mapping(target = "city", ignore = true)
+    @Mapping(target = "country", ignore = true)
+    @Mapping(target = "educationLevel", ignore = true)
+    @Mapping(target = "profession", ignore = true)
+    @Mapping(target = "imagens", ignore = true)
+    @Mapping(target = "anamneses", ignore = true)
+    Users toEntity(UserDTO dto);
 
-        var country = entity.getCountry();
-        var city = entity.getCity();
-        var education = entity.getEducationLevel();
-        var profession = entity.getProfession();
-
-        return UserDTO.builder()
-                .id(entity.getId())
-                .name(entity.getName())
-                .email(entity.getEmail())
-                .lastName(entity.getLastName())
-                .documentNumber(entity.getDocumentNumber())
-                .phoneNumber(entity.getPhoneNumber())
-                .postalCode(entity.getPostalCode())
-                .state(entity.getState())
-                .street(entity.getStreet())
-                .cityId(city != null ? city.getId() : null)
-                .cityName(city != null ? city.getName() : null)
-                .countryId(country != null ? country.getId() : null)
-                .countryDTO(country != null ? countryMapper.toDTO(country) : null)
-                .educationLevelId(education != null ? education.getId() : null)
-                .educationLevelName(education != null ? education.getName() : null)
-                .professionId(profession != null ? profession.getId() : null)
-                .professionName(profession != null ? profession.getName() : null)
-                .type(entity.getType())
-                .avatarUrl(entity.getAvatarUrl())
-                .stripeCustomerId(entity.getStripeCustomerId())
-                .asaasCustomerId(entity.getAsaasCustomerId())
-                .birthDate(entity.getBirthDate())
-                .age(entity.getAge())
-                .consultationGoal(entity.getConsultationGoal())
-                .build();
-    }
-
-    public Users toEntity(UserDTO userDTO) {
-        if (userDTO == null) {
-            return null;
-        }
-        return Users.builder()
-                .id(userDTO.getId())
-                .name(userDTO.getName())
-                .email(userDTO.getEmail())
-                .lastName(userDTO.getLastName())
-                .documentNumber(userDTO.getDocumentNumber())
-                .phoneNumber(userDTO.getPhoneNumber())
-                .postalCode(userDTO.getPostalCode())
-                .state(userDTO.getState())
-                .street(userDTO.getStreet())
-                .password(userDTO.getPassword())
-                .type(userDTO.getType())
-                .avatarUrl(userDTO.getAvatarUrl())
-                .stripeCustomerId(userDTO.getStripeCustomerId())
-                .asaasCustomerId(userDTO.getAsaasCustomerId())
-                .birthDate(userDTO.getBirthDate())
-                .age(userDTO.getAge())
-                .consultationGoal(userDTO.getConsultationGoal())
-                .build();
-    }
-
-    public Users toUpdate(Users entity) {
-        entity.setName(entity.getName());
-        entity.setHashCode(entity.getHashCode());
-        entity.setLastName(entity.getLastName());
-        entity.setCountry(entity.getCountry());
-        entity.setDocumentNumber(entity.getDocumentNumber());
-        entity.setPhoneNumber(entity.getPhoneNumber());
-        entity.setPostalCode(entity.getPostalCode());
-        entity.setState(entity.getState());
-        entity.setStreet(entity.getStreet());
-        entity.setAvatarUrl(entity.getAvatarUrl());
-        return entity;
-    }
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "city", ignore = true)
+    @Mapping(target = "country", ignore = true)
+    @Mapping(target = "educationLevel", ignore = true)
+    @Mapping(target = "profession", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "imagens", ignore = true)
+    @Mapping(target = "anamneses", ignore = true)
+    void updateEntityFromDto(UserDTO dto, @MappingTarget Users entity);
 }
