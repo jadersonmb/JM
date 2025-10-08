@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-slate-900 text-blue-600 font-bold">{{ t('anamnese.title') }}</h1>
+        <h1 class="text-2xl font-semibold text-blue-600 font-bold">{{ t('anamnese.title') }}</h1>
         <p class="mt-1 max-w-3xl text-sm text-slate-500">
           {{ t('anamnese.subtitle') }}
         </p>
@@ -135,7 +135,7 @@
                 {{ index + 1 }}
               </span>
               <div>
-                <p>{{ step.title }}</p>
+                <p class="">{{ step.title }}</p>
                 <p class="text-xs font-normal text-slate-400">{{ step.description }}</p>
               </div>
             </button>
@@ -212,13 +212,21 @@ import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import AnamneseService from '@/services/AnamneseService';
 import { useI18n } from 'vue-i18n';
+import {
+  getCountries,
+  getCities,
+  getEducationLevels,
+  getProfessions,
+  getPathologies,
+  getBiochemicalExams,
+} from '@/services/reference';
 import { PencilIcon } from '@heroicons/vue/24/outline';
 
 const STORAGE_KEY = 'jm_anamnese_wizard_draft';
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const saving = ref(false);
 const currentStepIndex = ref(0);
@@ -228,12 +236,32 @@ const anamneses = ref([]);
 const anamnesesLoading = ref(false);
 const selectedAnamnese = ref(null);
 
+const referenceLoading = reactive({
+  general: false,
+  cities: false,
+});
+
+const referenceData = reactive({
+  countries: [],
+  cities: [],
+  educationLevels: [],
+  professions: [],
+  pathologies: [],
+  biochemicalExams: [],
+});
+
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const isClient = computed(() => !isAdmin.value);
+
+const referenceParams = computed(() => ({ language: locale.value }));
 
 const createInitialForm = () => ({
   id: null,
   userId: isAdmin.value ? null : auth.user?.id ?? null,
+  countryId: null,
+  cityId: null,
+  educationLevelId: null,
+  professionId: null,
   paciente: '',
   endereco: '',
   dataNascimento: '',
@@ -307,7 +335,15 @@ const steps = computed(() => [
     title: t('anamnese.steps.personal.title'),
     description: t('anamnese.steps.personal.description'),
     component: StepDadosPessoais,
-    getProps: () => ({ form, isAdmin: isAdmin.value }),
+    getProps: () => ({
+      form,
+      isAdmin: isAdmin.value,
+      countries: referenceData.countries,
+      cities: referenceData.cities,
+      educationLevels: referenceData.educationLevels,
+      professions: referenceData.professions,
+      loadingReference: referenceLoading,
+    }),
   },
   {
     id: 'clinica',
@@ -335,7 +371,7 @@ const steps = computed(() => [
     title: t('anamnese.steps.biochemistry.title'),
     description: t('anamnese.steps.biochemistry.description'),
     component: StepBioquimica,
-    getProps: () => ({ form }),
+    getProps: () => ({ form, biochemicalExams: referenceData.biochemicalExams }),
   },
   {
     id: 'habitos',
@@ -384,6 +420,12 @@ const sanitizePayload = (data) => {
   const plain = JSON.parse(JSON.stringify(data));
   plain.examesBioquimicos = (plain.examesBioquimicos || []).map(({ __key, ...item }) => item);
   plain.refeicoes24h = (plain.refeicoes24h || []).map(({ __key, ...item }) => item);
+  plain.userId = plain.userId || null;
+  ['countryId', 'cityId', 'educationLevelId', 'professionId'].forEach((key) => {
+    if (!plain[key]) {
+      plain[key] = null;
+    }
+  });
   return plain;
 };
 
@@ -421,6 +463,7 @@ const hydrateFormFromAnamnese = (data) => {
   });
   form.examesBioquimicos = rehydrateList(data?.examesBioquimicos || []);
   form.refeicoes24h = rehydrateList(data?.refeicoes24h || []);
+  loadCitiesReference(form.countryId, true);
 };
 
 const summaryField = (key) => {
@@ -523,6 +566,56 @@ const exportPdf = () => {
   });
 };
 
+const loadReferenceData = async () => {
+  referenceLoading.general = true;
+  try {
+    const params = referenceParams.value;
+    const [countriesResponse, educationResponse, professionResponse, pathologiesResponse, biochemicalResponse] =
+      await Promise.all([
+        getCountries(params),
+        getEducationLevels(params),
+        getProfessions(params),
+        getPathologies(params),
+        getBiochemicalExams(params),
+      ]);
+    referenceData.countries = countriesResponse.data ?? [];
+    referenceData.educationLevels = educationResponse.data ?? [];
+    referenceData.professions = professionResponse.data ?? [];
+    referenceData.pathologies = pathologiesResponse.data ?? [];
+    referenceData.biochemicalExams = biochemicalResponse.data ?? [];
+  } catch (error) {
+    console.error('Failed to load reference data for anamnesis', error);
+  } finally {
+    referenceLoading.general = false;
+  }
+};
+
+const loadCitiesReference = async (countryId, preserveSelection = false) => {
+  if (!countryId) {
+    referenceData.cities = [];
+    if (!preserveSelection) {
+      form.cityId = null;
+    }
+    return;
+  }
+  referenceLoading.cities = true;
+  try {
+    const { data } = await getCities(countryId, referenceParams.value);
+    referenceData.cities = data ?? [];
+    if (!preserveSelection && form.cityId && !referenceData.cities.some((city) => city.id === form.cityId)) {
+      form.cityId = null;
+    }
+  } catch (error) {
+    console.error('Failed to load cities for anamnesis', error);
+    referenceData.cities = [];
+    if (!preserveSelection) {
+      form.cityId = null;
+    }
+  } finally {
+    referenceLoading.cities = false;
+  }
+};
+
 const loadAnamneses = async () => {
   if (isClient.value && !auth.user?.id) {
     return;
@@ -603,6 +696,84 @@ watch(currentStepIndex, () => {
 });
 
 watch(
+  () => form.countryId,
+  (newId, oldId) => {
+    if (newId === oldId) {
+      return;
+    }
+    loadCitiesReference(newId, true);
+  },
+);
+
+watch(
+  () => referenceData.cities,
+  (list) => {
+    if (form.cityId && !list.some((city) => city.id === form.cityId)) {
+      form.cityId = null;
+    }
+  },
+  { deep: true },
+);
+
+const syncEducationFromReference = () => {
+  if (!form.educationLevelId) {
+    return;
+  }
+  const match = referenceData.educationLevels.find((item) => item.id === form.educationLevelId);
+  if (match) {
+    form.escolaridade = match.name;
+  }
+};
+
+const syncProfessionFromReference = () => {
+  if (!form.professionId) {
+    return;
+  }
+  const match = referenceData.professions.find((item) => item.id === form.professionId);
+  if (match) {
+    form.profissao = match.name;
+  }
+};
+
+watch(
+  () => form.educationLevelId,
+  () => {
+    syncEducationFromReference();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => form.professionId,
+  () => {
+    syncProfessionFromReference();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => referenceData.educationLevels,
+  () => syncEducationFromReference(),
+  { deep: true },
+);
+
+watch(
+  () => referenceData.professions,
+  () => syncProfessionFromReference(),
+  { deep: true },
+);
+
+watch(
+  () => locale.value,
+  async () => {
+    await loadReferenceData();
+    if (form.countryId) {
+      await loadCitiesReference(form.countryId, true);
+    }
+  },
+);
+
+watch(
   () => auth.user?.id,
   (id) => {
     if (isClient.value) {
@@ -628,13 +799,29 @@ watch(
       form.telefone = user.phoneNumber || '';
     }
     if (!form.endereco) {
-      form.endereco = [user.street, user.city, user.state, user.country].filter((part) => part && part.length).join(', ');
+      const countryName = user.countryDTO?.name || user.countryName || user.country || '';
+      const cityName = user.cityName || (typeof user.city === 'string' ? user.city : '');
+      form.endereco = [user.street, cityName, user.state, countryName]
+        .filter((part) => part && String(part).length)
+        .join(', ');
     }
     if (!form.dataNascimento && user.birthDate) {
       form.dataNascimento = user.birthDate;
     }
     if (form.idade == null && typeof user.age === 'number') {
       form.idade = user.age;
+    }
+    if (!form.countryId && user.countryId) {
+      form.countryId = user.countryId;
+    }
+    if (!form.cityId && user.cityId) {
+      form.cityId = user.cityId;
+    }
+    if (!form.educationLevelId && user.educationLevelId) {
+      form.educationLevelId = user.educationLevelId;
+    }
+    if (!form.professionId && user.professionId) {
+      form.professionId = user.professionId;
     }
     if (!form.escolaridade && user.education) {
       form.escolaridade = user.education;
@@ -650,6 +837,10 @@ watch(
 );
 
 onMounted(async () => {
+  await loadReferenceData();
+  if (form.countryId) {
+    await loadCitiesReference(form.countryId, true);
+  }
   await loadAnamneses();
   if (!selectedAnamnese.value) {
     loadDraft();

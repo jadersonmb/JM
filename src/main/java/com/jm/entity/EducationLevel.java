@@ -42,6 +42,9 @@ public class EducationLevel {
     @Column(length = 255)
     private String description;
 
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

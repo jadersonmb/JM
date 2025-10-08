@@ -15,8 +15,13 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div class="md:col-span-2">
             <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.biochemistry.fields.name') }} <span class="text-red-500">*</span></label>
-            <input v-model="exame.nomeExame" type="text" required
+            <input v-model="exame.nomeExame" type="text" required :list="`biochemical-exams-${index}`"
               class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200" />
+            <datalist :id="`biochemical-exams-${index}`">
+              <option v-for="option in biochemicalExams" :key="option.id ?? option.code ?? option.name" :value="option.name">
+                {{ option.code ? `${option.name} (${option.code})` : option.name }}
+              </option>
+            </datalist>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.biochemistry.fields.value') }}</label>
@@ -43,7 +48,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
@@ -51,9 +56,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  biochemicalExams: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const form = props.form;
+const biochemicalExams = computed(() => props.biochemicalExams ?? []);
 const { t } = useI18n();
 
 const ensureArray = () => {

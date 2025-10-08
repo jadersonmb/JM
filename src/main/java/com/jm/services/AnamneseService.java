@@ -7,6 +7,10 @@ import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.AnamneseMapper;
 import com.jm.repository.AnamneseRepository;
+import com.jm.repository.CityRepository;
+import com.jm.repository.CountryRepository;
+import com.jm.repository.EducationLevelRepository;
+import com.jm.repository.ProfessionRepository;
 import com.jm.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +38,22 @@ public class AnamneseService {
     private final AnamneseMapper mapper;
     private final MessageSource messageSource;
     private final UserRepository userRepository;
+    private final CountryRepository countryRepository;
+    private final CityRepository cityRepository;
+    private final EducationLevelRepository educationLevelRepository;
+    private final ProfessionRepository professionRepository;
 
     public AnamneseService(AnamneseRepository repository, AnamneseMapper mapper, MessageSource messageSource,
-            UserRepository userRepository) {
+            UserRepository userRepository, CountryRepository countryRepository, CityRepository cityRepository,
+            EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
         this.userRepository = userRepository;
+        this.countryRepository = countryRepository;
+        this.cityRepository = cityRepository;
+        this.educationLevelRepository = educationLevelRepository;
+        this.professionRepository = professionRepository;
     }
 
     public Page<AnamneseDTO> findAll(Pageable pageable, AnamneseDTO filter) {
@@ -151,6 +164,26 @@ public class AnamneseService {
         user.setBirthDate(dto.getDataNascimento());
         user.setAge(dto.getIdade());
         user.setConsultationGoal(dto.getObjetivoConsulta());
+        if (dto.getCountryId() != null) {
+            user.setCountry(countryRepository.findById(dto.getCountryId()).orElse(null));
+        } else {
+            user.setCountry(null);
+        }
+        if (dto.getCityId() != null) {
+            user.setCity(cityRepository.findById(dto.getCityId()).orElse(null));
+        } else {
+            user.setCity(null);
+        }
+        if (dto.getEducationLevelId() != null) {
+            user.setEducationLevel(educationLevelRepository.findById(dto.getEducationLevelId()).orElse(null));
+        } else {
+            user.setEducationLevel(null);
+        }
+        if (dto.getProfessionId() != null) {
+            user.setProfession(professionRepository.findById(dto.getProfessionId()).orElse(null));
+        } else {
+            user.setProfession(null);
+        }
     }
 
     private JMException userNotFound() {

@@ -11,24 +11,67 @@
     ]">
       <div class="flex h-20 items-center justify-between px-6">
         <AppLogo />
-        <button class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 lg:hidden"
-          @click="mobileNavOpen = false">
+        <button
+          class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+          @click="mobileNavOpen = false"
+        >
           <XMarkIcon class="h-6 w-6" />
         </button>
       </div>
 
-      <nav class="flex-1 space-y-2 overflow-y-auto px-4 pb-10">
-        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('menu.title') }}</p>
-        <RouterLink v-for="item in navigation" :key="item.name" :to="item.to"
-          class="group mt-1 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition" :class="[
-            item.active
-              ? 'bg-primary-50 text-primary-600 shadow-sm'
-              : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
-          ]" @click="mobileNavOpen = false">
-          <component :is="item.icon" class="h-5 w-5"
-            :class="item.active ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-500'" />
-          <span>{{ item.label }}</span>
-        </RouterLink>
+      <nav class="flex-1 space-y-3 overflow-y-auto px-4 pb-10">
+        <p class="px-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('menu.title') }}
+        </p>
+        <div v-for="item in navigation" :key="item.name" class="mt-1">
+          <template v-if="item.children?.length">
+            <button
+              type="button"
+              class="group flex w-full items-center justify-between rounded-xl border border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              @click="toggleGroup(item.name)"
+            >
+              <span class="flex items-center gap-3">
+                <component :is="item.icon" class="h-5 w-5"
+                  :class="item.active ? 'text-primary-500' : 'text-slate-400 group-hover:text-slate-500'" />
+                {{ item.label }}
+              </span>
+              <ChevronDownIcon
+                class="h-4 w-4 text-slate-400 transition-transform"
+                :class="isGroupExpanded(item) ? 'rotate-180 text-primary-500' : ''"
+              />
+            </button>
+            <transition name="fade">
+              <div v-if="isGroupExpanded(item)" class="mt-1 space-y-1 pl-9">
+                <RouterLink
+                  v-for="child in item.children"
+                  :key="child.name"
+                  :to="child.to"
+                  class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition"
+                  :class="child.active
+                    ? 'bg-primary-50 text-primary-600 shadow-sm'
+                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
+                  @click="mobileNavOpen = false"
+                >
+                  <span>{{ child.label }}</span>
+                </RouterLink>
+              </div>
+            </transition>
+          </template>
+          <template v-else>
+            <RouterLink
+              :to="item.to"
+              class="group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition"
+              :class="item.active
+                ? 'bg-primary-50 text-primary-600 shadow-sm'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'"
+              @click="mobileNavOpen = false"
+            >
+              <component :is="item.icon" class="h-5 w-5"
+                :class="item.active ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-500'" />
+              <span>{{ item.label }}</span>
+            </RouterLink>
+          </template>
+        </div>
       </nav>
 
       <div class="border-t border-slate-200 p-4">
@@ -77,7 +120,7 @@
                 @click="selectedLocale = option.code"
               >
                 <img aria-hidden="true" :src="option.url" :alt="option.code"/>
-                <span class="sr-only">{{ option.label  }}</span>
+                <span class="sr-only">{{ option.label }}</span>
               </button>
             </div>
             <button type="button"
@@ -153,6 +196,7 @@ import {
   ChatBubbleLeftRightIcon,
   ClipboardDocumentListIcon,
   RectangleStackIcon,
+  GlobeAltIcon,
   Squares2X2Icon,
   UserGroupIcon,
   UserCircleIcon,
@@ -191,53 +235,98 @@ const selectedLocale = computed({
   set: (value) => preferences.setLocale(value),
 });
 
+const openGroups = ref([]);
+
 const navigation = computed(() => {
-  const items = [
+  const baseItems = [
     {
       name: 'dashboard',
       label: t('routes.dashboard'),
       to: { name: 'dashboard' },
       icon: Squares2X2Icon,
-      active: route.name === 'dashboard',
+      adminOnly: false,
     },
     {
       name: 'users',
       label: t('routes.users'),
       to: { name: 'users' },
       icon: UserGroupIcon,
-      active: route.name === 'users',
+      adminOnly: true,
     },
     {
       name: 'anamnese',
       label: t('menu.anamnese'),
       to: { name: 'anamnese' },
       icon: ClipboardDocumentListIcon,
-      active: route.name === 'anamnese',
+      adminOnly: false,
     },
     {
       name: 'whatsapp-nutrition',
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
       icon: ChatBubbleLeftRightIcon,
-      active: route.name === 'whatsapp-nutrition',
+      adminOnly: false,
     },
     {
       name: 'payments',
       label: t('routes.payments'),
       to: { name: 'payments' },
       icon: CreditCardIcon,
-      active: route.name === 'payments',
+      adminOnly: false,
     },
     {
       name: 'settings',
       label: t('routes.settings'),
       to: { name: 'settings' },
       icon: RectangleStackIcon,
-      active: route.name === 'settings',
+      adminOnly: false,
     },
   ];
-  return isAdmin.value ? items : items.filter((item) => item.name !== 'users');
+
+  const filtered = baseItems
+    .filter((item) => !item.adminOnly || isAdmin.value)
+    .map((item) => ({
+      ...item,
+      active: route.name === item.name,
+    }));
+
+  if (isAdmin.value) {
+    const referenceChildren = [
+      { name: 'reference-countries', label: t('routes.referenceCountries') },
+      { name: 'reference-cities', label: t('routes.referenceCities') },
+      { name: 'reference-education-levels', label: t('routes.referenceEducationLevels') },
+      { name: 'reference-professions', label: t('routes.referenceProfessions') },
+    ].map((child) => ({
+      ...child,
+      to: { name: child.name },
+      active: route.name === child.name,
+    }));
+
+    const referenceItem = {
+      name: 'references',
+      label: t('menu.reference'),
+      icon: GlobeAltIcon,
+      children: referenceChildren,
+      active: referenceChildren.some((child) => child.active),
+    };
+
+    const anamneseIndex = filtered.findIndex((item) => item.name === 'anamnese');
+    const insertIndex = anamneseIndex >= 0 ? anamneseIndex + 1 : filtered.length;
+    filtered.splice(insertIndex, 0, referenceItem);
+  }
+
+  return filtered;
 });
+
+const isGroupExpanded = (item) => item.active || openGroups.value.includes(item.name);
+
+const toggleGroup = (name) => {
+  if (openGroups.value.includes(name)) {
+    openGroups.value = openGroups.value.filter((group) => group !== name);
+  } else {
+    openGroups.value = [...openGroups.value, name];
+  }
+};
 
 const currentTitle = computed(() => {
   if (route.meta.titleKey) {
@@ -268,6 +357,17 @@ watch(
     mobileNavOpen.value = false;
     menuOpen.value = false;
   },
+);
+
+watch(
+  () => route.name,
+  (name) => {
+    const group = navigation.value.find((item) => item.children?.some((child) => child.name === name));
+    if (group && !openGroups.value.includes(group.name)) {
+      openGroups.value = [...openGroups.value, group.name];
+    }
+  },
+  { immediate: true },
 );
 
 watch(
