@@ -2,8 +2,8 @@
   <section class="card space-y-6">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
-        <p class="text-sm text-slate-500">{{ subtitle }}</p>
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400">{{ subtitle }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <slot name="toolbar" :selected="localSelected" :refresh="emitRefresh" />
@@ -23,13 +23,13 @@
     </div>
 
     <transition name="fade">
-      <div v-if="columnPanelOpen" class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 class="text-sm font-semibold text-slate-700">Visible columns</h3>
+      <div v-if="columnPanelOpen" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Visible columns</h3>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <label
             v-for="column in localColumns"
             :key="column.key"
-            class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm"
+            class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
           >
             <input type="checkbox" v-model="column.visible" @change="emitColumns" />
             {{ column.label }}
@@ -38,9 +38,9 @@
       </div>
     </transition>
 
-    <div class="overflow-x-auto rounded-2xl border border-slate-200">
-      <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+      <table class="min-w-full divide-y divide-slate-200 text-left text-sm dark:divide-slate-700">
+        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           <tr>
             <th v-if="selectable" class="w-12 px-4 py-3">
               <input
@@ -54,7 +54,7 @@
               <button
                 v-if="column.sortable"
                 type="button"
-                class="flex items-center gap-1 text-slate-600 transition hover:text-slate-900"
+                class="flex items-center gap-1 text-slate-600 transition hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
                 @click="toggleSort(column.key)"
               >
                 {{ column.label }}
@@ -68,25 +68,25 @@
             <th v-if="$slots.actions" class="px-4 py-3 text-slate-500">Actions</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-200 bg-white">
+        <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
           <tr v-if="loading">
-            <td :colspan="tableColspan" class="px-4 py-12 text-center text-sm text-slate-500">
-              <span class="inline-flex items-center gap-3 text-slate-500">
-                <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
+            <td :colspan="tableColspan" class="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-300">
+              <span class="inline-flex items-center gap-3 text-slate-500 dark:text-slate-300">
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600 dark:border-primary-500/40 dark:border-t-primary-400" />
                 Loading data...
               </span>
             </td>
           </tr>
           <template v-else>
             <tr v-if="!rows.length">
-              <td :colspan="tableColspan" class="px-4 py-12 text-center text-sm text-slate-500">
+              <td :colspan="tableColspan" class="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-300">
                 {{ emptyState }}
               </td>
             </tr>
             <tr
               v-for="row in rows"
               :key="row[idField]"
-              class="transition hover:bg-slate-50"
+              class="transition hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <td v-if="selectable" class="px-4 py-3">
                 <input
@@ -96,7 +96,7 @@
                   @change="emitSelected"
                 />
               </td>
-              <td v-for="column in visibleColumns" :key="column.key" class="px-4 py-3 align-top text-sm text-slate-600">
+              <td v-for="column in visibleColumns" :key="column.key" class="px-4 py-3 align-top text-sm text-slate-600 dark:text-slate-300">
                 <slot :name="`cell:${column.key}`" :row="row">
                   {{ row[column.key] ?? '-' }}
                 </slot>
@@ -110,15 +110,15 @@
       </table>
     </div>
 
-    <footer class="flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="text-sm text-slate-500">
+    <footer class="flex flex-col gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+      <div class="text-sm text-slate-500 dark:text-slate-400">
         Showing
-        <span class="font-semibold text-slate-700">{{ meta.from }}-{{ meta.to }}</span>
+        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ meta.from }}-{{ meta.to }}</span>
         of
-        <span class="font-semibold text-slate-700">{{ meta.total }}</span>
+        <span class="font-semibold text-slate-700 dark:text-slate-200">{{ meta.total }}</span>
       </div>
       <div class="flex flex-wrap items-center gap-3">
-        <label class="flex items-center gap-2 text-sm text-slate-500">
+        <label class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
           Rows per page
           <select v-model.number="localPerPage" class="input h-9 w-24" @change="emitPerPage">
             <option v-for="size in perPageOptions" :key="size" :value="size">{{ size }}</option>
@@ -128,7 +128,7 @@
           <button type="button" class="btn-secondary" :disabled="meta.page <= 1" @click="emitPage(meta.page - 1)">
             Prev
           </button>
-          <span class="text-sm font-semibold text-slate-500">Page {{ meta.page }} / {{ meta.lastPage }}</span>
+          <span class="text-sm font-semibold text-slate-500 dark:text-slate-300">Page {{ meta.page }} / {{ meta.lastPage }}</span>
           <button
             type="button"
             class="btn-secondary"

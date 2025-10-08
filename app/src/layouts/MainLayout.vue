@@ -6,7 +6,7 @@
     </transition>
 
     <aside :class="[
-      'fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:static lg:translate-x-0',
+      'fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 dark:border-slate-800 dark:bg-slate-900 lg:static lg:translate-x-0',
       mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
     ]">
       <div class="flex h-20 items-center justify-between px-6">
@@ -74,10 +74,10 @@
         </div>
       </nav>
 
-      <div class="border-t border-slate-200 p-4">
-        <div class="rounded-xl bg-slate-50 p-4">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('layout.help.title') }}</p>
-          <p class="mt-2 text-sm text-slate-600">{{ t('layout.help.description') }}</p>
+      <div class="border-t border-slate-200 p-4 dark:border-slate-800">
+        <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/60">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">{{ t('layout.help.title') }}</p>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ t('layout.help.description') }}</p>
           <a
             href="https://docs"
             class="mt-3 inline-flex items-center text-xs font-semibold text-primary-600 hover:text-primary-500"
@@ -89,17 +89,17 @@
     </aside>
 
     <div class="flex min-h-screen w-full flex-1 flex-col">
-      <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/85">
         <div class="flex h-20 items-center justify-between px-4 lg:px-10">
           <div class="flex items-center gap-3">
             <button type="button"
-              class="inline-flex items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:border-primary-200 hover:text-primary-600 lg:hidden"
+              class="inline-flex items-center justify-center rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:border-primary-200 hover:text-primary-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-primary-500 dark:hover:text-primary-300 lg:hidden"
               @click="mobileNavOpen = true">
               <Bars3BottomLeftIcon class="h-6 w-6" />
             </button>
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ currentSection }}</p>
-              <h1 class="text-xl font-semibold text-slate-900">{{ currentTitle }}</h1>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ currentSection }}</p>
+              <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">{{ currentTitle }}</h1>
             </div>
           </div>
 
@@ -115,8 +115,8 @@
                 type="button"
                 class="flex h-10 w-10 items-center justify-center rounded-full border text-xl transition"
                 :class="selectedLocale === option.code
-                  ? 'border-primary-300 bg-primary-50 text-primary-600'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600'"
+                  ? 'border-primary-300 bg-primary-50 text-primary-600 dark:border-primary-500 dark:bg-primary-500/20 dark:text-primary-200'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-primary-200 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-primary-500 dark:hover:text-primary-300'"
                 @click="selectedLocale = option.code"
               >
                 <img aria-hidden="true" :src="option.url" :alt="option.code"/>
@@ -124,7 +124,7 @@
               </button>
             </div>
             <button type="button"
-              class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-primary-200 hover:text-primary-600 md:flex"
+              class="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-500 transition hover:border-primary-200 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-primary-500 dark:hover:text-primary-300 md:flex"
               @click="router.push({ name: 'settings' })">
               <Cog6ToothIcon class="h-5 w-5" />
               <!-- <span>{{ t('layout.settings') }}</span> -->
@@ -132,7 +132,7 @@
 
             <div class="relative" ref="dropdownRef">
               <button type="button"
-                class="flex items-center gap-3 rounded-2xl border border-transparent bg-white px-3 py-2 text-left shadow-sm transition hover:border-primary-200 hover:shadow-md"
+                class="flex items-center gap-3 rounded-2xl border border-transparent bg-white px-3 py-2 text-left shadow-sm transition hover:border-primary-200 hover:shadow-md dark:bg-slate-900 dark:hover:border-primary-500"
                 @click="toggleDropdown">
                 <div class="h-10 w-10 rounded-2xl bg-primary-100 text-primary-600">
                   <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" alt="Profile"
@@ -142,30 +142,30 @@
                   </div>
                 </div>
                 <div class="hidden text-sm lg:block">
-                  <p class="font-semibold text-slate-900">{{ auth.user?.name }}</p>
-                  <p class="text-xs text-slate-400">{{ auth.user?.email }}</p>
+                  <p class="font-semibold text-slate-900 dark:text-slate-100">{{ auth.user?.name }}</p>
+                  <p class="text-xs text-slate-400 dark:text-slate-500">{{ auth.user?.email }}</p>
                 </div>
-                <ChevronDownIcon class="h-4 w-4 text-slate-400" />
+                <ChevronDownIcon class="h-4 w-4 text-slate-400 dark:text-slate-500" />
               </button>
 
               <transition name="dropdown">
                 <div v-if="menuOpen"
-                  class="absolute right-0 mt-3 w-56 rounded-xl border border-slate-200 bg-white py-2 shadow-xl">
+                  class="absolute right-0 mt-3 w-56 rounded-xl border border-slate-200 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
                   <button type="button"
-                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     @click="router.push({ name: 'profile' })">
                     <UserCircleIcon class="h-5 w-5" />
                     {{ t('layout.profile') }}
                   </button>
                   <button type="button"
-                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     @click="router.push({ name: 'settings' })">
                     <AdjustmentsHorizontalIcon class="h-5 w-5" />
                     {{ t('layout.settings') }}
                   </button>
-                  <hr class="my-2 border-slate-100" />
+                  <hr class="my-2 border-slate-100 dark:border-slate-700" />
                   <button type="button"
-                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
                     @click="logout">
                     <ArrowRightOnRectangleIcon class="h-5 w-5" />
                     {{ t('layout.logout') }}
