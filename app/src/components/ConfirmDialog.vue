@@ -1,12 +1,12 @@
 <template>
   <transition name="fade">
     <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4">
-      <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900">
+      <div class="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
         <header class="flex items-center gap-3">
           <ExclamationTriangleIcon class="h-10 w-10 text-amber-500" />
           <div>
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ title }}</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400">{{ message }}</p>
+            <h2 class="text-lg font-semibold text-slate-900">{{ title }}</h2>
+            <p class="text-sm text-slate-500">{{ message }}</p>
           </div>
         </header>
         <footer class="mt-6 flex items-center justify-end gap-3">

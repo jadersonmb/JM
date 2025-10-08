@@ -1,13 +1,13 @@
 <template>
   <div>
-    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">{{ t('anamnese.steps.personal.title') }}</h2>
-    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t('anamnese.steps.personal.description') }}</p>
+    <h2 class="text-lg font-semibold text-slate-900">{{ t('anamnese.steps.personal.title') }}</h2>
+    <p class="mt-1 text-sm text-slate-500">{{ t('anamnese.steps.personal.description') }}</p>
 
     <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
       <div class="md:col-span-2" v-if="isAdmin">
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.selectLabel') }}</label>
+        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.selectLabel') }}</label>
         <select v-model="selectedUserId" :disabled="loading"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('anamnese.steps.personal.placeholder') }}</option>
           <option v-for="user in users" :key="user.id" :value="user.id">
             {{ formatUserName(user) }}
@@ -15,19 +15,19 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label class="block text-sm font-medium text-slate-700 ">
           {{ t('anamnese.steps.personal.fields.patient') }} <span class="text-red-500">*</span>
         </label>
         <input v-model="form.paciente" type="text"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.address') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.address') }}</label>
         <input v-model="form.endereco" type="text"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200" />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.country') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.country') }}</label>
         <select v-model="selectedCountryId" :disabled="referenceLoading.general"
           class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
@@ -35,7 +35,7 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.city') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.city') }}</label>
         <select v-model="selectedCityId" :disabled="!selectedCountryId || referenceLoading.cities"
           class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
           <option value="">{{ t('common.placeholders.select') }}</option>
@@ -43,42 +43,42 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.birthDate') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.birthDate') }}</label>
         <input v-model="form.dataNascimento" type="date"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 " />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.age') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.age') }}</label>
         <input v-model.number="form.idade" type="number" min="0"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 " />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">
+        <label class="block text-sm font-medium text-slate-700 ">
           {{ t('anamnese.steps.personal.fields.phone') }} <span class="text-red-500">*</span>
         </label>
         <input v-model="form.telefone" type="tel"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 " />
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.education') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.education') }}</label>
         <select v-model="selectedEducationLevelId" :disabled="referenceLoading.general"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 ">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="level in educationLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-slate-700">{{ t('anamnese.steps.personal.fields.occupation') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.occupation') }}</label>
         <select v-model="selectedProfessionId" :disabled="referenceLoading.general"
-          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200">
+          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 ">
           <option value="">{{ t('common.placeholders.select') }}</option>
           <option v-for="profession in professions" :key="profession.id" :value="profession.id">{{ profession.name }}</option>
         </select>
       </div>
       <div class="md:col-span-2">
-        <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">{{ t('anamnese.steps.personal.fields.goal') }}</label>
+        <label class="block text-sm font-medium text-slate-700 ">{{ t('anamnese.steps.personal.fields.goal') }}</label>
         <textarea v-model="form.objetivoConsulta" rows="3"
-          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-primary-500 dark:focus:ring-primary-500"></textarea>
+          class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200 "></textarea>
       </div>
     </div>
 
