@@ -19,7 +19,7 @@
         <p class="text-sm text-slate-500">{{ auth.user?.email }}</p>
       </div>
 
-      <dl class="space-y-4 text-sm">
+      <!--<dl class="space-y-4 text-sm">
         <div>
           <dt class="text-xs uppercase tracking-wide text-slate-400">Role</dt>
           <dd class="mt-1 font-semibold capitalize text-slate-700">{{ auth.user?.role }}</dd>
@@ -33,7 +33,7 @@
           <dd class="mt-1 font-semibold text-slate-700">{{ formatDate(auth.user?.created_at || auth.user?.createdAt) }}
           </dd>
         </div>
-      </dl>
+      </dl> -->
     </section>
 
     <section class="card space-y-6">

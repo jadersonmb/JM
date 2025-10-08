@@ -34,6 +34,12 @@ ALTER TABLE user_entity
 ALTER TABLE user_entity
     ADD COLUMN IF NOT EXISTS profession_id CHAR(36) NULL AFTER education_level_id;
 
+
+
+ALTER TABLE user_entity DROP CONSTRAINT fk_user_entity_city;
+ALTER TABLE user_entity DROP CONSTRAINT fk_user_entity_education;
+ALTER TABLE user_entity DROP CONSTRAINT fk_user_entity_profession;
+
 ALTER TABLE user_entity
     ADD CONSTRAINT fk_user_entity_city FOREIGN KEY (city_id) REFERENCES cities(id);
 
