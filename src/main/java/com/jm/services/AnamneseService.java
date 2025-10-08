@@ -150,8 +150,6 @@ public class AnamneseService {
         }
         user.setBirthDate(dto.getDataNascimento());
         user.setAge(dto.getIdade());
-        user.setEducation(dto.getEscolaridade());
-        user.setOccupation(dto.getProfissao());
         user.setConsultationGoal(dto.getObjetivoConsulta());
     }
 

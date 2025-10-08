@@ -24,11 +24,16 @@ public class UserDTO {
     private String documentNumber;
     private String phoneNumber;
     private String street;
-    private String city;
     private String state;
     private String postalCode;
+    private UUID cityId;
+    private String cityName;
     private UUID countryId;
     private CountryDTO countryDTO;
+    private UUID educationLevelId;
+    private String educationLevelName;
+    private UUID professionId;
+    private String professionName;
     private String password;
     private String avatarUrl;
     private Users.Type type;
@@ -36,7 +41,5 @@ public class UserDTO {
     private String asaasCustomerId;
     private LocalDate birthDate;
     private Integer age;
-    private String education;
-    private String occupation;
     private String consultationGoal;
 }

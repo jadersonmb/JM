@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "foods")
+@Table(name = "meals")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,6 +37,12 @@ public class Meal {
     @Column(unique = true, nullable = false, length = 50)
     private String code;
 
+    @Column(nullable = false, length = 120)
+    private String name;
+
+    @Column(length = 255)
+    private String description;
+
     @Column(name = "typical_time")
     private LocalTime typicalTime;
 
@@ -49,5 +55,4 @@ public class Meal {
 
     @Column(name = "language", length = 5)
     private String language;
-
 }

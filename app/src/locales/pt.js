@@ -70,6 +70,14 @@ export default {
           label: 'País',
           placeholder: 'Brasil',
         },
+        education: {
+          label: 'Escolaridade',
+          placeholder: 'Selecione a escolaridade',
+        },
+        profession: {
+          label: 'Profissão',
+          placeholder: 'Selecione a profissão',
+        },
       },
       actions: {
         save: 'Salvar alterações',

@@ -36,6 +36,12 @@ public class EducationLevel {
     @Column(unique = true, nullable = false, length = 50)
     private String code;
 
+    @Column(nullable = false, length = 120)
+    private String name;
+
+    @Column(length = 255)
+    private String description;
+
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
 

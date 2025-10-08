@@ -36,6 +36,12 @@ public class Profession {
     @Column(unique = true, nullable = false, length = 50)
     private String code;
 
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    @Column(length = 255)
+    private String description;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

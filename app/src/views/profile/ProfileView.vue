@@ -103,6 +103,15 @@
             <label class="mb-1 block text-sm font-semibold text-slate-700" for="city">
               {{ t('settings.profile.fields.city.label') }}
             </label>
+            <select id="city" v-model="userForm.cityId" class="input"
+              :disabled="loadingUser || savingUser || !userForm.countryId || cities.length === 0">
+              <option value="">
+                {{ t('settings.profile.fields.city.placeholder') }}
+              </option>
+              <option v-for="city in cities" :key="city.id" :value="city.id">
+                {{ city.name }}
+              </option>
+            </select>
           </div>
           <div>
             <label class="mb-1 block text-sm font-semibold text-slate-700" for="state">
@@ -135,9 +144,46 @@
             <label class="mb-1 block text-sm font-semibold text-slate-700" for="country">
               {{ t('settings.profile.fields.country.label') }}
             </label>
-            <input id="country" v-model="userForm.country" type="text" class="input"
-              :placeholder="t('settings.profile.fields.country.placeholder')" autocomplete="country-name"
-              :disabled="loadingUser || savingUser" />
+            <select id="country" v-model="userForm.countryId" class="input"
+              :disabled="loadingUser || savingUser || countries.length === 0">
+              <option value="">
+                {{ t('settings.profile.fields.country.placeholder') }}
+              </option>
+              <option v-for="country in countries" :key="country.id" :value="country.id">
+                {{ country.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700" for="education">
+              {{ t('settings.profile.fields.education.label') }}
+            </label>
+            <select id="education" v-model="userForm.educationLevelId" class="input"
+              :disabled="loadingUser || savingUser || educationLevels.length === 0">
+              <option value="">
+                {{ t('settings.profile.fields.education.placeholder') }}
+              </option>
+              <option v-for="level in educationLevels" :key="level.id" :value="level.id">
+                {{ level.name }}
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-slate-700" for="profession">
+              {{ t('settings.profile.fields.profession.label') }}
+            </label>
+            <select id="profession" v-model="userForm.professionId" class="input"
+              :disabled="loadingUser || savingUser || professions.length === 0">
+              <option value="">
+                {{ t('settings.profile.fields.profession.placeholder') }}
+              </option>
+              <option v-for="profession in professions" :key="profession.id" :value="profession.id">
+                {{ profession.name }}
+              </option>
+            </select>
           </div>
         </div>
 
@@ -164,17 +210,23 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import { getUser, updateUser } from '@/services/users';
-import {
-  PhotoIcon
-} from '@heroicons/vue/24/outline';
+import { getUserSettings } from '@/services/settings';
+import { getCountries, getCities, getEducationLevels, getProfessions } from '@/services/reference';
+import { PhotoIcon } from '@heroicons/vue/24/outline';
 import { useI18n } from 'vue-i18n';
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const loadingUser = ref(false);
 const savingUser = ref(false);
+const loadingReference = ref(false);
 
+const countries = ref([]);
+const cities = ref([]);
+const educationLevels = ref([]);
+const professions = ref([]);
+const userSettings = ref({ language: '' });
 
 const emptyUser = () => ({
   id: '',
@@ -185,16 +237,20 @@ const emptyUser = () => ({
   documentNumber: '',
   avatarUrl: '',
   street: '',
-  city: '',
   state: '',
   postalCode: '',
-  country: '',
+  cityId: '',
+  countryId: '',
+  educationLevelId: '',
+  professionId: '',
 });
 
 const userForm = reactive(emptyUser());
 const initialUser = ref(structuredCloneIfPossible(emptyUser()));
 const file = ref(null);
 const preview = ref(auth.user?.avatarUrl ?? auth.user?.avatar ?? '');
+
+const userLanguage = computed(() => userSettings.value.language || locale.value);
 
 function structuredCloneIfPossible(value) {
   try {
@@ -204,9 +260,22 @@ function structuredCloneIfPossible(value) {
   }
 }
 
-const mapUserData = (data) => ({
+const mapUserData = (data = {}) => ({
   ...emptyUser(),
-  ...data,
+  id: data.id ?? '',
+  name: data.name ?? '',
+  lastName: data.lastName ?? '',
+  email: data.email ?? '',
+  phoneNumber: data.phoneNumber ?? '',
+  documentNumber: data.documentNumber ?? '',
+  avatarUrl: data.avatarUrl ?? '',
+  street: data.street ?? '',
+  state: data.state ?? '',
+  postalCode: data.postalCode ?? '',
+  cityId: data.cityId ?? '',
+  countryId: data.countryId ?? data.countryDTO?.id ?? '',
+  educationLevelId: data.educationLevelId ?? '',
+  professionId: data.professionId ?? '',
   userId: auth.user?.id ?? data?.userId ?? null,
 });
 
@@ -219,6 +288,7 @@ const resetProfile = () => {
     return;
   }
   Object.assign(userForm, structuredCloneIfPossible(initialUser.value));
+  loadCities(userForm.countryId, true);
 };
 
 const initials = (name = '') =>
@@ -249,6 +319,65 @@ const formatDate = (value) => {
   }
 };
 
+const loadSettings = async () => {
+  if (!auth.user?.id) {
+    return;
+  }
+  try {
+    const { data } = await getUserSettings(auth.user.id);
+    userSettings.value = { language: data?.language ?? userSettings.value.language ?? locale.value };
+  } catch (error) {
+    console.error('Failed to load user settings', error);
+    userSettings.value = { language: locale.value };
+  }
+};
+
+const referenceParams = computed(() =>
+  userLanguage.value ? { language: userLanguage.value } : {}
+);
+
+const loadReferenceData = async () => {
+  loadingReference.value = true;
+  try {
+    const params = referenceParams.value;
+    const [countriesResponse, educationResponse, professionResponse] = await Promise.all([
+      getCountries(params),
+      getEducationLevels(params),
+      getProfessions(params),
+    ]);
+    countries.value = countriesResponse.data ?? [];
+    educationLevels.value = educationResponse.data ?? [];
+    professions.value = professionResponse.data ?? [];
+  } catch (error) {
+    console.error('Failed to load reference data', error);
+  } finally {
+    loadingReference.value = false;
+  }
+};
+
+const loadCities = async (countryId, preserveSelection = false) => {
+  if (!countryId) {
+    cities.value = [];
+    if (!preserveSelection) {
+      userForm.cityId = '';
+    }
+    return;
+  }
+  try {
+    const { data } = await getCities(countryId, referenceParams.value);
+    cities.value = data ?? [];
+    if (userForm.cityId && !cities.value.some((city) => city.id === userForm.cityId) && !preserveSelection) {
+      userForm.cityId = '';
+    }
+  } catch (error) {
+    console.error('Failed to load cities', error);
+    cities.value = [];
+    if (!preserveSelection) {
+      userForm.cityId = '';
+    }
+  }
+};
+
 const loadUser = async () => {
   if (!auth.user?.id) {
     return;
@@ -259,16 +388,11 @@ const loadUser = async () => {
     const mapped = mapUserData(data ?? {});
     Object.assign(userForm, mapped);
     initialUser.value = structuredCloneIfPossible(mapped);
+    await loadCities(userForm.countryId, true);
   } finally {
     loadingUser.value = false;
   }
 };
-
-const mapSettingsData = (data) => ({
-  ...emptySettings(),
-  ...data,
-  userId: auth.user?.id ?? data?.userId ?? null,
-});
 
 const saveProfile = async () => {
   if (!auth.user?.id) {
@@ -276,20 +400,50 @@ const saveProfile = async () => {
   }
   savingUser.value = true;
   try {
-    const payload = { ...userForm, userId: auth.user.id };
-    const { data } = await updateUser(payload)
-    const mapped = mapSettingsData(data ?? payload);
+    const payload = {
+      ...userForm,
+      userId: auth.user.id,
+    };
+    const { data } = await updateUser(payload);
+    const mapped = mapUserData(data ?? payload);
+    Object.assign(userForm, mapped);
+    initialUser.value = structuredCloneIfPossible(mapped);
+    auth.user = { ...auth.user, ...mapped };
+    if (typeof auth.persist === 'function') {
+      auth.persist();
+    }
     notifications.push({
       type: 'success',
-      title: t('settings.preferences.toast.title'),
-      message: t('settings.preferences.toast.message'),
+      title: t('settings.profile.toast.title'),
+      message: t('settings.profile.toast.message'),
     });
   } finally {
     savingUser.value = false;
   }
 };
 
+watch(
+  () => userForm.countryId,
+  (countryId, previous) => {
+    if (countryId !== previous) {
+      loadCities(countryId);
+    }
+  }
+);
+
+watch(
+  userLanguage,
+  async () => {
+    await loadReferenceData();
+    if (userForm.countryId) {
+      await loadCities(userForm.countryId, true);
+    }
+  }
+);
+
 onMounted(async () => {
-  await Promise.all([loadUser()]);
+  await loadSettings();
+  await loadReferenceData();
+  await loadUser();
 });
 </script>

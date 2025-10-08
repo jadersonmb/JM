@@ -2,7 +2,6 @@ package com.jm.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -46,6 +45,12 @@ public class Food {
     @JoinColumn(name = "food_category_id", nullable = false)
     private FoodCategory foodCategory;
 
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    @Column(length = 255)
+    private String description;
+
     @Column(name = "average_calories", precision = 8, scale = 2)
     private BigDecimal averageCalories;
 
@@ -61,8 +66,9 @@ public class Food {
     @Column(name = "common_portion", precision = 8, scale = 2)
     private BigDecimal commonPortion;
 
-    @Column(name = "common_portion_unit", length = 20)
-    private String commonPortionUnit;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "common_portion_unit_id")
+    private MeasurementUnits commonPortionUnit;
 
     @Column(name = "is_active")
     private Boolean isActive = true;

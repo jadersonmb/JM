@@ -7,11 +7,9 @@ import com.jm.entity.Anamnese;
 import com.jm.entity.ExameBioquimico;
 import com.jm.entity.Refeicao24h;
 import com.jm.entity.Users;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.ReportingPolicy;
+import org.springframework.beans.BeanUtils;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,24 +17,18 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface AnamneseMapper {
+@Component
+public class AnamneseMapper {
 
-    @Mapping(target = "examesBioquimicos", ignore = true)
-    @Mapping(target = "refeicoes24h", ignore = true)
-    @Mapping(target = "userId", ignore = true)
-    AnamneseDTO toDTO(Anamnese entity);
+    public AnamneseDTO toDTO(Anamnese entity) {
+        if (entity == null) {
+            return null;
+        }
+        AnamneseDTO dto = new AnamneseDTO();
+        BeanUtils.copyProperties(entity, dto);
 
-    @Mapping(target = "examesBioquimicos", ignore = true)
-    @Mapping(target = "refeicoes24h", ignore = true)
-    @Mapping(target = "user", ignore = true)
-    Anamnese toEntity(AnamneseDTO dto);
-
-    @AfterMapping
-    default void afterToDto(Anamnese entity, @MappingTarget AnamneseDTO dto) {
         if (Objects.nonNull(entity.getExamesBioquimicos())) {
-            dto.setExamesBioquimicos(entity.getExamesBioquimicos()
-                    .stream()
+            dto.setExamesBioquimicos(entity.getExamesBioquimicos().stream()
                     .map(this::mapExameBioquimicoToDto)
                     .collect(Collectors.toList()));
         } else {
@@ -44,8 +36,7 @@ public interface AnamneseMapper {
         }
 
         if (Objects.nonNull(entity.getRefeicoes24h())) {
-            dto.setRefeicoes24h(entity.getRefeicoes24h()
-                    .stream()
+            dto.setRefeicoes24h(entity.getRefeicoes24h().stream()
                     .map(this::mapRefeicaoToDto)
                     .collect(Collectors.toList()));
         } else {
@@ -60,17 +51,23 @@ public interface AnamneseMapper {
             dto.setDataNascimento(user.getBirthDate());
             dto.setIdade(user.getAge());
             dto.setTelefone(user.getPhoneNumber());
-            dto.setEscolaridade(user.getEducation());
-            dto.setProfissao(user.getOccupation());
+            dto.setEscolaridade(user.getEducationLevel() != null ? user.getEducationLevel().getName() : null);
+            dto.setProfissao(user.getProfession() != null ? user.getProfession().getName() : null);
             dto.setObjetivoConsulta(user.getConsultationGoal());
         }
+
+        return dto;
     }
 
-    @AfterMapping
-    default void afterToEntity(AnamneseDTO dto, @MappingTarget Anamnese entity) {
+    public Anamnese toEntity(AnamneseDTO dto) {
+        if (dto == null) {
+            return null;
+        }
+        Anamnese entity = new Anamnese();
+        BeanUtils.copyProperties(dto, entity, "examesBioquimicos", "refeicoes24h", "userId");
+
         if (Objects.nonNull(dto.getExamesBioquimicos())) {
-            List<ExameBioquimico> exames = dto.getExamesBioquimicos()
-                    .stream()
+            List<ExameBioquimico> exames = dto.getExamesBioquimicos().stream()
                     .map(this::mapExameBioquimicoToEntity)
                     .collect(Collectors.toList());
             exames.forEach(exame -> exame.setAnamnese(entity));
@@ -80,8 +77,7 @@ public interface AnamneseMapper {
         }
 
         if (Objects.nonNull(dto.getRefeicoes24h())) {
-            List<Refeicao24h> refeicoes = dto.getRefeicoes24h()
-                    .stream()
+            List<Refeicao24h> refeicoes = dto.getRefeicoes24h().stream()
                     .map(this::mapRefeicaoToEntity)
                     .collect(Collectors.toList());
             refeicoes.forEach(refeicao -> refeicao.setAnamnese(entity));
@@ -89,9 +85,11 @@ public interface AnamneseMapper {
         } else {
             entity.setRefeicoes24h(new ArrayList<>());
         }
+
+        return entity;
     }
 
-    default ExameBioquimicoDTO mapExameBioquimicoToDto(ExameBioquimico entity) {
+    private ExameBioquimicoDTO mapExameBioquimicoToDto(ExameBioquimico entity) {
         if (entity == null) {
             return null;
         }
@@ -103,7 +101,7 @@ public interface AnamneseMapper {
                 .build();
     }
 
-    default ExameBioquimico mapExameBioquimicoToEntity(ExameBioquimicoDTO dto) {
+    private ExameBioquimico mapExameBioquimicoToEntity(ExameBioquimicoDTO dto) {
         if (dto == null) {
             return null;
         }
@@ -116,7 +114,7 @@ public interface AnamneseMapper {
                 .build();
     }
 
-    default Refeicao24hDTO mapRefeicaoToDto(Refeicao24h entity) {
+    private Refeicao24hDTO mapRefeicaoToDto(Refeicao24h entity) {
         if (entity == null) {
             return null;
         }
@@ -128,7 +126,7 @@ public interface AnamneseMapper {
                 .build();
     }
 
-    default Refeicao24h mapRefeicaoToEntity(Refeicao24hDTO dto) {
+    private Refeicao24h mapRefeicaoToEntity(Refeicao24hDTO dto) {
         if (dto == null) {
             return null;
         }
@@ -141,32 +139,30 @@ public interface AnamneseMapper {
                 .build();
     }
 
-    default String buildAddress(Users user) {
+    private String buildAddress(Users user) {
         List<String> parts = new ArrayList<>();
-        if (user.getStreet() != null && !user.getStreet().isBlank()) {
+        if (StringUtils.hasText(user.getStreet())) {
             parts.add(user.getStreet());
         }
-        if (user.getCity() != null && !user.getCity().isBlank()) {
-            parts.add(user.getCity());
+        if (user.getCity() != null && StringUtils.hasText(user.getCity().getName())) {
+            parts.add(user.getCity().getName());
         }
-        if (user.getState() != null && !user.getState().isBlank()) {
+        if (StringUtils.hasText(user.getState())) {
             parts.add(user.getState());
         }
-        /*
-         * if (user.getCountry() != null && !user.getCountry().isBlank()) {
-         * parts.add(user.getCountry());
-         * }
-         */
+        if (user.getCountry() != null && StringUtils.hasText(user.getCountry().getName())) {
+            parts.add(user.getCountry().getName());
+        }
         return String.join(", ", parts);
     }
 
-    default String buildFullName(Users user) {
+    private String buildFullName(Users user) {
         String firstName = user.getName();
         String lastName = user.getLastName();
-        if (firstName == null || firstName.isBlank()) {
-            return lastName != null ? lastName : "";
+        if (!StringUtils.hasText(firstName)) {
+            return StringUtils.hasText(lastName) ? lastName : "";
         }
-        if (lastName == null || lastName.isBlank()) {
+        if (!StringUtils.hasText(lastName)) {
             return firstName;
         }
         return String.format("%s %s", firstName, lastName).trim();
