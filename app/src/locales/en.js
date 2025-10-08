@@ -70,6 +70,14 @@ export default {
           label: 'Country',
           placeholder: 'Country',
         },
+        education: {
+          label: 'Education level',
+          placeholder: 'Select an education level',
+        },
+        profession: {
+          label: 'Profession',
+          placeholder: 'Select a profession',
+        },
       },
       actions: {
         save: 'Save changes',

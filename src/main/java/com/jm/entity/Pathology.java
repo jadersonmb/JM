@@ -36,6 +36,12 @@ public class Pathology {
     @Column(unique = true, nullable = false, length = 50)
     private String code;
 
+    @Column(nullable = false, length = 150)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 50)
     private String category;
 

@@ -12,8 +12,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -45,8 +46,8 @@ public class BiochemicalExam {
     @Column(nullable = true, length = 50)
     private String description;
 
-    @OneToOne
-    @JoinColumn(name = "measurement_unit_id", referencedColumnName = "id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "measurement_unit_id", nullable = false)
     private MeasurementUnits measurementUnit;
 
     @Column(name = "min_reference_value", precision = 10, scale = 2)

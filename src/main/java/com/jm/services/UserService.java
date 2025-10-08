@@ -6,7 +6,10 @@ import com.jm.entity.Users;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.UserMapper;
+import com.jm.repository.CityRepository;
 import com.jm.repository.CountryRepository;
+import com.jm.repository.EducationLevelRepository;
+import com.jm.repository.ProfessionRepository;
 import com.jm.repository.UserRepository;
 import com.jm.speciation.UserSpeciation;
 import org.slf4j.Logger;
@@ -30,14 +33,21 @@ public class UserService {
     private final MessageSource messageSource;
     private final PasswordEncoder passwordEncoder;
     private final CountryRepository countriesRepository;
+    private final CityRepository cityRepository;
+    private final EducationLevelRepository educationLevelRepository;
+    private final ProfessionRepository professionRepository;
 
     public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
-            PasswordEncoder passwordEncoder, CountryRepository countriesRepository) {
+            PasswordEncoder passwordEncoder, CountryRepository countriesRepository, CityRepository cityRepository,
+            EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
         this.passwordEncoder = passwordEncoder;
         this.countriesRepository = countriesRepository;
+        this.cityRepository = cityRepository;
+        this.educationLevelRepository = educationLevelRepository;
+        this.professionRepository = professionRepository;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -46,7 +56,14 @@ public class UserService {
 
     public UserDTO createUser(UserDTO dto) {
         Users entity = mapper.toEntity(dto);
-        entity.setCountry(countriesRepository.findById(dto.getCountryId()).orElse(null));
+        entity.setCountry(dto.getCountryId() != null ? countriesRepository.findById(dto.getCountryId()).orElse(null) : null);
+        entity.setCity(dto.getCityId() != null ? cityRepository.findById(dto.getCityId()).orElse(null) : null);
+        entity.setEducationLevel(dto.getEducationLevelId() != null
+                ? educationLevelRepository.findById(dto.getEducationLevelId()).orElse(null)
+                : null);
+        entity.setProfession(dto.getProfessionId() != null
+                ? professionRepository.findById(dto.getProfessionId()).orElse(null)
+                : null);
         if (!StringUtils.hasText(entity.getPassword()) && dto.getId() != null) {
             repository.findById(dto.getId()).ifPresent(existing -> entity.setPassword(existing.getPassword()));
         }

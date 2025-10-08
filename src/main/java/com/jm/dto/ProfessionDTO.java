@@ -1,23 +1,20 @@
 package com.jm.dto;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CountryDTO {
+public class ProfessionDTO {
 
     private UUID id;
     private String code;
     private String name;
-    private String nationality;
-    private String language;
-    private LocalDateTime createdAt;
+    private String description;
 }

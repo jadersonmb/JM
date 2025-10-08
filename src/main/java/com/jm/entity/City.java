@@ -79,4 +79,7 @@ public class City {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "language", length = 5)
+    private String language;
+
 }

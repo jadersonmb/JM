@@ -14,27 +14,37 @@ public class UserMapper {
         if (entity == null) {
             return null;
         }
+
+        var country = entity.getCountry();
+        var city = entity.getCity();
+        var education = entity.getEducationLevel();
+        var profession = entity.getProfession();
+
         return UserDTO.builder()
                 .id(entity.getId())
                 .name(entity.getName())
                 .email(entity.getEmail())
                 .lastName(entity.getLastName())
-                .city(entity.getCity())
                 .documentNumber(entity.getDocumentNumber())
                 .phoneNumber(entity.getPhoneNumber())
                 .postalCode(entity.getPostalCode())
                 .state(entity.getState())
                 .street(entity.getStreet())
+                .cityId(city != null ? city.getId() : null)
+                .cityName(city != null ? city.getName() : null)
+                .countryId(country != null ? country.getId() : null)
+                .countryDTO(country != null ? countryMapper.toDTO(country) : null)
+                .educationLevelId(education != null ? education.getId() : null)
+                .educationLevelName(education != null ? education.getName() : null)
+                .professionId(profession != null ? profession.getId() : null)
+                .professionName(profession != null ? profession.getName() : null)
                 .type(entity.getType())
                 .avatarUrl(entity.getAvatarUrl())
                 .stripeCustomerId(entity.getStripeCustomerId())
                 .asaasCustomerId(entity.getAsaasCustomerId())
                 .birthDate(entity.getBirthDate())
                 .age(entity.getAge())
-                .education(entity.getEducation())
-                .occupation(entity.getOccupation())
                 .consultationGoal(entity.getConsultationGoal())
-                .countryDTO(countryMapper.toDTO(entity.getCountry()))
                 .build();
     }
 
@@ -47,7 +57,6 @@ public class UserMapper {
                 .name(userDTO.getName())
                 .email(userDTO.getEmail())
                 .lastName(userDTO.getLastName())
-                .city(userDTO.getCity())
                 .documentNumber(userDTO.getDocumentNumber())
                 .phoneNumber(userDTO.getPhoneNumber())
                 .postalCode(userDTO.getPostalCode())
@@ -60,8 +69,6 @@ public class UserMapper {
                 .asaasCustomerId(userDTO.getAsaasCustomerId())
                 .birthDate(userDTO.getBirthDate())
                 .age(userDTO.getAge())
-                .education(userDTO.getEducation())
-                .occupation(userDTO.getOccupation())
                 .consultationGoal(userDTO.getConsultationGoal())
                 .build();
     }
@@ -70,7 +77,6 @@ public class UserMapper {
         entity.setName(entity.getName());
         entity.setHashCode(entity.getHashCode());
         entity.setLastName(entity.getLastName());
-        entity.setCity(entity.getCity());
         entity.setCountry(entity.getCountry());
         entity.setDocumentNumber(entity.getDocumentNumber());
         entity.setPhoneNumber(entity.getPhoneNumber());

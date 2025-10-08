@@ -47,6 +47,9 @@ public class FoodCategory {
     @OneToMany(mappedBy = "foodCategory", fetch = FetchType.LAZY)
     private List<Food> foods = new ArrayList<>();
 
+    @Column(name = "language", length = 5)
+    private String language;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 

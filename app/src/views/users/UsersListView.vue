@@ -28,8 +28,8 @@
           <div class="relative mt-1">
             <MagnifyingGlassIcon
               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input v-model="searchInput" type="search" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg 
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent  text-sm 
+            <input v-model="searchInput" type="search" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent  text-sm
            placeholder:text-gray-400" placeholder="Name or email" />
           </div>
         </div>
@@ -48,6 +48,36 @@
             <option value="all">All statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Country</label>
+          <select v-model="filters.countryId" class="input mt-1">
+            <option value="">All countries</option>
+            <option v-for="country in countries" :key="country.id" :value="country.id">{{ country.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">City</label>
+          <select v-model="filters.cityId" class="input mt-1" :disabled="!filters.countryId || cities.length === 0">
+            <option value="">All cities</option>
+            <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Education</label>
+          <select v-model="filters.educationLevelId" class="input mt-1">
+            <option value="">All education levels</option>
+            <option v-for="level in educationLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Profession</label>
+          <select v-model="filters.professionId" class="input mt-1">
+            <option value="">All professions</option>
+            <option v-for="profession in professions" :key="profession.id" :value="profession.id">
+              {{ profession.name }}
+            </option>
           </select>
         </div>
       </template>
@@ -80,6 +110,22 @@
           :class="row.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'">
           {{ row.status }}
         </span>
+      </template>
+
+      <template #cell:country="{ row }">
+        <span class="text-sm text-slate-600">{{ row.country || '—' }}</span>
+      </template>
+
+      <template #cell:city="{ row }">
+        <span class="text-sm text-slate-600">{{ row.city || '—' }}</span>
+      </template>
+
+      <template #cell:educationLevel="{ row }">
+        <span class="text-sm text-slate-600">{{ row.educationLevel || '—' }}</span>
+      </template>
+
+      <template #cell:profession="{ row }">
+        <span class="text-sm text-slate-600">{{ row.profession || '—' }}</span>
       </template>
 
       <template #cell:createdAt="{ row }">
@@ -117,10 +163,16 @@ import DataTable from '@/components/DataTable.vue';
 import UserFormModal from '@/components/UserFormModal.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { useNotificationStore } from '@/stores/notifications';
+import { useAuthStore } from '@/stores/auth';
 import { createUser, deleteUser, getUsers, updateUser } from '@/services/users';
 import { uploadFile } from '@/services/cloudFlare';
+import { getUserSettings } from '@/services/settings';
+import { getCountries, getCities, getEducationLevels, getProfessions } from '@/services/reference';
+import { useI18n } from 'vue-i18n';
 
 const notifications = useNotificationStore();
+const auth = useAuthStore();
+const { locale } = useI18n();
 
 const FILTER_STORAGE_KEY = 'users.table.filters';
 
@@ -128,9 +180,13 @@ const filters = reactive({
   search: '',
   role: 'all',
   status: 'all',
+  countryId: '',
+  cityId: '',
+  educationLevelId: '',
+  professionId: '',
   sortField: 'name',
   sortDirection: 'desc',
-  page: 0,
+  page: 1,
   perPage: 10,
 });
 
@@ -138,8 +194,15 @@ const searchInput = ref('');
 const loading = ref(false);
 const users = reactive({
   items: [],
-  meta: { page: 0, perPage: 10, total: 0, lastPage: 1, from: 0, to: 0 },
+  meta: { page: 1, perPage: 10, total: 0, lastPage: 1, from: 0, to: 0 },
 });
+
+const countries = ref([]);
+const cities = ref([]);
+const educationLevels = ref([]);
+const professions = ref([]);
+const userSettings = ref({ language: '' });
+const userLanguage = computed(() => userSettings.value.language || locale.value);
 
 let searchTimeout = null;
 
@@ -152,12 +215,37 @@ watch(searchInput, (value) => {
   }, 300);
 });
 
-watch(() => [filters.role, filters.status], () => {
-  filters.page = 1;
-  fetchUsers();
-});
+watch(
+  () => [
+    filters.role,
+    filters.status,
+    filters.countryId,
+    filters.cityId,
+    filters.educationLevelId,
+    filters.professionId,
+  ],
+  () => {
+    filters.page = 1;
+    fetchUsers();
+  }
+);
 
 watch(filters, () => persistFilters(), { deep: true });
+
+watch(
+  () => filters.countryId,
+  async (countryId, previous) => {
+    if (countryId !== previous) {
+      filters.cityId = '';
+      await loadCities(countryId);
+    }
+  }
+);
+
+watch(userLanguage, async () => {
+  await loadReferenceData();
+  await loadCities(filters.countryId, true);
+});
 
 const tableColumns = reactive(loadColumns());
 
@@ -170,9 +258,14 @@ const deleteQueue = ref([]);
 const formSubmitting = ref(false);
 const activeUser = ref(null);
 
-onMounted(() => {
+const referenceParams = computed(() => (userLanguage.value ? { language: userLanguage.value } : {}));
+
+onMounted(async () => {
   loadFilters();
-  fetchUsers();
+  await loadSettings();
+  await loadReferenceData();
+  await loadCities(filters.countryId, true);
+  await fetchUsers();
 });
 
 onBeforeUnmount(() => {
@@ -191,6 +284,11 @@ function loadFilters() {
     if (stored.perPage) filters.perPage = stored.perPage;
     if (stored.sortField) filters.sortField = stored.sortField;
     if (stored.sortDirection) filters.sortDirection = stored.sortDirection;
+    if (stored.countryId) filters.countryId = stored.countryId;
+    if (stored.cityId) filters.cityId = stored.cityId;
+    if (stored.educationLevelId) filters.educationLevelId = stored.educationLevelId;
+    if (stored.professionId) filters.professionId = stored.professionId;
+    if (stored.page) filters.page = stored.page;
   } catch {
     console.error('Failed to load filters');
   }
@@ -201,11 +299,69 @@ function persistFilters() {
     search: filters.search,
     role: filters.role,
     status: filters.status,
+    countryId: filters.countryId,
+    cityId: filters.cityId,
+    educationLevelId: filters.educationLevelId,
+    professionId: filters.professionId,
     perPage: filters.perPage,
     sortField: filters.sortField,
     sortDirection: filters.sortDirection,
+    page: filters.page,
   };
   localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(snapshot));
+}
+
+async function loadSettings() {
+  if (!auth.user?.id) {
+    userSettings.value = { language: locale.value };
+    return;
+  }
+  try {
+    const { data } = await getUserSettings(auth.user.id);
+    userSettings.value = { language: data?.language ?? locale.value };
+  } catch (error) {
+    console.error('Failed to load user settings', error);
+    userSettings.value = { language: locale.value };
+  }
+}
+
+async function loadReferenceData() {
+  try {
+    const params = referenceParams.value;
+    const [countriesResponse, educationResponse, professionResponse] = await Promise.all([
+      getCountries(params),
+      getEducationLevels(params),
+      getProfessions(params),
+    ]);
+    countries.value = countriesResponse.data ?? [];
+    educationLevels.value = educationResponse.data ?? [];
+    professions.value = professionResponse.data ?? [];
+  } catch (error) {
+    console.error('Failed to load reference data', error);
+  }
+}
+
+async function loadCities(countryId, preserveSelection = false) {
+  if (!countryId) {
+    cities.value = [];
+    if (!preserveSelection) {
+      filters.cityId = '';
+    }
+    return;
+  }
+  try {
+    const { data } = await getCities(countryId, referenceParams.value);
+    cities.value = data ?? [];
+    if (filters.cityId && !cities.value.some((city) => city.id === filters.cityId) && !preserveSelection) {
+      filters.cityId = '';
+    }
+  } catch (error) {
+    console.error('Failed to load cities', error);
+    cities.value = [];
+    if (!preserveSelection) {
+      filters.cityId = '';
+    }
+  }
 }
 
 async function fetchUsers() {
@@ -218,6 +374,10 @@ async function fetchUsers() {
       role: filters.role !== 'all' ? filters.role : undefined,
       status: filters.status !== 'all' ? filters.status : undefined,
       sort: `${filters.sortField},${filters.sortDirection}`,
+      countryId: filters.countryId || undefined,
+      cityId: filters.cityId || undefined,
+      educationLevelId: filters.educationLevelId || undefined,
+      professionId: filters.professionId || undefined,
     };
 
     const { data } = await getUsers(params);
@@ -240,6 +400,10 @@ async function fetchUsers() {
       status: item.status,
       avatarUrl: item.avatarUrl ?? item.avatar ?? null,
       createdAt: item.createdAt ?? item.created_at,
+      country: item.countryDTO?.name ?? item.countryName ?? '',
+      city: item.cityName ?? '',
+      educationLevel: item.educationLevelName ?? '',
+      profession: item.professionName ?? '',
     }));
 
     users.meta = {
@@ -267,23 +431,23 @@ const handleSort = ({ field, direction }) => {
   filters.sortField = field;
   filters.sortDirection = direction;
   fetchUsers();
-}
+};
 
 const handlePage = (page) => {
   filters.page = page;
   fetchUsers();
-}
+};
 
 const handlePerPage = (perPage) => {
   filters.perPage = perPage;
   filters.page = 1;
   fetchUsers();
-}
+};
 
 const persistColumns = (columns) => {
   localStorage.setItem('users.table.columns', JSON.stringify(columns));
   tableColumns.splice(0, tableColumns.length, ...columns);
-}
+};
 
 function loadColumns() {
   const defaults = [
@@ -291,6 +455,10 @@ function loadColumns() {
     { key: 'email', label: 'Email', sortable: true, visible: true },
     { key: 'role', label: 'Role', sortable: true, visible: true },
     { key: 'status', label: 'Status', sortable: true, visible: true },
+    { key: 'country', label: 'Country', sortable: false, visible: true },
+    { key: 'city', label: 'City', sortable: false, visible: true },
+    { key: 'educationLevel', label: 'Education', sortable: false, visible: false },
+    { key: 'profession', label: 'Profession', sortable: false, visible: false },
     { key: 'createdAt', label: 'Created', sortable: true, visible: true },
   ];
   try {
@@ -310,7 +478,7 @@ const initials = (name = '') => {
     .join('')
     .substring(0, 2)
     .toUpperCase();
-}
+};
 
 const formatDate = (value) => {
   if (!value) return 'N/A';
@@ -322,12 +490,12 @@ const formatDate = (value) => {
   } catch (error) {
     return value;
   }
-}
+};
 
 const openCreate = () => {
   activeUser.value = null;
   formModalOpen.value = true;
-}
+};
 
 const findUserById = (id) => users.items.find((user) => user.id === id);
 
@@ -336,7 +504,7 @@ const openEdit = (id) => {
   if (!user) return;
   activeUser.value = user;
   formModalOpen.value = true;
-}
+};
 
 const openBulkDelete = () => {
   if (!selectedIds.value.length) return;
@@ -344,14 +512,15 @@ const openBulkDelete = () => {
   confirmTitle.value = `Delete ${deleteQueue.value.length} users`;
   confirmMessage.value = 'Deleted users will lose access immediately. Proceed?';
   confirmOpen.value = true;
-}
+};
 
 const prepareDelete = (id) => {
   deleteQueue.value = [id];
   confirmTitle.value = 'Delete user';
   confirmMessage.value = 'The user will be permanently removed.';
   confirmOpen.value = true;
-}
+};
+
 const handleSubmit = async (payload) => {
   formSubmitting.value = true;
   try {
@@ -369,8 +538,8 @@ const handleSubmit = async (payload) => {
 
     if (activeUser.value?.id) {
       formData.append('id', activeUser.value?.id);
-      if(payload.avatarFile != null) {
-          const params = {
+      if (payload.avatarFile != null) {
+        const params = {
           file: payload.avatarFile,
           userId: activeUser.value?.id,
         };
@@ -380,16 +549,16 @@ const handleSubmit = async (payload) => {
       notifications.push({ type: 'success', title: 'User updated', message: `${payload.name} has been updated.` });
     } else {
       const { data } = await createUser(formData);
-      if(payload.avatarFile != null) {
-          const params = {
+      if (payload.avatarFile != null) {
+        const params = {
           file: payload.avatarFile,
           userId: data?.id,
         };
-       
-       const { data: imageDTO } =  await uploadFile(params);
-       formData.append('avatarUrl', imageDTO?.url);
-       formData.append('id', data?.id);
-       await updateUser(formData)
+
+        const { data: imageDTO } = await uploadFile(params);
+        formData.append('avatarUrl', imageDTO?.url);
+        formData.append('id', data?.id);
+        await updateUser(formData);
       }
       notifications.push({ type: 'success', title: 'User created', message: `${payload.name} has been added.` });
     }
@@ -401,7 +570,7 @@ const handleSubmit = async (payload) => {
   } finally {
     formSubmitting.value = false;
   }
-}
+};
 
 const handleConfirmDelete = async () => {
   if (!deleteQueue.value.length) return;
@@ -418,5 +587,5 @@ const handleConfirmDelete = async () => {
     const message = error.response?.data?.message ?? 'Unable to delete users.';
     notifications.push({ type: 'error', title: 'Delete failed', message });
   }
-}
+};
 </script>
