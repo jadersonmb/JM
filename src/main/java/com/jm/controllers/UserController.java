@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -40,16 +41,23 @@ public class UserController {
         return ResponseEntity.ok().body(listAllAccountDTO);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDTO> findById(@PathVariable UUID id) throws JMException {
+        logger.debug("REST request to get user {}", id);
+        return ResponseEntity.ok(userService.findById(id));
+    }
+
     @PutMapping
-    public ResponseEntity<?> update(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<UserDTO> update(@RequestBody UserDTO userDTO) {
         logger.debug("REST request to update User : {}", userDTO);
 
         UserDTO userSaveDTO = userService.findById(userDTO.getId());
         if(Objects.nonNull(userSaveDTO.getId())) {
             BeanUtils.copyProperties(userDTO, userSaveDTO, "id");
-            userService.createUser(userSaveDTO);
+            UserDTO updated = userService.createUser(userSaveDTO);
+            return ResponseEntity.ok(updated);
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(userSaveDTO);
     }
 
     @ExceptionHandler({JMException.class})
