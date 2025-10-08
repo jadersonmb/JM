@@ -1,10 +1,10 @@
 -- Add personal information columns to user_entity for anamnesis linkage
 ALTER TABLE user_entity
-    ADD COLUMN birth_date DATE,
-    ADD COLUMN age INTEGER,
-    ADD COLUMN education VARCHAR(150),
-    ADD COLUMN occupation VARCHAR(150),
-    ADD COLUMN consultation_goal VARCHAR(1000);
+    ADD COLUMN IF NOT EXISTS birth_date DATE,
+    ADD COLUMN IF NOT EXISTS age INTEGER,
+    ADD COLUMN IF NOT EXISTS education VARCHAR(150),
+    ADD COLUMN IF NOT EXISTS occupation VARCHAR(150),
+    ADD COLUMN IF NOT EXISTS consultation_goal VARCHAR(1000);
 
 -- Create anamnese table
 CREATE TABLE IF NOT EXISTS anamnese (

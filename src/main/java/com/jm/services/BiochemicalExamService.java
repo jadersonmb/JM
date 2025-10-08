@@ -40,7 +40,8 @@ public class BiochemicalExamService {
                 .name(entity.getName())
                 .description(entity.getDescription())
                 .measurementUnitId(entity.getMeasurementUnit() != null ? entity.getMeasurementUnit().getId() : null)
-                .measurementUnitName(entity.getMeasurementUnit() != null ? entity.getMeasurementUnit().getName() : null)
+                .measurementUnitDescription(
+                        entity.getMeasurementUnit() != null ? entity.getMeasurementUnit().getDescription() : null)
                 .minReferenceValue(entity.getMinReferenceValue())
                 .maxReferenceValue(entity.getMaxReferenceValue())
                 .build();

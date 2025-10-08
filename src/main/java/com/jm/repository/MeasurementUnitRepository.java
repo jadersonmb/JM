@@ -10,7 +10,7 @@ import java.util.UUID;
 @Repository
 public interface MeasurementUnitRepository extends JpaRepository<MeasurementUnits, UUID> {
 
-    List<MeasurementUnits> findByLanguageIgnoreCaseOrLanguageIsNullOrderByNameAsc(String language);
+    List<MeasurementUnits> findByLanguageIgnoreCaseOrLanguageIsNullOrderByDescriptionAsc(String language);
 
-    List<MeasurementUnits> findAllByOrderByNameAsc();
+    List<MeasurementUnits> findAllByOrderByDescriptionAsc();
 }

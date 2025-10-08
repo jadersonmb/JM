@@ -1,7 +1,7 @@
 ALTER TABLE food_categories
     ADD COLUMN IF NOT EXISTS language VARCHAR(5) DEFAULT NULL AFTER color;
 
-UPDATE food_categories SET language = 'en' WHERE language IS NULL;
+UPDATE food_categories SET language = 'en-US' WHERE language IS NULL;
 
 CREATE TABLE IF NOT EXISTS cities (
     id CHAR(36) PRIMARY KEY,
@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_user_entity_city_id ON user_entity (city_id);
 CREATE INDEX IF NOT EXISTS idx_user_entity_education_id ON user_entity (education_level_id);
 CREATE INDEX IF NOT EXISTS idx_user_entity_profession_id ON user_entity (profession_id);
 
-INSERT INTO cities (id, country_id, state_code, state_name, city_code, name, latitude, longitude, population, timezone,
+INSERT IGNORE INTO cities (id, country_id, state_code, state_name, city_code, name, latitude, longitude, population, timezone,
                     is_capital, language)
 VALUES
     (UUID(), (SELECT id FROM countries WHERE code = 'US' LIMIT 1), 'CA', 'California', 'US-LAX', 'Los Angeles',
@@ -73,6 +73,6 @@ VALUES
     (UUID(), (SELECT id FROM countries WHERE code = 'PT' LIMIT 1), 'PRT', 'Porto', 'PT-PRT', 'Porto',
      41.157944, -8.629105, 237559, 'Europe/Lisbon', FALSE, 'pt-PT'),
     (UUID(), (SELECT id FROM countries WHERE code = 'CA' LIMIT 1), 'ON', 'Ontario', 'CA-TOR', 'Toronto',
-     43.653225, -79.383186, 2731571, 'America/Toronto', FALSE, 'en-US'),
+     43.653225, -79.383186, 2731571, 'America/Toronto', FALSE, 'CA-en'),
     (UUID(), (SELECT id FROM countries WHERE code = 'CA' LIMIT 1), 'BC', 'British Columbia', 'CA-VAN', 'Vancouver',
-     49.282729, -123.120738, 662248, 'America/Vancouver', FALSE, 'en-US');
+     49.282729, -123.120738, 662248, 'America/Vancouver', FALSE, 'CA-en');

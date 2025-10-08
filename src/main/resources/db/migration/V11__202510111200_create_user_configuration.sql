@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS user_configuration (
     push_notifications BOOLEAN NOT NULL DEFAULT FALSE,
     security_alerts BOOLEAN NOT NULL DEFAULT TRUE,
     product_updates BOOLEAN NOT NULL DEFAULT TRUE,
-    language VARCHAR(20) DEFAULT 'pt-BR',
+    language VARCHAR(20) DEFAULT 'en-US',
     timezone VARCHAR(60) DEFAULT 'America/Sao_Paulo',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

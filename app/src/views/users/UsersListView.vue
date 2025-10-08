@@ -258,7 +258,7 @@ const deleteQueue = ref([]);
 const formSubmitting = ref(false);
 const activeUser = ref(null);
 
-const referenceParams = computed(() => (userLanguage.value ? { language: userLanguage.value } : {}));
+const referenceParams = computed(() => ({ language: locale.value }));
 
 onMounted(async () => {
   loadFilters();

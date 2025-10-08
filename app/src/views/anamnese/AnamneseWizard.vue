@@ -220,6 +220,7 @@ import {
   getPathologies,
   getBiochemicalExams,
 } from '@/services/reference';
+import { getUserSettings } from '@/services/settings';
 import { PencilIcon } from '@heroicons/vue/24/outline';
 
 const STORAGE_KEY = 'jm_anamnese_wizard_draft';
@@ -235,6 +236,7 @@ const viewMode = ref('form');
 const anamneses = ref([]);
 const anamnesesLoading = ref(false);
 const selectedAnamnese = ref(null);
+const userSettings = ref({ language: '' });
 
 const referenceLoading = reactive({
   general: false,
@@ -253,7 +255,19 @@ const referenceData = reactive({
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const isClient = computed(() => !isAdmin.value);
 
-const referenceParams = computed(() => ({ language: locale.value }));
+const referenceParams = computed(() => userSettings.value.language || locale.value);
+const loadSettings = async () => {
+  if (!auth.user?.id) {
+    return;
+  }
+  try {
+    const { data } = await getUserSettings(auth.user.id);
+    userSettings.value = { language: data?.language ?? userSettings.value.language ?? locale.value };
+  } catch (error) {
+    console.error('Failed to load user settings', error);
+    userSettings.value = { language: locale.value };
+  }
+};
 
 const createInitialForm = () => ({
   id: null,
@@ -569,7 +583,8 @@ const exportPdf = () => {
 const loadReferenceData = async () => {
   referenceLoading.general = true;
   try {
-    const params = referenceParams.value;
+    console.log('Loading reference data with params:', referenceParams.value);
+    const params = { language: referenceParams.value };
     const [countriesResponse, educationResponse, professionResponse, pathologiesResponse, biochemicalResponse] =
       await Promise.all([
         getCountries(params),
@@ -600,7 +615,7 @@ const loadCitiesReference = async (countryId, preserveSelection = false) => {
   }
   referenceLoading.cities = true;
   try {
-    const { data } = await getCities(countryId, referenceParams.value);
+    const { data } = await getCities(countryId, { language: referenceParams.value });
     referenceData.cities = data ?? [];
     if (!preserveSelection && form.cityId && !referenceData.cities.some((city) => city.id === form.cityId)) {
       form.cityId = null;
@@ -837,6 +852,7 @@ watch(
 );
 
 onMounted(async () => {
+  await loadSettings();
   await loadReferenceData();
   if (form.countryId) {
     await loadCitiesReference(form.countryId, true);

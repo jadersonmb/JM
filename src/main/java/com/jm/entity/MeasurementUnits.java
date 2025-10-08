@@ -39,9 +39,6 @@ public class MeasurementUnits {
     @Column(unique = true, nullable = false, length = 20)
     private String code;
 
-    @Column(nullable = false, length = 50)
-    private String name;
-
     @Column(nullable = false, length = 10)
     private String symbol;
 
@@ -60,9 +57,6 @@ public class MeasurementUnits {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
-
-    @Column(name = "sort_order")
-    private Integer sortOrder = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

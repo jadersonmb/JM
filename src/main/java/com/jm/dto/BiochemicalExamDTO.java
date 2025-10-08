@@ -19,7 +19,7 @@ public class BiochemicalExamDTO {
     private String name;
     private String description;
     private UUID measurementUnitId;
-    private String measurementUnitName;
+    private String measurementUnitDescription;
     private BigDecimal minReferenceValue;
     private BigDecimal maxReferenceValue;
 }

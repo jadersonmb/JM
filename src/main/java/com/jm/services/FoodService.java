@@ -60,9 +60,10 @@ public class FoodService {
                 .averageCarbs(entity.getAverageCarbs())
                 .averageFat(entity.getAverageFat())
                 .commonPortion(entity.getCommonPortion())
-                .commonPortionUnitId(entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getId() : null)
+                .commonPortionUnitId(
+                        entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getId() : null)
                 .commonPortionUnitName(
-                        entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getName() : null)
+                        entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getDescription() : null)
                 .build();
     }
 }

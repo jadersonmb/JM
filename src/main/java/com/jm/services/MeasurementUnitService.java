@@ -22,10 +22,10 @@ public class MeasurementUnitService {
     public List<MeasurementUnitDTO> findAll(String language) {
         Map<UUID, MeasurementUnits> accumulator = new LinkedHashMap<>();
         if (StringUtils.hasText(language)) {
-            repository.findByLanguageIgnoreCaseOrLanguageIsNullOrderByNameAsc(language)
+            repository.findByLanguageIgnoreCaseOrLanguageIsNullOrderByDescriptionAsc(language)
                     .forEach(unit -> accumulator.put(unit.getId(), unit));
         } else {
-            repository.findAllByOrderByNameAsc()
+            repository.findAllByOrderByDescriptionAsc()
                     .forEach(unit -> accumulator.put(unit.getId(), unit));
         }
         return accumulator.values().stream()
@@ -37,7 +37,6 @@ public class MeasurementUnitService {
         return MeasurementUnitDTO.builder()
                 .id(entity.getId())
                 .code(entity.getCode())
-                .name(entity.getName())
                 .symbol(entity.getSymbol())
                 .unitType(entity.getUnitType())
                 .conversionFactor(entity.getConversionFactor())

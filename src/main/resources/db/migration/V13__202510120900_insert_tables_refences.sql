@@ -1,5 +1,5 @@
 -- Insert countries
-INSERT INTO countries (id, code, name, nationality) VALUES
+INSERT IGNORE INTO countries (id, code, name, nationality) VALUES
 (UUID(), 'US', 'United States', 'American'),
 (UUID(), 'BR', 'Brazil', 'Brazilian'),
 (UUID(), 'GB', 'United Kingdom', 'British'),
@@ -12,7 +12,7 @@ INSERT INTO countries (id, code, name, nationality) VALUES
 (UUID(), 'IT', 'Italy', 'Italian');
 
 -- Insert education levels
-INSERT INTO education_levels (id, code, name, description) VALUES
+INSERT IGNORE INTO education_levels (id, code, name, description) VALUES
 (UUID(), 'ELEMENTARY', 'Elementary School', 'Basic education up to 5th grade'),
 (UUID(), 'MIDDLE', 'Middle School', 'Education from 6th to 9th grade'),
 (UUID(), 'HIGH', 'High School', 'Secondary education'),
@@ -23,7 +23,7 @@ INSERT INTO education_levels (id, code, name, description) VALUES
 (UUID(), 'POST_DOC', 'Postdoctoral', 'Postdoctoral studies');
 
 -- Insert professions
-INSERT INTO professions (id, code, name, description) VALUES
+INSERT IGNORE INTO professions (id, code, name, description) VALUES
 (UUID(), 'STUDENT', 'Student', 'Currently studying'),
 (UUID(), 'TEACHER', 'Teacher', 'Education professional'),
 (UUID(), 'ENGINEER', 'Engineer', 'Engineering professional'),
@@ -41,7 +41,7 @@ INSERT INTO professions (id, code, name, description) VALUES
 (UUID(),'UNEMPLOYED', 'Unemployed', 'Currently seeking employment');
 
 -- Insert measurement units
-INSERT INTO measurement_units (id, code, name, symbol, unit_type) VALUES
+INSERT IGNORE INTO measurement_units (id, code, name, symbol, unit_type) VALUES
 -- Weight units
 (UUID(), 'G', 'Gram', 'g', 'WEIGHT'),
 (UUID(), 'KG', 'Kilogram', 'kg', 'WEIGHT'),
@@ -64,7 +64,7 @@ INSERT INTO measurement_units (id, code, name, symbol, unit_type) VALUES
 (UUID(), 'PIECE', 'Piece', 'pc', 'COUNT');
 
 -- Insert food categories
-INSERT INTO food_categories (id, name, description, color) VALUES
+INSERT IGNORE INTO food_categories (id, name, description, color) VALUES
 (UUID(), 'Fruits', 'Fresh and dried fruits', '#FF6B6B'),
 (UUID(), 'Vegetables', 'Leafy greens and vegetables', '#51CF66'),
 (UUID(), 'Dairy', 'Milk, cheese and dairy products', '#339AF0'),
@@ -77,7 +77,7 @@ INSERT INTO food_categories (id, name, description, color) VALUES
 (UUID(), 'Sweets', 'Sweets and desserts', '#B197FC');
 
 -- Insert foods
-INSERT INTO foods (id, code, name, description, food_category_id, average_calories, average_protein, average_carbs, average_fat, common_portion, common_portion_unit_id) VALUES
+INSERT IGNORE INTO foods (id, code, name, description, food_category_id, average_calories, average_protein, average_carbs, average_fat, common_portion, common_portion_unit_id) VALUES
 -- Fruits
 (UUID(), 'APPLE', 'Apple', 'Fresh apple', (SELECT id FROM food_categories WHERE name = 'Fruits'), 52, 0.3, 14, 0.2, 150, (SELECT id FROM measurement_units WHERE code = 'G')),
 (UUID(), 'BANANA', 'Banana', 'Medium banana', (SELECT id FROM food_categories WHERE name = 'Fruits'), 89, 1.1, 23, 0.3, 120, (SELECT id FROM measurement_units WHERE code = 'G')),
@@ -100,7 +100,7 @@ INSERT INTO foods (id, code, name, description, food_category_id, average_calori
 (UUID(), 'BREAD', 'Bread', 'Whole wheat bread', (SELECT id FROM food_categories WHERE name = 'grains'), 265, 13, 49, 3.5, 100, (SELECT id FROM measurement_units WHERE code = 'G'));
 
 -- Insert meals
-INSERT INTO meals (id, code, name, description, typical_time, sort_order) VALUES
+INSERT IGNORE INTO meals (id, code, name, description, typical_time, sort_order) VALUES
 (UUID(), 'BREAKFAST', 'Breakfast', 'First meal of the day', '08:00:00', 1),
 (UUID(), 'MORNING_SNACK', 'Morning Snack', 'Mid-morning snack', '10:30:00', 2),
 (UUID(), 'LUNCH', 'Lunch', 'Main midday meal', '12:30:00', 3),
@@ -109,7 +109,7 @@ INSERT INTO meals (id, code, name, description, typical_time, sort_order) VALUES
 (UUID(), 'SUPPER', 'Supper', 'Late evening snack', '21:30:00', 6);
 
 -- Insert pathologies
-INSERT INTO pathologies (id, code, name, description, category, is_chronic, requires_monitoring) VALUES
+INSERT IGNORE INTO pathologies (id, code, name, description, category, is_chronic, requires_monitoring) VALUES
 (UUID(), 'HYPERTENSION', 'Hypertension', 'High blood pressure', 'CARDIOVASCULAR', TRUE, TRUE),
 (UUID(), 'DIABETES_1', 'Diabetes Type 1', 'Type 1 diabetes mellitus', 'METABOLIC', TRUE, TRUE),
 (UUID(), 'DIABETES_2', 'Diabetes Type 2', 'Type 2 diabetes mellitus', 'METABOLIC', TRUE, TRUE),
@@ -122,7 +122,7 @@ INSERT INTO pathologies (id, code, name, description, category, is_chronic, requ
 (UUID(), 'OBESITY', 'Obesity', 'Excess body weight', 'METABOLIC', TRUE, TRUE);
 
 -- Insert biochemical exams
-INSERT INTO biochemical_exams (id, code, name, description, measurement_unit_id, min_reference_value, max_reference_value) VALUES
+INSERT IGNORE INTO biochemical_exams (id, code, name, description, measurement_unit_id, min_reference_value, max_reference_value) VALUES
 (UUID(), 'GLUCOSE', 'Glucose', 'Blood glucose level', (SELECT id FROM measurement_units WHERE code = 'MG'), 70, 99),
 (UUID(), 'TOTAL_CHOLESTEROL', 'Total Cholesterol', 'Total cholesterol', (SELECT id FROM measurement_units WHERE code = 'MG'), 0, 200),
 (UUID(), 'HDL_CHOLESTEROL', 'HDL Cholesterol', 'Good cholesterol', (SELECT id FROM measurement_units WHERE code = 'MG'), 40, NULL),
