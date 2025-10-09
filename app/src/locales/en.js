@@ -3,6 +3,9 @@ export default {
     dashboard: 'Dashboard',
     users: 'Users',
     anamnese: 'Nutritional Anamnesis',
+    diet: 'Diet Plans',
+    dietNew: 'New Diet Plan',
+    dietEdit: 'Edit Diet Plan',
     whatsappNutrition: 'AI Nutrition',
     payments: 'Payments',
     settings: 'Settings',
@@ -155,6 +158,7 @@ export default {
   menu: {
     title: 'Menu',
     anamnese: 'Nutritional Anamnesis',
+    diet: 'Diet Plans',
     reference: 'Reference data',
   },
   common: {
@@ -171,6 +175,7 @@ export default {
       addMeal: 'Add meal',
       remove: 'Remove',
       edit: 'Edit',
+      view: 'View',
       cancel: 'Cancel',
     },
     adminOnly: 'Personal patient information is visible only to administrators.',
@@ -202,6 +207,101 @@ export default {
     success: {
       title: 'Anamnesis saved',
       message: 'Information recorded successfully.',
+    },
+  },
+  diet: {
+    title: 'Diet Plans',
+    description: 'Create personalized meal schedules with ingredients and notes for each patient.',
+    new: 'New Diet Plan',
+    edit: 'Edit Diet Plan',
+    view: 'Diet Plan Overview',
+    save: 'Save diet',
+    delete: 'Delete',
+    status: {
+      all: 'All',
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+    list: {
+      empty: 'No diet plans found.',
+      filters: {
+        patient: 'Patient',
+        patientPlaceholder: 'Patient name',
+        mealType: 'Meal type',
+        status: 'Status',
+      },
+      columns: {
+        patient: 'Patient',
+        meals: 'Meals',
+        updatedAt: 'Updated at',
+        active: 'Active',
+      },
+      confirmDelete: {
+        title: 'Delete diet plan',
+        message: 'This diet plan will be permanently removed. This action cannot be undone.',
+      },
+    },
+    wizard: {
+      steps: {
+        schedule: {
+          title: 'Meal schedule',
+          description: 'Define the meals and preferred times for the day.',
+        },
+        items: {
+          title: 'Meal items',
+          description: 'Add foods, units, and quantities to each meal.',
+        },
+        notes: {
+          title: 'Notes & review',
+          description: 'Write notes and review the full plan before saving.',
+        },
+      },
+      fields: {
+        patientName: 'Patient name',
+        patientPlaceholder: 'Patient or display name',
+        notes: 'Notes',
+        isActive: 'Diet is active',
+      },
+      schedule: {
+        timeLabel: 'Scheduled time',
+      },
+      items: {
+        addItem: 'Add item',
+        foodLabel: 'Food',
+        unitLabel: 'Unit',
+        quantityLabel: 'Quantity',
+        notesLabel: 'Notes',
+      },
+      review: {
+        title: 'Plan summary',
+        emptyItems: 'No items added yet.',
+      },
+      toast: {
+        title: 'Diet plans',
+        saved: 'Diet saved successfully.',
+        deleted: 'Diet deleted successfully.',
+        draftTitle: 'Draft restored',
+        draftRestored: 'We recovered an unsaved diet draft.',
+      },
+    },
+    meal: {
+      breakfast: 'Breakfast',
+      lunch: 'Lunch',
+      snack: 'Snack',
+      dinner: 'Dinner',
+      supper: 'Supper',
+    },
+    unit: {
+      gram: 'Gram',
+      unit: 'Unit',
+      slice: 'Slice',
+      ml: 'Milliliter',
+      cup: 'Cup',
+      tbsp: 'Tablespoon',
+    },
+    validation: {
+      atLeastOneMeal: 'Please add at least one meal',
+      itemRequired: 'Please fill food, unit and quantity',
     },
   },
   payments: {
