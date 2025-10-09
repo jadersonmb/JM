@@ -2,18 +2,21 @@ package com.jm.services;
 
 import com.jm.dto.DietMealDTO;
 import com.jm.dto.DietMealItemDTO;
+import com.jm.dto.DietOwnerDTO;
 import com.jm.dto.DietPlanDTO;
 import com.jm.entity.DietMeal;
 import com.jm.entity.DietMealItem;
 import com.jm.entity.DietPlan;
-import com.jm.entity.FoodItem;
-import com.jm.entity.UnitOfMeasure;
+import com.jm.entity.Food;
+import com.jm.entity.MeasurementUnits;
+import com.jm.entity.Users;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.DietPlanMapper;
 import com.jm.repository.DietPlanRepository;
-import com.jm.repository.FoodItemRepository;
-import com.jm.repository.UnitOfMeasureRepository;
+import com.jm.repository.FoodRepository;
+import com.jm.repository.MeasurementUnitRepository;
+import com.jm.repository.UserRepository;
 import com.jm.speciation.DietPlanSpecification;
 import com.jm.utils.SecurityUtils;
 import org.slf4j.Logger;
@@ -26,12 +29,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DietPlanService {
@@ -41,17 +52,19 @@ public class DietPlanService {
     private final DietPlanRepository dietPlanRepository;
     private final DietPlanMapper dietPlanMapper;
     private final MessageSource messageSource;
-    private final FoodItemRepository foodItemRepository;
-    private final UnitOfMeasureRepository unitOfMeasureRepository;
+    private final FoodRepository foodRepository;
+    private final MeasurementUnitRepository measurementUnitRepository;
+    private final UserRepository userRepository;
 
     public DietPlanService(DietPlanRepository dietPlanRepository, DietPlanMapper dietPlanMapper,
-            MessageSource messageSource, FoodItemRepository foodItemRepository,
-            UnitOfMeasureRepository unitOfMeasureRepository) {
+            MessageSource messageSource, FoodRepository foodRepository,
+            MeasurementUnitRepository measurementUnitRepository, UserRepository userRepository) {
         this.dietPlanRepository = dietPlanRepository;
         this.dietPlanMapper = dietPlanMapper;
         this.messageSource = messageSource;
-        this.foodItemRepository = foodItemRepository;
-        this.unitOfMeasureRepository = unitOfMeasureRepository;
+        this.foodRepository = foodRepository;
+        this.measurementUnitRepository = measurementUnitRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -61,7 +74,10 @@ public class DietPlanService {
             SecurityUtils.getCurrentUserId().ifPresent(criteria::setCreatedByUserId);
         }
         Page<DietPlan> result = dietPlanRepository.findAll(DietPlanSpecification.search(criteria), pageable);
-        return result.map(dietPlanMapper::toDTO);
+        Page<DietPlanDTO> pageResult = result.map(dietPlanMapper::toDTO);
+        populateOwnerDetails(pageResult.getContent());
+        pageResult.forEach(this::sortMealsAndItems);
+        return pageResult;
     }
 
     @Transactional
@@ -93,14 +109,14 @@ public class DietPlanService {
 
         DietPlan saved = dietPlanRepository.save(entity);
         logger.debug("{} - {}", getMessage("diet.saved"), saved.getId());
-        return dietPlanMapper.toDTO(saved);
+        return toDetailedDto(saved);
     }
 
     @Transactional(readOnly = true)
     public DietPlanDTO findById(UUID id) {
         DietPlan entity = dietPlanRepository.findById(id).orElseThrow(this::dietNotFound);
         enforceOwnership(entity);
-        return dietPlanMapper.toDTO(entity);
+        return toDetailedDto(entity);
     }
 
     @Transactional
@@ -111,41 +127,112 @@ public class DietPlanService {
         logger.debug("{} - {}", getMessage("diet.deleted"), id);
     }
 
+    @Transactional(readOnly = true)
+    public List<DietOwnerDTO> listOwners(String query) {
+        if (isClient()) {
+            UUID currentUserId = SecurityUtils.getCurrentUserId().orElseThrow(this::invalidBodyException);
+            Users currentUser = userRepository.findById(currentUserId).orElseThrow(this::dietForbidden);
+            return List.of(toOwnerDto(currentUser));
+        }
+
+        List<Users> users;
+        if (StringUtils.hasText(query)) {
+            Map<UUID, Users> accumulator = new LinkedHashMap<>();
+            userRepository.findTop20ByTypeAndNameContainingIgnoreCaseOrderByNameAsc(Users.Type.CLIENT, query)
+                    .forEach(user -> accumulator.put(user.getId(), user));
+            userRepository.findTop20ByTypeAndEmailContainingIgnoreCaseOrderByEmailAsc(Users.Type.CLIENT, query)
+                    .forEach(user -> accumulator.putIfAbsent(user.getId(), user));
+            users = new ArrayList<>(accumulator.values());
+        } else {
+            users = userRepository.findTop50ByTypeOrderByNameAsc(Users.Type.CLIENT);
+        }
+
+        return users.stream()
+                .map(this::toOwnerDto)
+                .collect(Collectors.toList());
+    }
+
+    private DietOwnerDTO toOwnerDto(Users user) {
+        if (user == null) {
+            return null;
+        }
+        return DietOwnerDTO.builder()
+                .id(user.getId())
+                .displayName(formatUserName(user))
+                .email(user.getEmail())
+                .build();
+    }
+
     private void applyMeals(DietPlan entity, List<DietMealDTO> meals) {
-        entity.getMeals().clear();
         if (CollectionUtils.isEmpty(meals)) {
             throw invalidBodyException();
         }
 
+        Map<UUID, DietMeal> existingMeals = entity.getMeals().stream()
+                .filter(meal -> meal.getId() != null)
+                .collect(Collectors.toMap(DietMeal::getId, meal -> meal, (left, right) -> left, LinkedHashMap::new));
+
+        List<DietMeal> updatedMeals = new ArrayList<>();
         for (DietMealDTO mealDTO : meals) {
             if (mealDTO == null || mealDTO.getMealType() == null) {
                 throw invalidBodyException();
             }
 
-            DietMeal meal = dietPlanMapper.toMealEntity(mealDTO);
-            meal.setId(mealDTO.getId());
+            DietMeal meal = resolveExistingMeal(existingMeals, mealDTO.getId());
             meal.setDietPlan(entity);
-            meal.getItems().clear();
+            meal.setMealType(mealDTO.getMealType());
+            meal.setScheduledTime(mealDTO.getScheduledTime());
             applyMealItems(meal, mealDTO.getItems());
-            entity.getMeals().add(meal);
+            updatedMeals.add(meal);
         }
+
+        entity.getMeals().clear();
+        entity.getMeals().addAll(updatedMeals);
+    }
+
+    private DietMeal resolveExistingMeal(Map<UUID, DietMeal> existingMeals, UUID id) {
+        if (id == null) {
+            return new DietMeal();
+        }
+        DietMeal meal = existingMeals.remove(id);
+        if (meal == null) {
+            throw invalidReference();
+        }
+        return meal;
     }
 
     private void applyMealItems(DietMeal meal, List<DietMealItemDTO> items) {
-        if (items == null) {
-            return;
+        Map<UUID, DietMealItem> existingItems = meal.getItems().stream()
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(DietMealItem::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+
+        List<DietMealItem> updatedItems = new ArrayList<>();
+        if (items != null) {
+            for (DietMealItemDTO itemDTO : items) {
+                validateMealItem(itemDTO);
+                DietMealItem item = resolveExistingMealItem(existingItems, itemDTO.getId());
+                item.setMeal(meal);
+                item.setFoodItem(resolveFood(itemDTO.getFoodItemId()));
+                item.setUnit(resolveMeasurementUnit(itemDTO.getUnitId()));
+                item.setQuantity(itemDTO.getQuantity());
+                item.setNotes(StringUtils.hasText(itemDTO.getNotes()) ? itemDTO.getNotes() : null);
+                updatedItems.add(item);
+            }
         }
 
-        for (DietMealItemDTO itemDTO : items) {
-            validateMealItem(itemDTO);
+        meal.getItems().clear();
+        meal.getItems().addAll(updatedItems);
+    }
 
-            DietMealItem item = dietPlanMapper.toMealItemEntity(itemDTO);
-            item.setId(itemDTO.getId());
-            item.setMeal(meal);
-            item.setFoodItem(resolveFoodItem(itemDTO.getFoodItemId()));
-            item.setUnit(resolveUnit(itemDTO.getUnitId()));
-            meal.getItems().add(item);
+    private DietMealItem resolveExistingMealItem(Map<UUID, DietMealItem> existingItems, UUID id) {
+        if (id == null) {
+            return new DietMealItem();
         }
+        DietMealItem item = existingItems.remove(id);
+        if (item == null) {
+            throw invalidReference();
+        }
+        return item;
     }
 
     private void validateMealItem(DietMealItemDTO itemDTO) {
@@ -165,18 +252,18 @@ public class DietPlanService {
         }
     }
 
-    private FoodItem resolveFoodItem(UUID id) {
+    private Food resolveFood(UUID id) {
         if (id == null) {
             throw foodNotFound();
         }
-        return foodItemRepository.findById(id).orElseThrow(this::foodNotFound);
+        return foodRepository.findById(id).orElseThrow(this::foodNotFound);
     }
 
-    private UnitOfMeasure resolveUnit(UUID id) {
+    private MeasurementUnits resolveMeasurementUnit(UUID id) {
         if (id == null) {
             throw unitNotFound();
         }
-        return unitOfMeasureRepository.findById(id).orElseThrow(this::unitNotFound);
+        return measurementUnitRepository.findById(id).orElseThrow(this::unitNotFound);
     }
 
     private UUID resolveOwner(DietPlanDTO dto) {
@@ -194,6 +281,71 @@ public class DietPlanService {
         if (currentUserId == null || !Objects.equals(currentUserId, entity.getCreatedByUserId())) {
             throw dietForbidden();
         }
+    }
+
+    private DietPlanDTO toDetailedDto(DietPlan entity) {
+        DietPlanDTO dto = dietPlanMapper.toDTO(entity);
+        populateOwnerDetails(List.of(dto));
+        sortMealsAndItems(dto);
+        return dto;
+    }
+
+    private void populateOwnerDetails(Collection<DietPlanDTO> dtos) {
+        if (CollectionUtils.isEmpty(dtos)) {
+            return;
+        }
+
+        Set<UUID> ownerIds = dtos.stream()
+                .map(DietPlanDTO::getCreatedByUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (ownerIds.isEmpty()) {
+            return;
+        }
+
+        Map<UUID, Users> owners = userRepository.findAllById(ownerIds).stream()
+                .collect(Collectors.toMap(Users::getId, user -> user));
+
+        for (DietPlanDTO dto : dtos) {
+            Users owner = owners.get(dto.getCreatedByUserId());
+            if (owner != null) {
+                dto.setCreatedByName(formatUserName(owner));
+                dto.setCreatedByEmail(owner.getEmail());
+            }
+        }
+    }
+
+    private void sortMealsAndItems(DietPlanDTO dto) {
+        if (dto == null || CollectionUtils.isEmpty(dto.getMeals())) {
+            return;
+        }
+
+        dto.getMeals().sort(Comparator
+                .comparing(DietMealDTO::getScheduledTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(DietMealDTO::getMealType, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        dto.getMeals().forEach(meal -> {
+            if (CollectionUtils.isEmpty(meal.getItems())) {
+                return;
+            }
+            meal.getItems().sort(Comparator
+                    .comparing(DietMealItemDTO::getFoodItemName, Comparator.nullsLast(String::compareToIgnoreCase))
+                    .thenComparing(DietMealItemDTO::getQuantity, Comparator.nullsLast(Comparator.naturalOrder())));
+        });
+    }
+
+    private String formatUserName(Users user) {
+        if (user == null) {
+            return null;
+        }
+        String firstName = StringUtils.hasText(user.getName()) ? user.getName().trim() : "";
+        String lastName = StringUtils.hasText(user.getLastName()) ? user.getLastName().trim() : "";
+        String combined = (firstName + " " + lastName).trim();
+        if (StringUtils.hasText(combined)) {
+            return combined;
+        }
+        return user.getEmail();
     }
 
     private JMException dietNotFound() {

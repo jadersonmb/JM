@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.List;
 
 @Repository
 public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecificationExecutor<Users> {
@@ -16,4 +17,10 @@ public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecifica
     Optional<Users> findByEmail(String username);
 
     Optional<Users> findByPhoneNumber(String phoneNumber);
+
+    List<Users> findTop50ByTypeOrderByNameAsc(Users.Type type);
+
+    List<Users> findTop20ByTypeAndNameContainingIgnoreCaseOrderByNameAsc(Users.Type type, String name);
+
+    List<Users> findTop20ByTypeAndEmailContainingIgnoreCaseOrderByEmailAsc(Users.Type type, String email);
 }

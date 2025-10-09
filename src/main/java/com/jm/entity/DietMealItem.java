@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
+import com.jm.entity.Food;
+import com.jm.entity.MeasurementUnits;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -41,12 +44,12 @@ public class DietMealItem {
     private DietMeal meal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "food_item_id", nullable = false)
-    private FoodItem foodItem;
+    @JoinColumn(name = "food_id", nullable = false)
+    private Food foodItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "unit_id", nullable = false)
-    private UnitOfMeasure unit;
+    @JoinColumn(name = "measurement_unit_id", nullable = false)
+    private MeasurementUnits unit;
 
     @Column(name = "quantity", precision = 10, scale = 2, nullable = false)
     private BigDecimal quantity;
