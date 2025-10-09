@@ -3,6 +3,9 @@ export default {
     dashboard: 'Painel',
     users: 'Usuários',
     anamnese: 'Anamnese Nutricional',
+    diet: 'Planos Alimentares',
+    dietNew: 'Novo Plano Alimentar',
+    dietEdit: 'Editar Plano Alimentar',
     whatsappNutrition: 'Nutrição IA',
     payments: 'Pagamentos',
     settings: 'Configurações',
@@ -155,6 +158,7 @@ export default {
   menu: {
     title: 'Menu',
     anamnese: 'Anamnese Nutricional',
+    diet: 'Planos Alimentares',
     reference: 'Dados de referência',
   },
   common: {
@@ -171,6 +175,7 @@ export default {
       addMeal: 'Adicionar refeição',
       remove: 'Remover',
       edit: 'Editar',
+      view: 'Visualizar',
       cancel: 'Cancelar',
     },
     adminOnly: 'Os dados pessoais do paciente ficam visíveis apenas para administradores.',
@@ -202,6 +207,101 @@ export default {
     success: {
       title: 'Anamnese salva',
       message: 'As informações foram registradas com sucesso.',
+    },
+  },
+  diet: {
+    title: 'Planos Alimentares',
+    description: 'Crie agendas de refeições personalizadas com ingredientes e observações.',
+    new: 'Novo Plano Alimentar',
+    edit: 'Editar Plano Alimentar',
+    view: 'Resumo do Plano Alimentar',
+    save: 'Salvar plano',
+    delete: 'Excluir',
+    status: {
+      all: 'Todos',
+      active: 'Ativo',
+      inactive: 'Inativo',
+    },
+    list: {
+      empty: 'Nenhum plano alimentar encontrado.',
+      filters: {
+        patient: 'Paciente',
+        patientPlaceholder: 'Nome do paciente',
+        mealType: 'Refeição',
+        status: 'Status',
+      },
+      columns: {
+        patient: 'Paciente',
+        meals: 'Refeições',
+        updatedAt: 'Atualizado em',
+        active: 'Ativo',
+      },
+      confirmDelete: {
+        title: 'Excluir plano alimentar',
+        message: 'Este plano será removido permanentemente. Essa ação não pode ser desfeita.',
+      },
+    },
+    wizard: {
+      steps: {
+        schedule: {
+          title: 'Agenda de refeições',
+          description: 'Defina as refeições e horários preferidos do dia.',
+        },
+        items: {
+          title: 'Itens da refeição',
+          description: 'Adicione alimentos, unidades e quantidades para cada refeição.',
+        },
+        notes: {
+          title: 'Notas e revisão',
+          description: 'Registre observações e revise o plano completo antes de salvar.',
+        },
+      },
+      fields: {
+        patientName: 'Nome do paciente',
+        patientPlaceholder: 'Nome ou apelido do paciente',
+        notes: 'Observações',
+        isActive: 'Plano ativo',
+      },
+      schedule: {
+        timeLabel: 'Horário',
+      },
+      items: {
+        addItem: 'Adicionar item',
+        foodLabel: 'Alimento',
+        unitLabel: 'Unidade',
+        quantityLabel: 'Quantidade',
+        notesLabel: 'Observações',
+      },
+      review: {
+        title: 'Resumo do plano',
+        emptyItems: 'Nenhum item adicionado ainda.',
+      },
+      toast: {
+        title: 'Planos alimentares',
+        saved: 'Plano salvo com sucesso.',
+        deleted: 'Plano excluído com sucesso.',
+        draftTitle: 'Rascunho recuperado',
+        draftRestored: 'Restauramos um rascunho não salvo.',
+      },
+    },
+    meal: {
+      breakfast: 'Café da manhã',
+      lunch: 'Almoço',
+      snack: 'Lanche',
+      dinner: 'Jantar',
+      supper: 'Ceia',
+    },
+    unit: {
+      gram: 'Grama',
+      unit: 'Unidade',
+      slice: 'Fatia',
+      ml: 'Mililitro',
+      cup: 'Xícara',
+      tbsp: 'Colher de sopa',
+    },
+    validation: {
+      atLeastOneMeal: 'Adicione ao menos uma refeição',
+      itemRequired: 'Preencha alimento, unidade e quantidade',
     },
   },
   payments: {

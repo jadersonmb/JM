@@ -28,7 +28,12 @@ public enum ProblemType {
     ERROR_GET_FILE("/error-list", "Error to get file", "error_get_file"),
     ERROR_DELETE_FILE("/error-delete", "Error to delete file", "error_delete_file"),
     USER_NOT_CREATED("/user-not-created", "User not created", "user_not_created"),
-    ERROR_GEMINI("/gemini-chat", "Error to chat with Gemini", "error_gemini_chat");
+    ERROR_GEMINI("/gemini-chat", "Error to chat with Gemini", "error_gemini_chat"),
+    DIET_NOT_FOUND("/diet-not-found", "Diet not found", "diet.not-found"),
+    DIET_FORBIDDEN("/diet-forbidden", "Diet forbidden", "diet.forbidden"),
+    DIET_INVALID_REFERENCE("/diet-invalid-reference", "Invalid diet reference", "diet.invalid-reference"),
+    DIET_UNIT_NOT_FOUND("/diet-unit-not-found", "Unit of measure not found", "diet.unit.not-found"),
+    DIET_FOOD_NOT_FOUND("/diet-food-not-found", "Food item not found", "diet.food.not-found");
 
     private String uri;
     private String title;

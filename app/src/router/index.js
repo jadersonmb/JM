@@ -45,6 +45,24 @@ const router = createRouter({
           meta: { titleKey: 'routes.anamnese' },
         },
         {
+          path: 'diet',
+          name: 'diet',
+          component: () => import('@/views/diet/DietList.vue'),
+          meta: { titleKey: 'routes.diet' },
+        },
+        {
+          path: 'diet/new',
+          name: 'diet-new',
+          component: () => import('@/views/diet/DietWizard.vue'),
+          meta: { titleKey: 'routes.dietNew' },
+        },
+        {
+          path: 'diet/:id/edit',
+          name: 'diet-edit',
+          component: () => import('@/views/diet/DietWizard.vue'),
+          meta: { titleKey: 'routes.dietEdit' },
+        },
+        {
           path: 'whatsapp',
           name: 'whatsapp-nutrition',
           component: () => import('@/views/whatsapp/WhatsAppNutritionView.vue'),

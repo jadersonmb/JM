@@ -194,6 +194,7 @@ import {
   ChevronDownIcon,
   Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
+  CakeIcon,
   ClipboardDocumentListIcon,
   RectangleStackIcon,
   GlobeAltIcon,
@@ -261,6 +262,13 @@ const navigation = computed(() => {
       adminOnly: false,
     },
     {
+      name: 'diet',
+      label: t('menu.diet'),
+      to: { name: 'diet' },
+      icon: CakeIcon,
+      adminOnly: false,
+    },
+    {
       name: 'whatsapp-nutrition',
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
@@ -285,10 +293,16 @@ const navigation = computed(() => {
 
   const filtered = baseItems
     .filter((item) => !item.adminOnly || isAdmin.value)
-    .map((item) => ({
-      ...item,
-      active: route.name === item.name,
-    }));
+    .map((item) => {
+      const related = {
+        diet: ['diet', 'diet-new', 'diet-edit'],
+      };
+      const relatedRoutes = related[item.name] ?? [item.name];
+      return {
+        ...item,
+        active: relatedRoutes.includes(route.name),
+      };
+    });
 
   if (isAdmin.value) {
     const referenceChildren = [
