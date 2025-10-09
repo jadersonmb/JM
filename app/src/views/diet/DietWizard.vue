@@ -27,7 +27,26 @@
     </div>
     <template v-else>
       <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="grid gap-4 md:grid-cols-2">
+        <div class="grid gap-4 md:grid-cols-3">
+          <label class="flex flex-col text-sm font-semibold text-slate-600">
+            <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.fields.owner') }}</span>
+            <template v-if="isAdmin">
+              <select
+                class="input"
+                :disabled="isReadOnly"
+                :value="form.createdByUserId ?? ''"
+                @change="onOwnerSelect($event.target.value)"
+              >
+                <option value="" disabled>{{ t('diet.wizard.fields.ownerPlaceholder') }}</option>
+                <option v-for="owner in owners" :key="owner.id" :value="owner.id">
+                  {{ owner.displayName || owner.email || '—' }}
+                </option>
+              </select>
+            </template>
+            <template v-else>
+              <input type="text" class="input" :readonly="true" :value="ownerDisplayName" />
+            </template>
+          </label>
           <label class="flex flex-col text-sm font-semibold text-slate-600">
             <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.fields.patientName') }}</span>
             <input
@@ -38,7 +57,7 @@
               :placeholder="t('diet.wizard.fields.patientPlaceholder')"
             />
           </label>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 md:justify-end">
             <input
               id="diet-active"
               type="checkbox"
@@ -138,6 +157,7 @@ const loading = ref(false);
 const saving = ref(false);
 const units = ref([]);
 const foods = ref([]);
+const owners = ref([]);
 
 const form = reactive({
   id: null,
@@ -199,6 +219,50 @@ const headerTitle = computed(() => {
   return form.id ? t('diet.edit') : t('diet.new');
 });
 
+const ownerDisplayName = computed(() => {
+  const selected = owners.value.find((owner) => owner.id === form.createdByUserId);
+  if (selected) {
+    return selected.displayName || selected.email || '';
+  }
+  if (!isAdmin.value) {
+    return auth.user?.name || auth.user?.email || '';
+  }
+  return '';
+});
+
+const onOwnerSelect = (value) => {
+  form.createdByUserId = value || null;
+};
+
+const ensureOwnerOption = (id, name = '', email = '') => {
+  if (!id) return;
+  if (owners.value.some((owner) => owner.id === id)) return;
+  owners.value = [
+    ...owners.value,
+    {
+      id,
+      displayName: name || email || '',
+      email,
+    },
+  ];
+};
+
+const setDefaultOwner = () => {
+  if (form.createdByUserId) {
+    ensureOwnerOption(form.createdByUserId, ownerDisplayName.value);
+    return;
+  }
+  const firstOwner = owners.value[0];
+  if (firstOwner?.id) {
+    form.createdByUserId = firstOwner.id;
+    return;
+  }
+  if (auth.user?.id) {
+    form.createdByUserId = auth.user.id;
+    ensureOwnerOption(auth.user.id, auth.user.name ?? '', auth.user.email ?? '');
+  }
+};
+
 const submitLabel = computed(() => t('diet.save'));
 
 const currentStep = computed(() => steps.value[currentStepIndex.value]);
@@ -231,6 +295,8 @@ const currentStepProps = computed(() => {
     meals: form.meals,
     foods: foods.value,
     units: units.value,
+    patientName: form.patientName,
+    ownerName: ownerDisplayName.value,
     disabled: isReadOnly.value,
     'onUpdate:modelValue': (value) => {
       form.notes = value;
@@ -290,6 +356,14 @@ const normalizeMealsForPayload = () =>
   }));
 
 const validateForm = () => {
+  if (!form.createdByUserId) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('diet.validation.ownerRequired'),
+    });
+    return false;
+  }
   if (!form.meals.length) {
     notifications.push({
       type: 'warning',
@@ -366,6 +440,11 @@ const loadDiet = async (id) => {
         quantity: item.quantity != null ? Number(item.quantity) : null,
       })),
     }));
+    ensureOwnerOption(
+      form.createdByUserId,
+      data.createdByName ?? '',
+      data.createdByEmail ?? ''
+    );
   } catch (error) {
     notifications.push({
       type: 'error',
@@ -379,12 +458,18 @@ const loadDiet = async (id) => {
 
 const loadReferences = async () => {
   try {
-    const [unitsResponse, foodsResponse] = await Promise.all([
+    const [unitsResponse, foodsResponse, ownersResponse] = await Promise.all([
       DietService.listUnits({ active: true }),
       DietService.listFoods({ active: true }),
+      DietService.listOwners(),
     ]);
     units.value = unitsResponse.data ?? [];
     foods.value = foodsResponse.data ?? [];
+    owners.value = (ownersResponse.data ?? []).map((owner) => ({
+      ...owner,
+      displayName: owner.displayName || owner.email || '',
+    }));
+    setDefaultOwner();
   } catch (error) {
     notifications.push({
       type: 'error',
@@ -413,6 +498,8 @@ const restoreDraft = () => {
         scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
       })),
     });
+    ensureOwnerOption(form.createdByUserId);
+    setDefaultOwner();
     notifications.push({
       type: 'info',
       title: t('diet.wizard.toast.draftTitle'),

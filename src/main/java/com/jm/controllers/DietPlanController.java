@@ -1,5 +1,6 @@
 package com.jm.controllers;
 
+import com.jm.dto.DietOwnerDTO;
 import com.jm.dto.DietPlanDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/diets")
@@ -54,14 +57,18 @@ public class DietPlanController {
     @PutMapping
     public ResponseEntity<?> update(@RequestBody DietPlanDTO dto) {
         logger.debug("REST request to update Diet : {}", dto);
-        service.create(dto);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(service.create(dto));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/owners")
+    public ResponseEntity<List<DietOwnerDTO>> listOwners(@RequestParam(required = false, name = "query") String query) {
+        return ResponseEntity.ok(service.listOwners(query));
     }
 
     @ExceptionHandler({ JMException.class })

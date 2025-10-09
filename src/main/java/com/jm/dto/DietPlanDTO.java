@@ -19,6 +19,8 @@ public class DietPlanDTO {
 
     private UUID id;
     private UUID createdByUserId;
+    private String createdByName;
+    private String createdByEmail;
     private String patientName;
     private String notes;
     private Boolean active;

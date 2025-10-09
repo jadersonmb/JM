@@ -1,18 +1,17 @@
 package com.jm.services;
 
 import com.jm.dto.FoodItemDTO;
-import com.jm.entity.FoodItem;
+import com.jm.entity.Food;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
-import com.jm.mappers.DietPlanMapper;
-import com.jm.repository.FoodItemRepository;
+import com.jm.repository.FoodRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
@@ -24,29 +23,37 @@ public class FoodItemService {
 
     private static final Logger logger = LoggerFactory.getLogger(FoodItemService.class);
 
-    private final FoodItemRepository repository;
-    private final DietPlanMapper mapper;
+    private final FoodRepository repository;
     private final MessageSource messageSource;
 
-    public FoodItemService(FoodItemRepository repository, DietPlanMapper mapper, MessageSource messageSource) {
+    public FoodItemService(FoodRepository repository, MessageSource messageSource) {
         this.repository = repository;
-        this.mapper = mapper;
         this.messageSource = messageSource;
     }
 
+    @Transactional(readOnly = true)
     public List<FoodItemDTO> findAll(Boolean onlyActive) {
-        List<FoodItem> foods;
+        List<Food> foods;
         if (Boolean.TRUE.equals(onlyActive)) {
-            foods = repository.findByActiveTrueOrderByNameAsc();
+            foods = repository.findByIsActiveTrueOrderByNameAsc();
         } else {
-            foods = repository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+            foods = repository.findAllByOrderByNameAsc();
         }
-        logger.debug("Loaded {} food items", foods.size());
-        return foods.stream().map(mapper::toFoodItemDTO).collect(Collectors.toList());
+        logger.debug("Loaded {} foods", foods.size());
+        return foods.stream().map(this::toDto).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public FoodItemDTO findById(UUID id) {
-        return mapper.toFoodItemDTO(repository.findById(id).orElseThrow(this::foodNotFound));
+        return toDto(repository.findById(id).orElseThrow(this::foodNotFound));
+    }
+
+    private FoodItemDTO toDto(Food entity) {
+        return FoodItemDTO.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .active(entity.getIsActive() == null || Boolean.TRUE.equals(entity.getIsActive()))
+                .build();
     }
 
     private JMException foodNotFound() {

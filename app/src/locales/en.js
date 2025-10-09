@@ -257,6 +257,8 @@ export default {
         },
       },
       fields: {
+        owner: 'Diet owner',
+        ownerPlaceholder: 'Select a client',
         patientName: 'Patient name',
         patientPlaceholder: 'Patient or display name',
         notes: 'Notes',
@@ -274,6 +276,9 @@ export default {
       },
       review: {
         title: 'Plan summary',
+        ownerLabel: 'Owner',
+        patientLabel: 'Patient',
+        mealCountLabel: 'Meals in plan',
         emptyItems: 'No items added yet.',
       },
       toast: {
@@ -299,10 +304,11 @@ export default {
       cup: 'Cup',
       tbsp: 'Tablespoon',
     },
-    validation: {
-      atLeastOneMeal: 'Please add at least one meal',
-      itemRequired: 'Please fill food, unit and quantity',
-    },
+      validation: {
+        ownerRequired: 'Please choose who owns this diet',
+        atLeastOneMeal: 'Please add at least one meal',
+        itemRequired: 'Please fill food, unit and quantity',
+      },
   },
   payments: {
     methodSelection: {

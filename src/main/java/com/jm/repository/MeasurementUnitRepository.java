@@ -13,4 +13,6 @@ public interface MeasurementUnitRepository extends JpaRepository<MeasurementUnit
     List<MeasurementUnits> findByLanguageIgnoreCaseOrLanguageIsNullOrderByDescriptionAsc(String language);
 
     List<MeasurementUnits> findAllByOrderByDescriptionAsc();
+
+    List<MeasurementUnits> findByIsActiveTrueOrderByDescriptionAsc();
 }

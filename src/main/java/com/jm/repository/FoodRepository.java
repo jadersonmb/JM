@@ -19,4 +19,6 @@ public interface FoodRepository extends JpaRepository<Food, UUID> {
     List<Food> findByFoodCategoryIdAndLanguageIsNullOrderByNameAsc(UUID categoryId);
 
     List<Food> findAllByOrderByNameAsc();
+
+    List<Food> findByIsActiveTrueOrderByNameAsc();
 }

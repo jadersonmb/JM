@@ -22,4 +22,7 @@ export default {
   listFoods(params) {
     return api.get('/api/v1/foods', { params });
   },
+  listOwners(params) {
+    return api.get('/api/v1/diets/owners', { params });
+  },
 };

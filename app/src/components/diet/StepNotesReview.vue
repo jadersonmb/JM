@@ -16,6 +16,21 @@
       />
     </label>
 
+    <section class="grid gap-3 sm:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.ownerLabel') }}</p>
+        <p class="mt-1 text-sm font-semibold text-slate-700">{{ props.ownerName || t('common.placeholders.empty') }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.patientLabel') }}</p>
+        <p class="mt-1 text-sm font-semibold text-slate-700">{{ props.patientName || t('common.placeholders.empty') }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.mealCountLabel') }}</p>
+        <p class="mt-1 text-sm font-semibold text-slate-700">{{ mealCount }}</p>
+      </div>
+    </section>
+
     <section class="space-y-4">
       <h4 class="text-base font-semibold text-slate-800">{{ t('diet.wizard.review.title') }}</h4>
       <div class="grid gap-4 lg:grid-cols-2">
@@ -64,6 +79,8 @@ const props = defineProps({
   meals: { type: Array, default: () => [] },
   foods: { type: Array, default: () => [] },
   units: { type: Array, default: () => [] },
+  patientName: { type: String, default: '' },
+  ownerName: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
 });
 
@@ -72,6 +89,7 @@ const emit = defineEmits(['update:modelValue']);
 const { t } = useI18n();
 
 const meals = computed(() => props.meals ?? []);
+const mealCount = computed(() => meals.value.length ?? 0);
 
 const onInput = (value) => {
   emit('update:modelValue', value);

@@ -257,6 +257,8 @@ export default {
         },
       },
       fields: {
+        owner: 'Responsável pela dieta',
+        ownerPlaceholder: 'Selecione um cliente',
         patientName: 'Nome do paciente',
         patientPlaceholder: 'Nome ou apelido do paciente',
         notes: 'Observações',
@@ -274,6 +276,9 @@ export default {
       },
       review: {
         title: 'Resumo do plano',
+        ownerLabel: 'Responsável',
+        patientLabel: 'Paciente',
+        mealCountLabel: 'Refeições no plano',
         emptyItems: 'Nenhum item adicionado ainda.',
       },
       toast: {
@@ -300,6 +305,7 @@ export default {
       tbsp: 'Colher de sopa',
     },
     validation: {
+      ownerRequired: 'Selecione o responsável pela dieta',
       atLeastOneMeal: 'Adicione ao menos uma refeição',
       itemRequired: 'Preencha alimento, unidade e quantidade',
     },
