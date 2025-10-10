@@ -1,6 +1,9 @@
 <template>
   <transition name="modal">
-    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-10">
+    <div
+      v-if="modelValue"
+      class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 px-4 py-10 sm:py-16"
+    >
       <div class="w-full max-w-3xl rounded-3xl bg-white shadow-2xl">
         <header class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
@@ -87,6 +90,7 @@
                 v-model="form.countryId"
                 class="input"
                 :disabled="countries.length === 0"
+                @change="handleCountryChange"
               >
                 <option value="">Select country</option>
                 <option v-for="country in countries" :key="country.id" :value="country.id">
@@ -263,15 +267,6 @@ watch(
 );
 
 watch(
-  () => form.countryId,
-  (countryId, previous) => {
-    if (initializing || countryId === previous) return;
-    form.cityId = '';
-    emit('fetch-cities', countryId || '');
-  }
-);
-
-watch(
   () => props.cities,
   (cities) => {
     if (initializing || !form.cityId) return;
@@ -336,6 +331,13 @@ const handleFile = (event) => {
 const removeFile = () => {
   form.avatarFile = null;
   preview.value = form.avatarUrl ?? '';
+};
+
+const handleCountryChange = () => {
+  if (initializing) return;
+  const countryId = form.countryId || '';
+  form.cityId = '';
+  emit('fetch-cities', countryId);
 };
 
 const handleSubmit = () => {
