@@ -185,7 +185,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterView, RouterLink, useRoute, useRouter } from 'vue-router';
 import {
   AdjustmentsHorizontalIcon,
@@ -223,6 +223,24 @@ const dropdownRef = ref(null);
 
 const { t } = useI18n();
 const preferences = usePreferencesStore();
+
+const MdiTargetIcon = (props, { attrs }) =>
+  h(
+    'svg',
+    {
+      xmlns: 'http://www.w3.org/2000/svg',
+      viewBox: '0 0 24 24',
+      fill: 'currentColor',
+      'aria-hidden': 'true',
+      ...attrs,
+      class: attrs?.class ?? props?.class,
+    },
+    [
+      h('path', {
+        d: 'M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2ZM12 20C7.6 20 4 16.4 4 12S7.6 4 12 4 20 7.6 20 12 16.4 20 12 20ZM12 6C8.7 6 6 8.7 6 12S8.7 18 12 18 18 15.3 18 12 15.3 6 12 6ZM12 16C9.8 16 8 14.2 8 12S9.8 8 12 8 16 9.8 16 12 14.2 16 12 16ZM12 10C10.9 10 10 10.9 10 12S10.9 14 12 14 14 13.1 14 12 13.1 10 12 10Z',
+      }),
+    ]
+  );
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
@@ -269,6 +287,13 @@ const navigation = computed(() => {
       adminOnly: false,
     },
     {
+      name: 'goals',
+      label: t('menu.goals'),
+      to: { name: 'goals' },
+      icon: MdiTargetIcon,
+      adminOnly: false,
+    },
+    {
       name: 'whatsapp-nutrition',
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
@@ -296,6 +321,7 @@ const navigation = computed(() => {
     .map((item) => {
       const related = {
         diet: ['diet', 'diet-new', 'diet-edit'],
+        goals: ['goals', 'goals-new', 'goals-edit'],
       };
       const relatedRoutes = related[item.name] ?? [item.name];
       return {
