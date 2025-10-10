@@ -31,6 +31,9 @@ public class UserSpeciation {
             if (Objects.nonNull(filter.getCountryId())) {
                 predicates.add(builder.equal(root.join("country", JoinType.LEFT).get("id"), filter.getCountryId()));
             }
+            if (Objects.nonNull(filter.getType())) {
+                predicates.add(builder.equal(root.get("type"), filter.getType()));
+            }
             if (Objects.nonNull(filter.getCityId())) {
                 predicates.add(builder.equal(root.join("city", JoinType.LEFT).get("id"), filter.getCityId()));
             }
