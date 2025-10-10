@@ -33,7 +33,13 @@ public enum ProblemType {
     DIET_FORBIDDEN("/diet-forbidden", "Diet forbidden", "diet.forbidden"),
     DIET_INVALID_REFERENCE("/diet-invalid-reference", "Invalid diet reference", "diet.invalid-reference"),
     DIET_UNIT_NOT_FOUND("/diet-unit-not-found", "Unit of measure not found", "diet.unit.not-found"),
-    DIET_FOOD_NOT_FOUND("/diet-food-not-found", "Food item not found", "diet.food.not-found");
+    DIET_FOOD_NOT_FOUND("/diet-food-not-found", "Food item not found", "diet.food.not-found"),
+    NUTRITION_GOAL_NOT_FOUND("/nutrition-goal-not-found", "Nutrition goal not found", "goal.not-found"),
+    NUTRITION_GOAL_FORBIDDEN("/nutrition-goal-forbidden", "Nutrition goal forbidden", "goal.forbidden"),
+    NUTRITION_GOAL_TEMPLATE_NOT_FOUND("/nutrition-goal-template-not-found", "Nutrition goal template not found",
+            "goal.template.not-found"),
+    NUTRITION_GOAL_UNIT_NOT_FOUND("/nutrition-goal-unit-not-found", "Unit of measure not found",
+            "goal.unit.not-found");
 
     private String uri;
     private String title;

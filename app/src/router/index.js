@@ -63,6 +63,24 @@ const router = createRouter({
           meta: { titleKey: 'routes.dietEdit' },
         },
         {
+          path: 'goals',
+          name: 'goals',
+          component: () => import('@/views/goals/GoalList.vue'),
+          meta: { titleKey: 'routes.goals' },
+        },
+        {
+          path: 'goals/new',
+          name: 'goals-new',
+          component: () => import('@/views/goals/GoalWizard.vue'),
+          meta: { titleKey: 'routes.goalsNew' },
+        },
+        {
+          path: 'goals/:id/edit',
+          name: 'goals-edit',
+          component: () => import('@/views/goals/GoalWizard.vue'),
+          meta: { titleKey: 'routes.goalsEdit' },
+        },
+        {
           path: 'whatsapp',
           name: 'whatsapp-nutrition',
           component: () => import('@/views/whatsapp/WhatsAppNutritionView.vue'),
