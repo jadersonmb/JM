@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-0">
     <DataTable title="User management" subtitle="Search, review, and manage users connected to your Java backend."
       :columns="tableColumns" :rows="users.items" :loading="loading" :selected="selectedIds"
       :sort="{ field: filters.sortField, direction: filters.sortDirection }" :pagination="users.meta"
@@ -270,8 +270,6 @@ const deleteQueue = ref([]);
 const formSubmitting = ref(false);
 const activeUser = ref(null);
 
-const referenceParams = computed(() => ({ language: locale.value }));
-
 onMounted(async () => {
   loadFilters();
   await loadSettings();
@@ -348,7 +346,7 @@ async function loadSettings() {
 
 async function loadReferenceData() {
   try {
-    const params = referenceParams.value;
+    const params = userSettings.value;
     const [countriesResponse, educationResponse, professionResponse] = await Promise.all([
       getCountries(params),
       getEducationLevels(params),
@@ -434,7 +432,7 @@ async function fetchCitiesByCountryId(countryId) {
     return [];
   }
   try {
-    const { data } = await getCities(countryId, referenceParams.value);
+    const { data } = await getCities(countryId, userSettings.value);
     return data ?? [];
   } catch (error) {
     console.error('Failed to load cities', error);

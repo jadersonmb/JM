@@ -233,9 +233,9 @@ watch(
   () => props.user,
   (user) => {
     initializing = true;
-    resetErrors();
+    /*resetErrors();*/
     if (!user) {
-      resetForm();
+      /*resetForm();*/
       preview.value = '';
       initializing = false;
       return;
