@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isAdmin || activeSubscription.status === 'CANCELLED'" class="grid gap-6 xl:grid-cols-2">
+  <div v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'" class="grid gap-6 xl:grid-cols-2">
     <div class="space-y-6">
       <PaymentMethodSelection v-model="currentMethod" />
 
@@ -319,9 +319,9 @@ const refundMessage = computed(() => {
 });
 
 const timelineItems = computed(() => {
-  return payments.value
+  return subscriptions.value
     .slice()
-    .sort((a, b) => new Date(b.updatedAt ?? b.createdAt) - new Date(a.updatedAt ?? a.createdAt))
+    .sort((a, b) => a.status.localeCompare(b.status) || new Date(b.createdAt) - new Date(a.createdAt))
     .map((payment) => {
       const meta = timelineMeta(payment);
       return {
@@ -423,7 +423,7 @@ async function loadPayments() {
       page: pagination.page - 1,
       size: pagination.perPage,
       sort: sort.value.field ? `${sort.value.field},${sort.value.direction}` : undefined,
-      customerId: auth.user.id,
+      customerId: isAdmin.value ? undefined : auth.user.id,
       ...sanitizeFilters(filters),
     };
     const { data } = await listPayments(params);
@@ -832,12 +832,19 @@ function formatDate(value) {
 }
 
 function timelineMeta(payment) {
+  console.log(payment);
   const status = (payment.status ?? '').toUpperCase();
   const amount = formatCurrency(payment.amount);
   const extraDetails = payment.description ? ` ${payment.description}` : '';
 
   const baseMeta = {
     COMPLETED: {
+      title: t('payments.timeline.completed.title'),
+      description: t('payments.timeline.completed.description', { amount }),
+      icon: CheckCircleIcon,
+      className: 'timeline-success',
+    },
+    ACTIVE: {
       title: t('payments.timeline.completed.title'),
       description: t('payments.timeline.completed.description', { amount }),
       icon: CheckCircleIcon,
@@ -855,6 +862,12 @@ function timelineMeta(payment) {
       icon: XCircleIcon,
       className: 'timeline-danger',
     },
+    CANCELLED: {
+      title: t('payments.timeline.failed.title'),
+      description: t('payments.timeline.failed.description', { amount }),
+      icon: XCircleIcon,
+      className: 'timeline-danger',
+    },  
     PROCESSING: {
       title: t('payments.timeline.processing.title'),
       description: t('payments.timeline.processing.description', { amount }),

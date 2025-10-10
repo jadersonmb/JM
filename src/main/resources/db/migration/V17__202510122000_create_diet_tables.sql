@@ -55,25 +55,3 @@ CREATE TABLE IF NOT EXISTS diet_meal_item (
 CREATE INDEX IF NOT EXISTS idx_diet_meal_item_meal ON diet_meal_item(diet_meal_id);
 CREATE INDEX IF NOT EXISTS idx_diet_meal_item_food ON diet_meal_item(food_item_id);
 CREATE INDEX IF NOT EXISTS idx_diet_meal_item_unit ON diet_meal_item(unit_id);
-
-INSERT IGNORE INTO unit_of_measure (id, code, display_name)
-VALUES
-    (UUID(), 'GRAM', 'Gram'),
-    (UUID(), 'ML', 'Milliliter'),
-    (UUID(), 'SLICE', 'Slice'),
-    (UUID(), 'UNIT', 'Unit'),
-    (UUID(), 'CUP', 'Cup'),
-    (UUID(), 'TBSP', 'Tablespoon');
-
-INSERT IGNORE INTO food_item (id, name)
-VALUES
-    (UUID(), 'Whole-wheat bread'),
-    (UUID(), 'Egg'),
-    (UUID(), 'Chicken breast'),
-    (UUID(), 'Pasta'),
-    (UUID(), 'Banana'),
-    (UUID(), 'Whey protein'),
-    (UUID(), 'Peanut butter'),
-    (UUID(), 'Oats'),
-    (UUID(), 'Green salad'),
-    (UUID(), 'Beans');

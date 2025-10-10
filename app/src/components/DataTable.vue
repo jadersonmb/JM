@@ -152,7 +152,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-  title: { type: String, default: 'Data table' },
+  title: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   columns: {
     type: Array,

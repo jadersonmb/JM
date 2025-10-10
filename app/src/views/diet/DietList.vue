@@ -24,7 +24,7 @@
       @change:per-page="handlePerPage"
       @refresh="fetchDiets"
     >
-      <template #filters>
+      <template v-if="isAdmin" #filters>
         <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
           <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.list.filters.patient') }}</span>
           <input
@@ -102,10 +102,13 @@ import DataTable from '@/components/DataTable.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DietService from '@/services/DietService';
 import { useNotificationStore } from '@/stores/notifications';
+import { useAuthStore } from '@/stores/auth';
 
 const { t } = useI18n();
 const router = useRouter();
 const notifications = useNotificationStore();
+const auth = useAuthStore();
+const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
 const filters = reactive({
   patientName: '',

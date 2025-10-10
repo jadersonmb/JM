@@ -371,7 +371,7 @@ const steps = computed(() => [
     title: t('anamnese.steps.pathologies.title'),
     description: t('anamnese.steps.pathologies.description'),
     component: StepPatologias,
-    getProps: () => ({ form }),
+    getProps: () => ({ form }, { pathologies: referenceData.pathologies } ),
   },
   {
     id: 'bioimpedancia',
@@ -583,7 +583,6 @@ const exportPdf = () => {
 const loadReferenceData = async () => {
   referenceLoading.general = true;
   try {
-    console.log('Loading reference data with params:', referenceParams.value);
     const params = { language: referenceParams.value };
     const [countriesResponse, educationResponse, professionResponse, pathologiesResponse, biochemicalResponse] =
       await Promise.all([

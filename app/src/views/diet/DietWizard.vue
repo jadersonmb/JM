@@ -47,7 +47,7 @@
               <input type="text" class="input" :readonly="true" :value="ownerDisplayName" />
             </template>
           </label>
-          <label class="flex flex-col text-sm font-semibold text-slate-600">
+          <label v-if="isAdmin" class="flex flex-col text-sm font-semibold text-slate-600">
             <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.fields.patientName') }}</span>
             <input
               type="text"
@@ -295,7 +295,7 @@ const currentStepProps = computed(() => {
     meals: form.meals,
     foods: foods.value,
     units: units.value,
-    patientName: form.patientName,
+    patientName: isAdmin.value ? form.patientName : auth.user?.name || '',
     ownerName: ownerDisplayName.value,
     disabled: isReadOnly.value,
     'onUpdate:modelValue': (value) => {

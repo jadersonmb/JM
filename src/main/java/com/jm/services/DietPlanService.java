@@ -191,7 +191,7 @@ public class DietPlanService {
     }
 
     private DietMeal resolveExistingMeal(Map<UUID, DietMeal> existingMeals, UUID id) {
-        if (id == null) {
+        if (id == null || existingMeals.isEmpty()) {
             return new DietMeal();
         }
         DietMeal meal = existingMeals.remove(id);
@@ -204,7 +204,8 @@ public class DietPlanService {
     private void applyMealItems(DietMeal meal, List<DietMealItemDTO> items) {
         Map<UUID, DietMealItem> existingItems = meal.getItems().stream()
                 .filter(item -> item.getId() != null)
-                .collect(Collectors.toMap(DietMealItem::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+                .collect(
+                        Collectors.toMap(DietMealItem::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
 
         List<DietMealItem> updatedItems = new ArrayList<>();
         if (items != null) {
@@ -225,7 +226,7 @@ public class DietPlanService {
     }
 
     private DietMealItem resolveExistingMealItem(Map<UUID, DietMealItem> existingItems, UUID id) {
-        if (id == null) {
+        if (id == null || existingItems.isEmpty()) {
             return new DietMealItem();
         }
         DietMealItem item = existingItems.remove(id);
@@ -391,4 +392,3 @@ public class DietPlanService {
         return SecurityUtils.hasRole("ADMIN");
     }
 }
-
