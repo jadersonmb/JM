@@ -229,6 +229,32 @@ const errors = reactive({ name: '', email: '', password: '' });
 const isEdit = computed(() => Boolean(props.user?.id));
 let initializing = false;
 
+function resetErrors() {
+  errors.name = '';
+  errors.email = '';
+  errors.password = '';
+}
+
+function resetForm() {
+  form.name = '';
+  form.lastName = '';
+  form.email = '';
+  form.phoneNumber = '';
+  form.documentNumber = '';
+  form.role = 'CLIENT';
+  form.password = '';
+  form.passwordConfirmation = '';
+  form.countryId = '';
+  form.cityId = '';
+  form.state = '';
+  form.postalCode = '';
+  form.street = '';
+  form.educationLevelId = '';
+  form.professionId = '';
+  form.avatarFile = null;
+  form.avatarUrl = '';
+}
+
 watch(
   () => props.user,
   (user) => {
@@ -286,32 +312,6 @@ watch(
     }
   }
 );
-
-const resetErrors = () => {
-  errors.name = '';
-  errors.email = '';
-  errors.password = '';
-};
-
-const resetForm = () => {
-  form.name = '';
-  form.lastName = '';
-  form.email = '';
-  form.phoneNumber = '';
-  form.documentNumber = '';
-  form.role = 'CLIENT';
-  form.password = '';
-  form.passwordConfirmation = '';
-  form.countryId = '';
-  form.cityId = '';
-  form.state = '';
-  form.postalCode = '';
-  form.street = '';
-  form.educationLevelId = '';
-  form.professionId = '';
-  form.avatarFile = null;
-  form.avatarUrl = '';
-};
 
 const close = () => {
   emit('update:modelValue', false);
