@@ -37,9 +37,8 @@
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Role</label>
           <select v-model="filters.role" class="input mt-1">
             <option value="all">All roles</option>
-            <option value="admin">Administrator</option>
-            <option value="moderator">Moderator</option>
-            <option value="user">User</option>
+            <option value="CLIENT">Client</option>
+            <option value="ADMIN">Administrator</option>
           </select>
         </div>
         <div>
@@ -102,7 +101,7 @@
       </template>
 
       <template #cell:role="{ row }">
-        <span class="badge bg-slate-100 text-slate-600 capitalize">{{ row.role }}</span>
+        <span class="badge bg-slate-100 text-slate-600 capitalize">{{ formatRole(row.role) }}</span>
       </template>
 
       <template #cell:status="{ row }">
@@ -144,7 +143,18 @@
       </template>
     </DataTable>
 
-    <UserFormModal v-model="formModalOpen" :user="activeUser" :submitting="formSubmitting" @submit="handleSubmit" />
+    <UserFormModal
+      v-model="formModalOpen"
+      :user="activeUser"
+      :submitting="formSubmitting"
+      :countries="countries"
+      :cities="modalCities"
+      :education-levels="educationLevels"
+      :professions="professions"
+      :loading-cities="modalCitiesLoading"
+      @fetch-cities="handleFetchCitiesForModal"
+      @submit="handleSubmit"
+    />
 
     <ConfirmDialog v-model="confirmOpen" :title="confirmTitle" :message="confirmMessage" confirm-label="Delete"
       @confirm="handleConfirmDelete" />
@@ -164,7 +174,7 @@ import UserFormModal from '@/components/UserFormModal.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { useNotificationStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
-import { createUser, deleteUser, getUsers, updateUser } from '@/services/users';
+import { createUser, deleteUser, getUser, getUsers, updateUser } from '@/services/users';
 import { uploadFile } from '@/services/cloudFlare';
 import { getUserSettings } from '@/services/settings';
 import { getCountries, getCities, getEducationLevels, getProfessions } from '@/services/reference';
@@ -201,6 +211,8 @@ const countries = ref([]);
 const cities = ref([]);
 const educationLevels = ref([]);
 const professions = ref([]);
+const modalCities = ref([]);
+const modalCitiesLoading = ref(false);
 const userSettings = ref({ language: '' });
 const userLanguage = computed(() => userSettings.value.language || locale.value);
 
@@ -279,7 +291,16 @@ function loadFilters() {
       filters.search = stored.search;
       searchInput.value = stored.search;
     }
-    if (stored.role) filters.role = stored.role;
+    if (stored.role) {
+      if (stored.role === 'all') {
+        filters.role = 'all';
+      } else {
+        const normalizedRole = stored.role.toString().toUpperCase();
+        if (['ADMIN', 'CLIENT'].includes(normalizedRole)) {
+          filters.role = normalizedRole;
+        }
+      }
+    }
     if (stored.status) filters.status = stored.status;
     if (stored.perPage) filters.perPage = stored.perPage;
     if (stored.sortField) filters.sortField = stored.sortField;
@@ -350,8 +371,8 @@ async function loadCities(countryId, preserveSelection = false) {
     return;
   }
   try {
-    const { data } = await getCities(countryId, referenceParams.value);
-    cities.value = data ?? [];
+    const data = await fetchCitiesByCountryId(countryId);
+    cities.value = data;
     if (filters.cityId && !cities.value.some((city) => city.id === filters.cityId) && !preserveSelection) {
       filters.cityId = '';
     }
@@ -364,6 +385,94 @@ async function loadCities(countryId, preserveSelection = false) {
   }
 }
 
+const resolveReferenceName = (collectionRef, id, fallback = '') => {
+  if (!id) return fallback;
+  const list = Array.isArray(collectionRef.value) ? collectionRef.value : [];
+  const match = list.find((entry) => entry.id === id);
+  return match?.name ?? fallback;
+};
+
+function normalizeUser(item = {}) {
+  const role = (item.type ?? item.role ?? 'CLIENT').toString().toUpperCase();
+  const countryId = item.countryId ?? item.countryDTO?.id ?? null;
+  const educationLevelId = item.educationLevelId ?? item.educationLevel?.id ?? null;
+  const professionId = item.professionId ?? item.profession?.id ?? null;
+  const countryName = item.countryDTO?.name ?? item.countryName
+    ?? resolveReferenceName(countries, countryId, '');
+  const educationName = item.educationLevelName ?? item.educationLevel?.name
+    ?? resolveReferenceName(educationLevels, educationLevelId, '');
+  const professionName = item.professionName ?? item.profession?.name
+    ?? resolveReferenceName(professions, professionId, '');
+  return {
+    id: item.id,
+    name: item.name ?? '',
+    lastName: item.lastName ?? '',
+    email: item.email ?? '',
+    role,
+    type: role,
+    status: item.status ?? 'active',
+    avatarUrl: item.avatarUrl ?? item.avatar ?? null,
+    createdAt: item.createdAt ?? item.created_at ?? null,
+    documentNumber: item.documentNumber ?? '',
+    phoneNumber: item.phoneNumber ?? '',
+    street: item.street ?? '',
+    state: item.state ?? '',
+    postalCode: item.postalCode ?? '',
+    countryId,
+    country: countryName,
+    cityId: item.cityId ?? item.city?.id ?? null,
+    city: item.cityName ?? item.city?.name ?? '',
+    educationLevelId,
+    educationLevel: educationName,
+    professionId,
+    profession: professionName,
+  };
+}
+
+async function fetchCitiesByCountryId(countryId) {
+  if (!countryId) {
+    return [];
+  }
+  try {
+    const { data } = await getCities(countryId, referenceParams.value);
+    return data ?? [];
+  } catch (error) {
+    console.error('Failed to load cities', error);
+    return [];
+  }
+}
+
+const buildUserPayload = (payload, userId) => {
+  const sanitize = (value) => (value === '' || value === null || value === undefined ? undefined : value);
+  const role = (payload.role || 'CLIENT').toString().toUpperCase();
+  const body = {
+    id: userId,
+    name: payload.name,
+    lastName: payload.lastName || undefined,
+    email: payload.email,
+    type: role,
+    documentNumber: payload.documentNumber || undefined,
+    phoneNumber: payload.phoneNumber || undefined,
+    street: payload.street || undefined,
+    state: payload.state || undefined,
+    postalCode: payload.postalCode || undefined,
+    countryId: sanitize(payload.countryId),
+    cityId: sanitize(payload.cityId),
+    educationLevelId: sanitize(payload.educationLevelId),
+    professionId: sanitize(payload.professionId),
+  };
+  if (!userId) {
+    delete body.id;
+  }
+  if (payload.password) {
+    body.password = payload.password;
+  }
+  if (payload.avatarUrl !== undefined) {
+    body.avatarUrl = payload.avatarUrl || undefined;
+  }
+  return body;
+};
+
 async function fetchUsers() {
   loading.value = true;
   try {
@@ -371,7 +480,7 @@ async function fetchUsers() {
       page: filters.page,
       size: filters.perPage,
       search: filters.search || undefined,
-      role: filters.role !== 'all' ? filters.role : undefined,
+      type: filters.role !== 'all' ? filters.role : undefined,
       status: filters.status !== 'all' ? filters.status : undefined,
       sort: `${filters.sortField},${filters.sortDirection}`,
       countryId: filters.countryId || undefined,
@@ -392,19 +501,7 @@ async function fetchUsers() {
       to: data?.to ?? (pageData.length ? (filters.page - 1) * filters.perPage + pageData.length : 0),
     };
 
-    users.items = pageData.map((item) => ({
-      id: item.id,
-      name: item.name,
-      email: item.email,
-      role: item.role,
-      status: item.status,
-      avatarUrl: item.avatarUrl ?? item.avatar ?? null,
-      createdAt: item.createdAt ?? item.created_at,
-      country: item.countryDTO?.name ?? item.countryName ?? '',
-      city: item.cityName ?? '',
-      educationLevel: item.educationLevelName ?? '',
-      profession: item.professionName ?? '',
-    }));
+    users.items = pageData.map((item) => normalizeUser(item));
 
     users.meta = {
       page: meta.page ?? filters.page,
@@ -447,6 +544,24 @@ const handlePerPage = (perPage) => {
 const persistColumns = (columns) => {
   localStorage.setItem('users.table.columns', JSON.stringify(columns));
   tableColumns.splice(0, tableColumns.length, ...columns);
+};
+
+const handleFetchCitiesForModal = async (countryId) => {
+  modalCitiesLoading.value = true;
+  try {
+    modalCities.value = countryId ? await fetchCitiesByCountryId(countryId) : [];
+  } catch (error) {
+    console.error('Failed to load modal cities', error);
+    modalCities.value = [];
+  } finally {
+    modalCitiesLoading.value = false;
+  }
+};
+
+const formatRole = (value) => {
+  if (!value) return 'Client';
+  const normalized = value.toString().toUpperCase();
+  return normalized === 'ADMIN' ? 'Admin' : 'Client';
 };
 
 function loadColumns() {
@@ -494,16 +609,40 @@ const formatDate = (value) => {
 
 const openCreate = () => {
   activeUser.value = null;
+  modalCities.value = [];
   formModalOpen.value = true;
 };
 
 const findUserById = (id) => users.items.find((user) => user.id === id);
 
-const openEdit = (id) => {
-  const user = findUserById(id);
-  if (!user) return;
-  activeUser.value = user;
-  formModalOpen.value = true;
+const openEdit = async (id) => {
+  try {
+    modalCities.value = [];
+    const { data } = await getUser(id);
+    const user = normalizeUser(data);
+    activeUser.value = user;
+    await handleFetchCitiesForModal(user.countryId ?? '');
+    formModalOpen.value = true;
+  } catch (error) {
+    console.error('Failed to load user details', error);
+    const fallback = findUserById(id);
+    if (fallback) {
+      activeUser.value = fallback;
+      await handleFetchCitiesForModal(fallback.countryId ?? '');
+      formModalOpen.value = true;
+      notifications.push({
+        type: 'warning',
+        title: 'Partial data loaded',
+        message: 'Unable to load the latest user data. Showing cached information.',
+      });
+    } else {
+      notifications.push({
+        type: 'error',
+        title: 'Load failed',
+        message: error.response?.data?.message ?? 'Unable to load user details.',
+      });
+    }
+  }
 };
 
 const openBulkDelete = () => {
@@ -524,46 +663,45 @@ const prepareDelete = (id) => {
 const handleSubmit = async (payload) => {
   formSubmitting.value = true;
   try {
-    const formData = new FormData();
-    formData.append('name', payload.name);
-    formData.append('email', payload.email);
-    formData.append('role', payload.role);
-    formData.append('status', payload.status);
-    if (payload.password) {
-      formData.append('password', payload.password);
-    }
-    if (payload.avatarFile) {
-      formData.append('avatar', payload.avatarFile);
-    }
+    const userId = activeUser.value?.id ?? null;
+    if (userId) {
+      const updateBody = buildUserPayload(payload, userId);
+      await updateUser(updateBody);
 
-    if (activeUser.value?.id) {
-      formData.append('id', activeUser.value?.id);
-      if (payload.avatarFile != null) {
+      if (payload.avatarFile) {
         const params = {
           file: payload.avatarFile,
-          userId: activeUser.value?.id,
+          userId,
         };
-        await uploadFile(params);
+        const { data: imageDTO } = await uploadFile(params);
+        if (imageDTO?.url) {
+          await updateUser({ id: userId, avatarUrl: imageDTO.url });
+        }
       }
-      await updateUser(formData);
+
       notifications.push({ type: 'success', title: 'User updated', message: `${payload.name} has been updated.` });
     } else {
-      const { data } = await createUser(formData);
-      if (payload.avatarFile != null) {
+      const createBody = buildUserPayload(payload);
+      const { data } = await createUser(createBody);
+      const newUserId = data?.id;
+
+      if (payload.avatarFile && newUserId) {
         const params = {
           file: payload.avatarFile,
-          userId: data?.id,
+          userId: newUserId,
         };
-
         const { data: imageDTO } = await uploadFile(params);
-        formData.append('avatarUrl', imageDTO?.url);
-        formData.append('id', data?.id);
-        await updateUser(formData);
+        if (imageDTO?.url) {
+          await updateUser({ id: newUserId, avatarUrl: imageDTO.url });
+        }
       }
+
       notifications.push({ type: 'success', title: 'User created', message: `${payload.name} has been added.` });
     }
     formModalOpen.value = false;
-    fetchUsers();
+    activeUser.value = null;
+    selectedIds.value = [];
+    await fetchUsers();
   } catch (error) {
     const message = error.response?.data?.message ?? 'Unable to save user.';
     notifications.push({ type: 'error', title: 'Save failed', message });
