@@ -434,7 +434,8 @@ async function fetchCitiesByCountryId(countryId) {
     return [];
   }
   try {
-    const { data } = await getCities(countryId, referenceParams.value);
+    const params = referenceParams.value ? { ...referenceParams.value } : {};
+    const { data } = await getCities(countryId, params);
     return data ?? [];
   } catch (error) {
     console.error('Failed to load cities', error);
