@@ -8,6 +8,7 @@ public enum ProblemType {
     INVALID_BODY("/invalid-body", "Invalid Body", "invalid_message_body"),
     INVALID_BODY_PARAM("/invalid-body", "Invaled Body", "invalid_message_body_param"),
     INVALID_VALUE_LONG_DATABASE("/invaled-long-database", "Value Long", "invalid_value_long_database"),
+    INVALID_DATA("/invalid-data", "Invalid Data", "invalid_data"),
 
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
@@ -40,7 +41,8 @@ public enum ProblemType {
             "goal.template.not-found"),
     NUTRITION_GOAL_UNIT_NOT_FOUND("/nutrition-goal-unit-not-found", "Unit of measure not found",
             "goal.unit.not-found"),
-    PATHOLOGY_NOT_FOUND("/pathology-not-found", "Pathology not found", "pathology.not-found");
+    PATHOLOGY_NOT_FOUND("/pathology-not-found", "Pathology not found", "pathology.not-found"),
+    EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service");
 
     private String uri;
     private String title;
