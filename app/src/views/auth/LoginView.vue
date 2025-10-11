@@ -150,7 +150,7 @@ const handleSubmit = async () => {
   resetErrors();
   try {
     await auth.login({ email: form.email, password: form.password });
-    const redirect = route.query.redirect ?? '/dashboard';
+    const redirect = route.query.redirect ?? '/dashboard/nutrition';
     router.push(redirect);
   } catch (error) {
     const response = error.response;

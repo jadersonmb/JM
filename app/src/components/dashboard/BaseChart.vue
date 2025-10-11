@@ -5,10 +5,10 @@
       class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
     >
       <div class="space-y-1">
-        <h3 v-if="title" class="text-base font-semibold text-slate-900 dark:text-slate-100">
+        <h3 v-if="title" class="text-base font-semibold text-slate-900">
           {{ title }}
         </h3>
-        <p v-if="subtitle" class="text-sm text-slate-500 dark:text-slate-400">
+        <p v-if="subtitle" class="text-sm text-slate-500">
           {{ subtitle }}
         </p>
       </div>
@@ -20,16 +20,16 @@
     <div class="relative mt-6 flex-1">
       <div
         v-if="loading"
-        class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm dark:bg-slate-900/50"
+        class="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/70 backdrop-blur-sm"
       >
-        <span class="text-sm font-medium text-slate-500 dark:text-slate-300">
+        <span class="text-sm font-medium text-slate-500">
           {{ loadingText }}
         </span>
       </div>
 
       <div
         v-if="empty && !loading"
-        class="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-400 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-500"
+        class="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-400"
       >
         {{ emptyMessage }}
       </div>
@@ -45,7 +45,7 @@
 
     <footer
       v-if="$slots.footer"
-      class="mt-6 border-t border-slate-200 pt-4 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400"
+      class="mt-6 border-t border-slate-200 pt-4 text-sm text-slate-500"
     >
       <slot name="footer" />
     </footer>

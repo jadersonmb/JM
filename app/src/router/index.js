@@ -24,7 +24,7 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: { name: 'dashboard' },
+          redirect: { name: 'dashboard/nutrition' },
         },
         {
           path: 'dashboard',
@@ -133,6 +133,12 @@ const router = createRouter({
               name: 'reference-education-levels',
               component: () => import('@/views/reference/ReferenceEducationLevelsView.vue'),
               meta: { titleKey: 'routes.referenceEducationLevels', requiresAdmin: true },
+            },
+            {
+              path: 'meals',
+              name: 'reference-meals',
+              component: () => import('@/views/reference/ReferenceMealsView.vue'),
+              meta: { titleKey: 'routes.referenceMeals', requiresAdmin: true },
             },
             {
               path: 'professions',

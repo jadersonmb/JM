@@ -15,6 +15,9 @@ public class NutritionDashboardDTO {
     double totalProtein;
     double totalCarbs;
     double totalFat;
+    double totalLiquidVolume;
+    double totalLiquidVolumeMl;
+    String liquidUnitSymbol;
     int mealsAnalyzed;
     Map<String, Double> categoryCalories;
     List<NutritionHistoryItem> history;
@@ -23,11 +26,17 @@ public class NutritionDashboardDTO {
     @Builder
     public static class NutritionHistoryItem {
         UUID messageId;
+        UUID foodId;
         String foodName;
         double calories;
         double protein;
         double carbs;
         double fat;
+        double liquidVolume;
+        double liquidVolumeMl;
+        String liquidUnitSymbol;
+        UUID mealId;
+        String mealName;
         String primaryCategory;
         OffsetDateTime analyzedAt;
         String summary;

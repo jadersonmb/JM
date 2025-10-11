@@ -3,10 +3,12 @@ package com.jm.controllers;
 import com.jm.dto.CityDTO;
 import com.jm.dto.CountryDTO;
 import com.jm.dto.EducationLevelDTO;
+import com.jm.dto.MealDTO;
 import com.jm.dto.ProfessionDTO;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
 import com.jm.services.EducationLevelService;
+import com.jm.services.MealService;
 import com.jm.services.ProfessionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -39,6 +41,7 @@ public class ReferenceManagementController {
     private final CityService cityService;
     private final EducationLevelService educationLevelService;
     private final ProfessionService professionService;
+    private final MealService mealService;
 
     @GetMapping("/countries")
     public ResponseEntity<Page<CountryDTO>> listCountries(Pageable pageable,
@@ -159,6 +162,36 @@ public class ReferenceManagementController {
     public ResponseEntity<Void> deleteProfession(@PathVariable UUID id) {
         ensureAdmin();
         professionService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/meals")
+    public ResponseEntity<Page<MealDTO>> listMeals(Pageable pageable,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String language) {
+        ensureAdmin();
+        return ResponseEntity.ok(mealService.search(pageable, name, code, language));
+    }
+
+    @PostMapping("/meals")
+    public ResponseEntity<MealDTO> createMeal(@RequestBody MealDTO dto) {
+        ensureAdmin();
+        MealDTO created = mealService.save(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/meals/{id}")
+    public ResponseEntity<MealDTO> updateMeal(@PathVariable UUID id, @RequestBody MealDTO dto) {
+        ensureAdmin();
+        dto.setId(id);
+        return ResponseEntity.ok(mealService.save(dto));
+    }
+
+    @DeleteMapping("/meals/{id}")
+    public ResponseEntity<Void> deleteMeal(@PathVariable UUID id) {
+        ensureAdmin();
+        mealService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

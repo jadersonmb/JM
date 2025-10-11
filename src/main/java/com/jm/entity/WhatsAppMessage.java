@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -62,6 +64,13 @@ public class WhatsAppMessage {
 
     @Column(name = "cloudflare_image_url")
     private String cloudflareImageUrl;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_user_id")
+    private Users owner;
+
+    @Column(name = "manual_entry", nullable = false)
+    private boolean manualEntry;
 
     @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     private NutritionAnalysis nutritionAnalysis;

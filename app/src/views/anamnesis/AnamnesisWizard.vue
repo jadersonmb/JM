@@ -19,7 +19,7 @@
             <p class="text-sm text-slate-500">{{ t('anamnesis.admin.listSubtitle') }}</p>
           </div>
           <div class="flex grade gap-2">
-            <button type="button" class="btn-secondary" :disabled="anamnesisLoading" @click="startNewAnamnesis">
+            <button type="button" class="btn-primary" :disabled="anamnesisLoading" @click="startNewAnamnesis">
               <span v-if="anamnesisLoading" class="loader h-4 w-4"></span>
               <span v-else>{{ t('anamnesis.admin.new') }}</span>
             </button>

@@ -14,6 +14,7 @@ import com.jm.dto.analytics.MacroDistributionResponseDTO;
 import com.jm.dto.analytics.TopFoodDTO;
 import com.jm.dto.analytics.TopFoodsResponseDTO;
 import com.jm.entity.Anamnesis;
+import com.jm.entity.MeasurementUnits;
 import com.jm.entity.NutritionAnalysis;
 import com.jm.entity.NutritionGoal;
 import com.jm.entity.Users;
@@ -587,6 +588,10 @@ public class AnalyticsService {
         if (analysis == null) {
             return BigDecimal.ZERO;
         }
+        BigDecimal recorded = liquidVolumeToMilliliters(analysis);
+        if (recorded.compareTo(BigDecimal.ZERO) > 0) {
+            return recorded;
+        }
         String source = String.join(" ",
                 Optional.ofNullable(analysis.getFoodName()).orElse(""),
                 Optional.ofNullable(analysis.getSummary()).orElse(""));
@@ -609,6 +614,29 @@ public class AnalyticsService {
             return value;
         }
         return BigDecimal.valueOf(250);
+    }
+
+    private BigDecimal liquidVolumeToMilliliters(NutritionAnalysis analysis) {
+        if (analysis == null || analysis.getLiquidVolume() == null || analysis.getLiquidVolume().signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal base = analysis.getLiquidVolume();
+        MeasurementUnits unit = analysis.getLiquidUnit();
+        if (unit == null) {
+            return base;
+        }
+        Double factor = unit.getConversionFactor();
+        if (factor != null && factor > 0) {
+            return base.multiply(BigDecimal.valueOf(factor), MATH_CONTEXT);
+        }
+        String code = unit.getCode() != null ? unit.getCode().toLowerCase(Locale.ROOT) : "";
+        return switch (code) {
+            case "l", "lt", "litre", "liter" -> base.multiply(ONE_THOUSAND, MATH_CONTEXT);
+            case "cup" -> base.multiply(BigDecimal.valueOf(240), MATH_CONTEXT);
+            case "tbsp" -> base.multiply(BigDecimal.valueOf(15), MATH_CONTEXT);
+            case "tsp" -> base.multiply(BigDecimal.valueOf(5), MATH_CONTEXT);
+            default -> base;
+        };
     }
 
     private BigDecimal estimateFiber(NutritionAnalysis analysis) {

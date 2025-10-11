@@ -9,20 +9,30 @@ import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
+import com.jm.dto.WhatsAppNutritionEntryRequest;
+import com.jm.entity.Food;
 import com.jm.entity.FoodCategory;
+import com.jm.entity.Meal;
+import com.jm.entity.MeasurementUnits;
 import com.jm.entity.NutritionAnalysis;
 import com.jm.entity.Users;
 import com.jm.entity.WhatsAppMessage;
 import com.jm.repository.FoodCategoryRepository;
+import com.jm.repository.FoodRepository;
+import com.jm.repository.MealRepository;
+import com.jm.repository.MeasurementUnitRepository;
 import com.jm.repository.NutritionAnalysisRepository;
 import com.jm.repository.WhatsAppMessageRepository;
 import com.jm.speciation.WhatsAppSpecification;
 
 import com.jm.execption.JMException;
+import com.jm.execption.ProblemType;
+import com.jm.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,6 +66,9 @@ public class WhatsAppNutritionService {
     private final WhatsAppMessageRepository messageRepository;
     private final NutritionAnalysisRepository nutritionAnalysisRepository;
     private final FoodCategoryRepository foodCategoryRepository;
+    private final MealRepository mealRepository;
+    private final FoodRepository foodRepository;
+    private final MeasurementUnitRepository measurementUnitRepository;
     private final ObjectMapper objectMapper;
     private final CloudflareR2Service cloudflareR2Service;
     private final UserService userService;
@@ -111,13 +124,15 @@ public class WhatsAppNutritionService {
 
         switch (messageType) {
             case "image" -> handleImageMessage(builder, message, from);
-            case "text" -> handleTextMessage(builder, message);
+            case "text" -> handleTextMessage(builder, message, from);
             default -> logger.info("Message type {} not handled", messageType);
         }
     }
 
-    private void handleTextMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message) {
+    private void handleTextMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
+            String from) {
         Map<String, Object> textContent = (Map<String, Object>) message.getOrDefault("text", Map.of());
+        findUserByPhone(from).ifPresent(builder::owner);
         builder.textContent((String) textContent.getOrDefault("body", ""));
         messageRepository.save(builder.build());
     }
@@ -130,6 +145,7 @@ public class WhatsAppNutritionService {
 
         builder.mediaId(mediaId);
         builder.textContent(caption);
+        findUserByPhone(from).ifPresent(builder::owner);
 
         WhatsAppMessage savedMessage = messageRepository.save(builder.build());
         if (mediaId == null) {
@@ -146,13 +162,23 @@ public class WhatsAppNutritionService {
 
             MultipartFile imageFile = cloudflareR2Service.toMultipartFile(imageBytes, mediaId + ".jpg",
                     metadata.getMimeType());
-            ImageDTO cloudflareImage = cloudflareR2Service.uploadFile(imageFile, userService
-                    .findAll(PageRequest.of(0, 20), UserDTO.builder().phoneNumber(savedMessage.getFromPhone()).build())
-                    .getContent().getFirst().getId());
+
+            Users owner = Optional.ofNullable(savedMessage.getOwner())
+                    .or(() -> findUserByPhone(savedMessage.getFromPhone()))
+                    .orElse(null);
 
             savedMessage.setMediaUrl(metadata.getUrl());
             savedMessage.setMimeType(metadata.getMimeType());
-            savedMessage.setCloudflareImageUrl(cloudflareImage.getUrl());
+
+            if (owner != null) {
+                ImageDTO cloudflareImage = cloudflareR2Service.uploadFile(imageFile, owner.getId());
+                savedMessage.setOwner(owner);
+                savedMessage.setCloudflareImageUrl(cloudflareImage.getUrl());
+            } else {
+                logger.warn("Skipping Cloudflare upload for message {} because owner could not be resolved",
+                        savedMessage.getId());
+            }
+
             messageRepository.save(savedMessage);
 
             GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType());
@@ -177,8 +203,36 @@ public class WhatsAppNutritionService {
         }
     }
 
+    private Optional<Users> findUserByPhone(String phone) {
+        if (!StringUtils.hasText(phone)) {
+            return Optional.empty();
+        }
+        try {
+            return userService
+                    .findAll(PageRequest.of(0, 1), UserDTO.builder().phoneNumber(phone).build())
+                    .getContent()
+                    .stream()
+                    .findFirst()
+                    .map(dto -> {
+                        try {
+                            return userService.findEntityById(dto.getId());
+                        } catch (JMException ex) {
+                            logger.debug("Failed to load user {} for phone {}", dto.getId(), phone, ex);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull);
+        } catch (JMException ex) {
+            logger.debug("Failed to resolve user by phone {}", phone, ex);
+            return Optional.empty();
+        }
+    }
+
     private void saveNutritionAnalysis(WhatsAppMessage message, GeminiNutritionResult result)
             throws JsonProcessingException {
+        MeasurementUnits caloriesUnit = resolveMeasurementUnit(null, "KCAL");
+        MeasurementUnits macroUnit = resolveMeasurementUnit(null, "G");
+
         NutritionAnalysis analysis = NutritionAnalysis.builder().message(message).foodName(result.foodName)
                 .calories(toBigDecimal(result.calories))
                 .protein(toBigDecimal(result.macronutrients != null ? result.macronutrients.protein_g : null))
@@ -186,6 +240,10 @@ public class WhatsAppNutritionService {
                 .fat(toBigDecimal(result.macronutrients != null ? result.macronutrients.fat_g : null))
                 .summary(result.summary).categoriesJson(objectMapper.writeValueAsString(result.categories))
                 .confidence(toBigDecimal(result.confidence)).primaryCategory(resolvePrimaryCategory(result.categories))
+                .caloriesUnit(caloriesUnit)
+                .proteinUnit(macroUnit)
+                .carbsUnit(macroUnit)
+                .fatUnit(macroUnit)
                 .build();
 
         message.setNutritionAnalysis(analysis);
@@ -314,41 +372,167 @@ public class WhatsAppNutritionService {
     @Transactional(readOnly = true)
     public List<WhatsAppMessageFeedDTO> getRecentMessagesWithFilter(WhatsAppMessageDTO filter, UUID userId) {
         List<WhatsAppMessage> messages = messageRepository.findAll(WhatsAppSpecification.search(filter));
-
         Optional<String> normalizedPhone = resolveUserPhone(userId);
-        if (normalizedPhone.isPresent()) {
-            String expected = normalizedPhone.get();
-            messages = messages.stream()
-                    .filter(message -> phoneMatches(expected, message.getFromPhone())
-                            || phoneMatches(expected, message.getToPhone()))
-                    .collect(Collectors.toList());
+
+        Comparator<WhatsAppMessage> comparator = Comparator
+                .comparing(WhatsAppMessage::getReceivedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed();
+
+        return messages.stream()
+                .filter(message -> {
+                    if (userId == null) {
+                        return true;
+                    }
+                    UUID ownerId = Optional.ofNullable(message.getOwner()).map(Users::getId).orElse(null);
+                    if (ownerId != null) {
+                        return ownerId.equals(userId);
+                    }
+                    return normalizedPhone.map(expected -> phoneMatches(expected, message.getFromPhone())
+                            || phoneMatches(expected, message.getToPhone())).orElse(false);
+                })
+                .sorted(comparator)
+                .limit(50)
+                .map(this::toFeedDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public WhatsAppMessageFeedDTO createManualEntry(WhatsAppNutritionEntryRequest request) {
+        PermissionContext context = currentPermission();
+        Users owner = resolveOwner(context, request.getOwnerUserId());
+
+        WhatsAppMessage message = WhatsAppMessage.builder()
+                .owner(owner)
+                .manualEntry(true)
+                .messageType("MANUAL")
+                .fromPhone(owner.getPhoneNumber())
+                .toPhone(owner.getPhoneNumber())
+                .textContent(request.getTextContent())
+                .cloudflareImageUrl(request.getImageUrl())
+                .mediaUrl(request.getImageUrl())
+                .receivedAt(Optional.ofNullable(request.getReceivedAt()).orElse(OffsetDateTime.now()))
+                .build();
+
+        NutritionAnalysis analysis = applyNutritionRequest(message, null, request);
+        message.setNutritionAnalysis(analysis);
+
+        WhatsAppMessage saved = messageRepository.save(message);
+        return toFeedDto(saved);
+    }
+
+    @Transactional
+    public WhatsAppMessageFeedDTO updateEntry(UUID messageId, WhatsAppNutritionEntryRequest request) {
+        PermissionContext context = currentPermission();
+        WhatsAppMessage message = messageRepository.findById(messageId)
+                .orElseThrow(() -> messageNotFound(messageId));
+
+        ensureCanManage(context, message);
+
+        if (context.admin() && request.getOwnerUserId() != null) {
+            Users newOwner = resolveOwner(context, request.getOwnerUserId());
+            message.setOwner(newOwner);
+            message.setFromPhone(newOwner.getPhoneNumber());
+        } else if (!context.admin() && message.getOwner() == null) {
+            Users owner = resolveOwner(context, context.userId());
+            message.setOwner(owner);
         }
 
-        return messages.stream().map(this::toFeedDto).collect(Collectors.toList());
+        if (request.getReceivedAt() != null) {
+            message.setReceivedAt(request.getReceivedAt());
+        }
+
+        message.setTextContent(request.getTextContent());
+        message.setCloudflareImageUrl(request.getImageUrl());
+        message.setMediaUrl(request.getImageUrl());
+        message.setManualEntry(true);
+
+        if (!StringUtils.hasText(message.getMessageType()) || "MANUAL".equalsIgnoreCase(message.getMessageType())) {
+            message.setMessageType("MANUAL");
+        }
+
+        NutritionAnalysis analysis = applyNutritionRequest(message, message.getNutritionAnalysis(), request);
+        message.setNutritionAnalysis(analysis);
+
+        WhatsAppMessage saved = messageRepository.save(message);
+        return toFeedDto(saved);
+    }
+
+    @Transactional
+    public void deleteEntry(UUID messageId) {
+        PermissionContext context = currentPermission();
+        WhatsAppMessage message = messageRepository.findById(messageId)
+                .orElseThrow(() -> messageNotFound(messageId));
+
+        ensureCanManage(context, message);
+        messageRepository.delete(message);
     }
 
     private WhatsAppMessageFeedDTO toFeedDto(WhatsAppMessage message) {
         NutritionAnalysis analysis = message.getNutritionAnalysis();
         WhatsAppMessageFeedDTO.NutritionSummary nutritionSummary = null;
+        WhatsAppMessageFeedDTO.MealSummary mealSummary = null;
+        WhatsAppMessageFeedDTO.FoodSummary foodSummary = null;
+        WhatsAppMessageFeedDTO.LiquidSummary liquidSummary = null;
+
         if (analysis != null) {
             nutritionSummary = WhatsAppMessageFeedDTO.NutritionSummary
                     .builder()
+                    .foodId(Optional.ofNullable(analysis.getFood()).map(Food::getId).orElse(null))
                     .foodName(analysis.getFoodName())
                     .calories(optionalDouble(analysis.getCalories()))
                     .protein(optionalDouble(analysis.getProtein()))
                     .carbs(optionalDouble(analysis.getCarbs()))
                     .fat(optionalDouble(analysis.getFat()))
+                    .caloriesUnitId(Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .caloriesUnitSymbol(Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .proteinUnitId(Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .proteinUnitSymbol(Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .carbsUnitId(Optional.ofNullable(analysis.getCarbsUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .carbsUnitSymbol(Optional.ofNullable(analysis.getCarbsUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .fatUnitId(Optional.ofNullable(analysis.getFatUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .fatUnitSymbol(Optional.ofNullable(analysis.getFatUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .primaryCategoryId(Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getId).orElse(null))
                     .primaryCategory(
                             Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getName).orElse(null))
                     .summary(analysis.getSummary())
                     .build();
+
+            Meal meal = analysis.getMeal();
+            if (meal != null) {
+                mealSummary = WhatsAppMessageFeedDTO.MealSummary.builder()
+                        .id(meal.getId())
+                        .name(meal.getName())
+                        .code(meal.getCode())
+                        .description(meal.getDescription())
+                        .sortOrder(meal.getSortOrder())
+                        .build();
+            }
+
+            Food food = analysis.getFood();
+            if (food != null) {
+                foodSummary = WhatsAppMessageFeedDTO.FoodSummary.builder()
+                        .id(food.getId())
+                        .name(food.getName())
+                        .code(food.getCode())
+                        .categoryId(Optional.ofNullable(food.getFoodCategory()).map(FoodCategory::getId).orElse(null))
+                        .categoryName(Optional.ofNullable(food.getFoodCategory()).map(FoodCategory::getName).orElse(null))
+                        .build();
+            }
+
+            BigDecimal liquidVolume = analysis.getLiquidVolume();
+            MeasurementUnits liquidUnit = analysis.getLiquidUnit();
+            if (liquidVolume != null && liquidVolume.signum() > 0) {
+                liquidSummary = WhatsAppMessageFeedDTO.LiquidSummary.builder()
+                        .volume(optionalDouble(liquidVolume))
+                        .unitId(Optional.ofNullable(liquidUnit).map(MeasurementUnits::getId).orElse(null))
+                        .unitSymbol(Optional.ofNullable(liquidUnit).map(MeasurementUnits::getSymbol).orElse(null))
+                        .volumeMl(convertToMilliliters(liquidVolume, liquidUnit))
+                        .build();
+            }
         }
 
-        String imageUrl = null;
-        if ("image".equalsIgnoreCase(message.getMessageType())) {
-            imageUrl = message.getCloudflareImageUrl();
-
-        }
+        String imageUrl = Optional.ofNullable(message.getCloudflareImageUrl())
+                .filter(StringUtils::hasText)
+                .orElseGet(() -> StringUtils.hasText(message.getMediaUrl()) ? message.getMediaUrl() : null);
 
         return WhatsAppMessageFeedDTO.builder()
                 .id(message.getId())
@@ -360,8 +544,147 @@ public class WhatsAppNutritionService {
                 .imageUrl(imageUrl)
                 .receivedAt(message.getReceivedAt())
                 .cloudFlareImageUrl(message.getCloudflareImageUrl())
+                .manualEntry(message.isManualEntry())
+                .ownerUserId(Optional.ofNullable(message.getOwner()).map(Users::getId).orElse(null))
+                .meal(mealSummary)
+                .food(foodSummary)
+                .liquids(liquidSummary)
                 .nutrition(nutritionSummary)
                 .build();
+    }
+
+    private NutritionAnalysis applyNutritionRequest(WhatsAppMessage message, NutritionAnalysis existing,
+            WhatsAppNutritionEntryRequest request) {
+        NutritionAnalysis target = existing != null ? existing : new NutritionAnalysis();
+        target.setMessage(message);
+
+        Meal meal = resolveMeal(request.getMealId());
+        target.setMeal(meal);
+
+        Food food = resolveFood(request.getFoodId());
+        if (food != null) {
+            target.setFood(food);
+            String requestedName = StringUtils.hasText(request.getFoodName()) ? request.getFoodName() : null;
+            target.setFoodName(requestedName != null ? requestedName : food.getName());
+        } else {
+            target.setFood(null);
+            target.setFoodName(request.getFoodName());
+        }
+
+        target.setCalories(toBigDecimal(request.getCalories()));
+        target.setProtein(toBigDecimal(request.getProtein()));
+        target.setCarbs(toBigDecimal(request.getCarbs()));
+        target.setFat(toBigDecimal(request.getFat()));
+        target.setSummary(request.getSummary());
+
+        target.setCaloriesUnit(resolveMeasurementUnit(request.getCaloriesUnitId(), "KCAL"));
+        target.setProteinUnit(resolveMeasurementUnit(request.getProteinUnitId(), "G"));
+        target.setCarbsUnit(resolveMeasurementUnit(request.getCarbsUnitId(), "G"));
+        target.setFatUnit(resolveMeasurementUnit(request.getFatUnitId(), "G"));
+        target.setPrimaryCategory(lookupFoodCategory(request.getPrimaryCategoryId()));
+
+        target.setLiquidVolume(toBigDecimal(request.getLiquidVolume()));
+        target.setLiquidUnit(resolveMeasurementUnit(request.getLiquidUnitId(), "ML"));
+
+        if (existing != null) {
+            target.setCategoriesJson(existing.getCategoriesJson());
+            target.setConfidence(existing.getConfidence());
+        } else {
+            target.setCategoriesJson(null);
+            target.setConfidence(null);
+        }
+
+        return target;
+    }
+
+    private MeasurementUnits resolveMeasurementUnit(UUID unitId, String fallbackCode) {
+        if (unitId != null) {
+            return measurementUnitRepository.findById(unitId)
+                    .orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                            ProblemType.INVALID_DATA.getTitle(), "Measurement unit not found"));
+        }
+        if (!StringUtils.hasText(fallbackCode)) {
+            return null;
+        }
+        return measurementUnitRepository.findByCodeIgnoreCase(fallbackCode).orElseGet(() -> {
+            logger.warn("Measurement unit with code {} not found", fallbackCode);
+            return null;
+        });
+    }
+
+    private Meal resolveMeal(UUID mealId) {
+        if (mealId == null) {
+            return null;
+        }
+        return mealRepository.findById(mealId)
+                .orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                        ProblemType.INVALID_DATA.getTitle(), "Meal not found"));
+    }
+
+    private Food resolveFood(UUID foodId) {
+        if (foodId == null) {
+            return null;
+        }
+        return foodRepository.findById(foodId)
+                .orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                        ProblemType.INVALID_DATA.getTitle(), "Food not found"));
+    }
+
+    private FoodCategory lookupFoodCategory(UUID categoryId) {
+        if (categoryId == null) {
+            return null;
+        }
+        return foodCategoryRepository.findById(categoryId).orElse(null);
+    }
+
+    private PermissionContext currentPermission() {
+        UUID userId = SecurityUtils.getCurrentUserId()
+                .orElseThrow(() -> new JMException(HttpStatus.FORBIDDEN.value(), ProblemType.WHATSAPP_FORBIDDEN.getUri(),
+                        ProblemType.WHATSAPP_FORBIDDEN.getTitle(), "Unable to resolve authenticated user"));
+        return new PermissionContext(userId, SecurityUtils.hasRole("ADMIN"));
+    }
+
+    private Users resolveOwner(PermissionContext context, UUID ownerId) {
+        if (context.admin() && ownerId == null) {
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                    ProblemType.INVALID_DATA.getTitle(), "Target user is required for this operation");
+        }
+        UUID targetId = ownerId != null ? ownerId : context.userId();
+        if (targetId == null) {
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                    ProblemType.INVALID_DATA.getTitle(), "Owner user is required");
+        }
+        if (!context.admin() && !targetId.equals(context.userId())) {
+            throw new JMException(HttpStatus.FORBIDDEN.value(), ProblemType.WHATSAPP_FORBIDDEN.getUri(),
+                    ProblemType.WHATSAPP_FORBIDDEN.getTitle(),
+                    "You are not allowed to manage nutrition entries for other users");
+        }
+        try {
+            return userService.findEntityById(targetId);
+        } catch (JMException ex) {
+            throw ex;
+        }
+    }
+
+    private void ensureCanManage(PermissionContext context, WhatsAppMessage message) {
+        if (context.admin()) {
+            return;
+        }
+        UUID ownerId = Optional.ofNullable(message.getOwner()).map(Users::getId).orElse(null);
+        if (ownerId == null || !ownerId.equals(context.userId())) {
+            throw new JMException(HttpStatus.FORBIDDEN.value(), ProblemType.WHATSAPP_FORBIDDEN.getUri(),
+                    ProblemType.WHATSAPP_FORBIDDEN.getTitle(),
+                    "You are not allowed to modify this nutrition entry");
+        }
+    }
+
+    private JMException messageNotFound(UUID id) {
+        return new JMException(HttpStatus.NOT_FOUND.value(), ProblemType.WHATSAPP_MESSAGE_NOT_FOUND.getUri(),
+                ProblemType.WHATSAPP_MESSAGE_NOT_FOUND.getTitle(),
+                "WhatsApp nutrition entry " + id + " not found");
+    }
+
+    private record PermissionContext(UUID userId, boolean admin) {
     }
 
     @Transactional(readOnly = true)
@@ -381,6 +704,12 @@ public class WhatsAppNutritionService {
         double totalProtein = analyses.stream().mapToDouble(a -> optionalDouble(a.getProtein())).sum();
         double totalCarbs = analyses.stream().mapToDouble(a -> optionalDouble(a.getCarbs())).sum();
         double totalFat = analyses.stream().mapToDouble(a -> optionalDouble(a.getFat())).sum();
+        double totalLiquidMl = analyses.stream()
+                .mapToDouble(a -> convertToMilliliters(a.getLiquidVolume(), a.getLiquidUnit()))
+                .sum();
+
+        String liquidSymbol = totalLiquidMl >= 1000 ? "L" : "ml";
+        double totalLiquidDisplay = "L".equals(liquidSymbol) ? totalLiquidMl / 1000d : totalLiquidMl;
 
         Map<String, Double> categoryCalories = new ConcurrentHashMap<>();
         analyses.forEach(analysis -> {
@@ -392,11 +721,17 @@ public class WhatsAppNutritionService {
         List<NutritionDashboardDTO.NutritionHistoryItem> history = analyses.stream()
                 .map(analysis -> NutritionDashboardDTO.NutritionHistoryItem.builder()
                         .messageId(analysis.getMessage().getId())
+                        .foodId(Optional.ofNullable(analysis.getFood()).map(Food::getId).orElse(null))
                         .foodName(analysis.getFoodName())
                         .calories(optionalDouble(analysis.getCalories()))
                         .protein(optionalDouble(analysis.getProtein()))
                         .carbs(optionalDouble(analysis.getCarbs()))
                         .fat(optionalDouble(analysis.getFat()))
+                        .liquidVolume(optionalDouble(analysis.getLiquidVolume()))
+                        .liquidVolumeMl(convertToMilliliters(analysis.getLiquidVolume(), analysis.getLiquidUnit()))
+                        .liquidUnitSymbol(Optional.ofNullable(analysis.getLiquidUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                        .mealId(Optional.ofNullable(analysis.getMeal()).map(Meal::getId).orElse(null))
+                        .mealName(Optional.ofNullable(analysis.getMeal()).map(Meal::getName).orElse(null))
                         .primaryCategory(Optional.ofNullable(analysis.getPrimaryCategory())
                                 .map(FoodCategory::getName).orElse(null))
                         .analyzedAt(analysis.getCreatedAt())
@@ -409,6 +744,9 @@ public class WhatsAppNutritionService {
                 .totalProtein(totalProtein)
                 .totalCarbs(totalCarbs)
                 .totalFat(totalFat)
+                .totalLiquidVolume(totalLiquidDisplay)
+                .totalLiquidVolumeMl(totalLiquidMl)
+                .liquidUnitSymbol(liquidSymbol)
                 .mealsAnalyzed(analyses.size())
                 .categoryCalories(categoryCalories)
                 .history(history)
@@ -446,6 +784,28 @@ public class WhatsAppNutritionService {
 
     private double optionalDouble(BigDecimal value) {
         return value == null ? 0.0 : value.doubleValue();
+    }
+
+    private double convertToMilliliters(BigDecimal volume, MeasurementUnits unit) {
+        if (volume == null || volume.signum() <= 0) {
+            return 0.0;
+        }
+        double base = optionalDouble(volume);
+        if (unit == null) {
+            return base;
+        }
+        Double factor = unit.getConversionFactor();
+        if (factor != null && factor > 0) {
+            return base * factor;
+        }
+        String code = unit.getCode() != null ? unit.getCode().toUpperCase(Locale.ROOT) : "";
+        return switch (code) {
+            case "L", "LT", "LITRE", "LITER" -> base * 1000;
+            case "CUP" -> base * 240;
+            case "TBSP" -> base * 15;
+            case "TSP" -> base * 5;
+            default -> base;
+        };
     }
 
     private Optional<String> resolveUserPhone(UUID userId) {

@@ -69,8 +69,39 @@ public class NutritionAnalysis {
     private BigDecimal confidence;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "calories_unit_id")
+    private MeasurementUnits caloriesUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "protein_unit_id")
+    private MeasurementUnits proteinUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "carbs_unit_id")
+    private MeasurementUnits carbsUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fat_unit_id")
+    private MeasurementUnits fatUnit;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "primary_category_id")
     private FoodCategory primaryCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meal_id")
+    private Meal meal;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "food_id")
+    private Food food;
+
+    @Column(name = "liquid_volume")
+    private BigDecimal liquidVolume;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "liquid_unit_id")
+    private MeasurementUnits liquidUnit;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

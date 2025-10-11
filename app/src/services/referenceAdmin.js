@@ -23,3 +23,8 @@ export const listProfessions = (params = {}) => api.get('/api/v1/reference-manag
 export const createProfession = (payload) => api.post('/api/v1/reference-management/professions', payload);
 export const updateProfession = (id, payload) => api.put(`/api/v1/reference-management/professions/${id}`, payload);
 export const deleteProfession = (id) => api.delete(`/api/v1/reference-management/professions/${id}`);
+
+export const listMeals = (params = {}) => api.get('/api/v1/reference-management/meals', { params });
+export const createMeal = (payload) => api.post('/api/v1/reference-management/meals', payload);
+export const updateMeal = (id, payload) => api.put(`/api/v1/reference-management/meals/${id}`, payload);
+export const deleteMeal = (id) => api.delete(`/api/v1/reference-management/meals/${id}`);

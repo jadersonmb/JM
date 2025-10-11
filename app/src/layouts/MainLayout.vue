@@ -259,13 +259,13 @@ const openGroups = ref([]);
 
 const navigation = computed(() => {
   const baseItems = [
-    {
+    /*{
       name: 'dashboard',
       label: t('routes.dashboard'),
       to: { name: 'dashboard' },
       icon: Squares2X2Icon,
       adminOnly: false,
-    },
+    },*/
     {
       name: 'dashboard-nutrition',
       label: t('routes.nutritionDashboard'),
@@ -343,6 +343,7 @@ const navigation = computed(() => {
       { name: 'reference-countries', label: t('routes.referenceCountries') },
       { name: 'reference-cities', label: t('routes.referenceCities') },
       { name: 'reference-education-levels', label: t('routes.referenceEducationLevels') },
+      { name: 'reference-meals', label: t('routes.referenceMeals') },
       { name: 'reference-professions', label: t('routes.referenceProfessions') },
     ].map((child) => ({
       ...child,

@@ -44,6 +44,9 @@ public enum ProblemType {
     PATHOLOGY_NOT_FOUND("/pathology-not-found", "Pathology not found", "pathology.not-found"),
     ANALYTICS_FORBIDDEN("/analytics-forbidden", "Analytics access forbidden", "analytics.forbidden"),
     ANALYTICS_USER_NOT_FOUND("/analytics-user-not-found", "Analytics user not found", "analytics.user.not-found"),
+    WHATSAPP_MESSAGE_NOT_FOUND("/whatsapp-message-not-found", "WhatsApp message not found",
+            "whatsapp.message.not-found"),
+    WHATSAPP_FORBIDDEN("/whatsapp-forbidden", "WhatsApp nutrition forbidden", "whatsapp.nutrition.forbidden"),
     EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service");
 
     private String uri;

@@ -20,4 +20,5 @@ public class MealDTO {
     private String description;
     private LocalTime typicalTime;
     private Integer sortOrder;
+    private String language;
 }

@@ -9,7 +9,7 @@
       <template #toolbar="{ selected }">
         <button type="button" class="btn-primary" @click="openCreate">
           <PlusIcon class="h-4 w-4" />
-          <span>New user</span>
+          <span>New Patient</span>
         </button>
         <button type="button" class="btn-secondary" :disabled="selected.length !== 1" @click="openEdit(selected[0])">
           <PencilSquareIcon class="h-4 w-4" />
@@ -677,7 +677,7 @@ const handleSubmit = async (payload) => {
         }
       }
 
-      notifications.push({ type: 'success', title: 'User updated', message: `${payload.name} has been updated.` });
+      notifications.push({ type: 'success', title: 'Patient updated', message: `${payload.name} has been updated.` });
     } else {
       const createBody = buildUserPayload(payload);
       const { data } = await createUser(createBody);
@@ -694,7 +694,7 @@ const handleSubmit = async (payload) => {
         }
       }
 
-      notifications.push({ type: 'success', title: 'User created', message: `${payload.name} has been added.` });
+      notifications.push({ type: 'success', title: 'Patient created', message: `${payload.name} has been added.` });
     }
     formModalOpen.value = false;
     activeUser.value = null;
@@ -714,13 +714,13 @@ const handleConfirmDelete = async () => {
     await Promise.all(deleteQueue.value.map((id) => deleteUser(id)));
     notifications.push({
       type: 'success',
-      title: 'Users deleted',
+      title: 'Patient deleted',
       message: `${deleteQueue.value.length} user(s) removed successfully.`,
     });
     selectedIds.value = [];
     fetchUsers();
   } catch (error) {
-    const message = error.response?.data?.message ?? 'Unable to delete users.';
+    const message = error.response?.data?.message ?? 'Unable to delete patient.';
     notifications.push({ type: 'error', title: 'Delete failed', message });
   }
 };
