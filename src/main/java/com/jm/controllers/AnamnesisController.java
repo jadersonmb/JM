@@ -1,9 +1,9 @@
 package com.jm.controllers;
 
-import com.jm.dto.AnamneseDTO;
+import com.jm.dto.AnamnesisDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
-import com.jm.services.AnamneseService;
+import com.jm.services.AnamnesisService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -25,43 +25,43 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/anamnese")
+@RequestMapping("/api/v1/anamnesis")
 @AllArgsConstructor
-@Tag(name = "Anamnese", description = "Operations about nutritional anamnesis")
-public class AnamneseController {
+@Tag(name = "Anamnesis", description = "Operations about nutritional anamnesis")
+public class AnamnesisController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AnamneseService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnamnesisService.class);
 
-    private final AnamneseService service;
+    private final AnamnesisService service;
 
     @PostMapping
-    public ResponseEntity<AnamneseDTO> create(@RequestBody AnamneseDTO dto) {
-        logger.debug("REST request to create Anamnese : {}", dto);
+    public ResponseEntity<AnamnesisDTO> create(@RequestBody AnamnesisDTO dto) {
+        logger.debug("REST request to create Anamnesis : {}", dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
 
     @GetMapping
-    public ResponseEntity<Page<AnamneseDTO>> listAll(Pageable pageable, AnamneseDTO filter) {
+    public ResponseEntity<Page<AnamnesisDTO>> listAll(Pageable pageable, AnamnesisDTO filter) {
         logger.debug("REST request to get all Anamneses");
-        Page<AnamneseDTO> anamneses = service.findAll(pageable, filter);
-        return ResponseEntity.ok(anamneses);
+        Page<AnamnesisDTO> anamnesisPage = service.findAll(pageable, filter);
+        return ResponseEntity.ok(anamnesisPage);
     }
 
     @PutMapping
-    public ResponseEntity<AnamneseDTO> update(@RequestBody AnamneseDTO dto) {
-        logger.debug("REST request to update Anamnese : {}", dto);
+    public ResponseEntity<AnamnesisDTO> update(@RequestBody AnamnesisDTO dto) {
+        logger.debug("REST request to update Anamnesis : {}", dto);
         return ResponseEntity.ok(service.update(dto));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AnamneseDTO> findById(@PathVariable UUID id) {
-        logger.debug("REST request to get Anamnese : {}", id);
+    public ResponseEntity<AnamnesisDTO> findById(@PathVariable UUID id) {
+        logger.debug("REST request to get Anamnesis : {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        logger.debug("REST request to delete Anamnese : {}", id);
+        logger.debug("REST request to delete Anamnesis : {}", id);
         service.delete(id);
         return ResponseEntity.noContent().build();
     }

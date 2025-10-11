@@ -2,8 +2,14 @@ package com.jm.services;
 
 import com.jm.dto.FoodDTO;
 import com.jm.entity.Food;
+import com.jm.execption.JMException;
+import com.jm.execption.ProblemType;
 import com.jm.repository.FoodRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -17,53 +23,71 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class FoodService {
 
-    private final FoodRepository repository;
+        private final FoodRepository repository;
+        private final MessageSource messageSource;
 
-    public List<FoodDTO> findAll(String language, UUID categoryId) {
-        Map<UUID, Food> accumulator = new LinkedHashMap<>();
-        if (StringUtils.hasText(language)) {
-            if (categoryId != null) {
-                repository.findByFoodCategoryIdAndLanguageIgnoreCaseOrderByNameAsc(categoryId, language)
-                        .forEach(food -> accumulator.put(food.getId(), food));
-                repository.findByFoodCategoryIdAndLanguageIsNullOrderByNameAsc(categoryId)
-                        .forEach(food -> accumulator.putIfAbsent(food.getId(), food));
-            } else {
-                repository.findByLanguageIgnoreCaseOrderByNameAsc(language)
-                        .forEach(food -> accumulator.put(food.getId(), food));
-                repository.findByLanguageIsNullOrderByNameAsc()
-                        .forEach(food -> accumulator.putIfAbsent(food.getId(), food));
-            }
-        } else {
-            if (categoryId != null) {
-                repository.findByFoodCategoryIdAndLanguageIsNullOrderByNameAsc(categoryId)
-                        .forEach(food -> accumulator.put(food.getId(), food));
-            } else {
-                repository.findAllByOrderByNameAsc()
-                        .forEach(food -> accumulator.put(food.getId(), food));
-            }
+        public List<FoodDTO> findAll(String language, UUID categoryId) {
+                Map<UUID, Food> accumulator = new LinkedHashMap<>();
+                if (StringUtils.hasText(language)) {
+                        if (categoryId != null) {
+                                repository.findByFoodCategoryIdAndLanguageIgnoreCaseOrderByNameAsc(categoryId, language)
+                                                .forEach(food -> accumulator.put(food.getId(), food));
+                                repository.findByFoodCategoryIdAndLanguageIsNullOrderByNameAsc(categoryId)
+                                                .forEach(food -> accumulator.putIfAbsent(food.getId(), food));
+                        } else {
+                                repository.findByLanguageIgnoreCaseOrderByNameAsc(language)
+                                                .forEach(food -> accumulator.put(food.getId(), food));
+                                repository.findByLanguageIsNullOrderByNameAsc()
+                                                .forEach(food -> accumulator.putIfAbsent(food.getId(), food));
+                        }
+                } else {
+                        if (categoryId != null) {
+                                repository.findByFoodCategoryIdAndLanguageIsNullOrderByNameAsc(categoryId)
+                                                .forEach(food -> accumulator.put(food.getId(), food));
+                        } else {
+                                repository.findAllByOrderByNameAsc()
+                                                .forEach(food -> accumulator.put(food.getId(), food));
+                        }
+                }
+                return accumulator.values().stream()
+                                .map(this::toDto)
+                                .collect(Collectors.toList());
         }
-        return accumulator.values().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
 
-    private FoodDTO toDto(Food entity) {
-        return FoodDTO.builder()
-                .id(entity.getId())
-                .code(entity.getCode())
-                .name(entity.getName())
-                .description(entity.getDescription())
-                .categoryId(entity.getFoodCategory() != null ? entity.getFoodCategory().getId() : null)
-                .categoryName(entity.getFoodCategory() != null ? entity.getFoodCategory().getName() : null)
-                .averageCalories(entity.getAverageCalories())
-                .averageProtein(entity.getAverageProtein())
-                .averageCarbs(entity.getAverageCarbs())
-                .averageFat(entity.getAverageFat())
-                .commonPortion(entity.getCommonPortion())
-                .commonPortionUnitId(
-                        entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getId() : null)
-                .commonPortionUnitName(
-                        entity.getCommonPortionUnit() != null ? entity.getCommonPortionUnit().getDescription() : null)
-                .build();
-    }
+        private FoodDTO toDto(Food entity) {
+                return FoodDTO.builder()
+                                .id(entity.getId())
+                                .code(entity.getCode())
+                                .name(entity.getName())
+                                .description(entity.getDescription())
+                                .categoryId(entity.getFoodCategory() != null ? entity.getFoodCategory().getId() : null)
+                                .categoryName(entity.getFoodCategory() != null ? entity.getFoodCategory().getName()
+                                                : null)
+                                .averageCalories(entity.getAverageCalories())
+                                .averageProtein(entity.getAverageProtein())
+                                .averageCarbs(entity.getAverageCarbs())
+                                .averageFat(entity.getAverageFat())
+                                .commonPortion(entity.getCommonPortion())
+                                .commonPortionUnitId(
+                                                entity.getCommonPortionUnit() != null
+                                                                ? entity.getCommonPortionUnit().getId()
+                                                                : null)
+                                .commonPortionUnitName(
+                                                entity.getCommonPortionUnit() != null
+                                                                ? entity.getCommonPortionUnit().getDescription()
+                                                                : null)
+                                .build();
+        }
+
+        public Food findByEntityId(UUID id) {
+                return repository.findById(id).orElseThrow(this::foodNotFound);
+        }
+
+        private JMException foodNotFound() {
+                ProblemType problemType = ProblemType.USER_NOT_FOUND;
+                String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                                LocaleContextHolder.getLocale());
+                return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                                messageDetails);
+        }
 }

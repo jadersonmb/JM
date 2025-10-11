@@ -73,6 +73,10 @@ public class CountryService {
         return countryMapper.toDTO(countryRepository.findById(id).orElseThrow(this::countryNotFound));
     }
 
+    public Country findEntityById(UUID id) {
+        return countryRepository.findById(id).orElseThrow(this::countryNotFound);
+    }
+
     private JMException countryNotFound() {
         ProblemType problemType = ProblemType.COUNTRY_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();

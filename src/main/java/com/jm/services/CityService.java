@@ -1,6 +1,7 @@
 package com.jm.services;
 
 import com.jm.dto.CityDTO;
+import com.jm.entity.Anamnesis;
 import com.jm.entity.City;
 import com.jm.entity.Country;
 import com.jm.execption.JMException;
@@ -13,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -89,6 +91,10 @@ public class CityService {
         return countryRepository.findById(id).orElseThrow(this::countryNotFound);
     }
 
+    public City findEntityById(UUID id) {
+        return cityRepository.findById(id).orElseThrow(this::cityNotFound);
+    }
+
     private JMException invalidBody() {
         ProblemType problemType = ProblemType.INVALID_BODY;
         Locale locale = LocaleContextHolder.getLocale();
@@ -109,4 +115,5 @@ public class CityService {
         String message = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(), message);
     }
+
 }

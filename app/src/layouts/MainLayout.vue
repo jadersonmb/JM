@@ -273,9 +273,9 @@ const navigation = computed(() => {
       adminOnly: true,
     },
     {
-      name: 'anamnese',
-      label: t('menu.anamnese'),
-      to: { name: 'anamnese' },
+      name: 'anamnesis',
+      label: t('menu.anamnesis'),
+      to: { name: 'anamnesis' },
       icon: ClipboardDocumentListIcon,
       adminOnly: false,
     },
@@ -350,8 +350,8 @@ const navigation = computed(() => {
       active: referenceChildren.some((child) => child.active),
     };
 
-    const anamneseIndex = filtered.findIndex((item) => item.name === 'anamnese');
-    const insertIndex = anamneseIndex >= 0 ? anamneseIndex + 1 : filtered.length;
+    const anamnesisIndex = filtered.findIndex((item) => item.name === 'anamnesis');
+    const insertIndex = anamnesisIndex >= 0 ? anamnesisIndex + 1 : filtered.length;
     filtered.splice(insertIndex, 0, referenceItem);
   }
 

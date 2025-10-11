@@ -73,6 +73,10 @@ public class ProfessionService {
         return mapper.toDTO(repository.findById(id).orElseThrow(this::professionNotFound));
     }
 
+    public Profession findEntityById(UUID id) {
+        return repository.findById(id).orElseThrow(this::professionNotFound);
+    }
+
     private JMException professionNotFound() {
         ProblemType problemType = ProblemType.PROFESSION_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();

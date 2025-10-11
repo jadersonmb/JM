@@ -73,6 +73,10 @@ public class EducationLevelService {
         return mapper.toDTO(repository.findById(id).orElseThrow(this::educationLevelNotFound));
     }
 
+    public EducationLevel findEntityById(UUID id) {
+        return repository.findById(id).orElseThrow(this::educationLevelNotFound);
+    }
+
     private JMException educationLevelNotFound() {
         ProblemType problemType = ProblemType.EDUCATION_LEVEL_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();

@@ -2,8 +2,14 @@ package com.jm.services;
 
 import com.jm.dto.PathologyDTO;
 import com.jm.entity.Pathology;
+import com.jm.execption.JMException;
+import com.jm.execption.ProblemType;
 import com.jm.repository.PathologyRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -18,6 +24,7 @@ import java.util.stream.Collectors;
 public class PathologyService {
 
     private final PathologyRepository repository;
+    private final MessageSource messageSource;
 
     public List<PathologyDTO> findAll(String language) {
         Map<UUID, Pathology> accumulator = new LinkedHashMap<>();
@@ -43,5 +50,17 @@ public class PathologyService {
                 .chronic(Boolean.TRUE.equals(entity.getIsChronic()))
                 .requiresMonitoring(Boolean.TRUE.equals(entity.getRequiresMonitoring()))
                 .build();
+    }
+
+    public Pathology findById(UUID id) {
+        return repository.findById(id).orElseThrow(this::pathologyNotFound);
+    }
+
+    private JMException pathologyNotFound() {
+        ProblemType problemType = ProblemType.PATHOLOGY_NOT_FOUND;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
     }
 }

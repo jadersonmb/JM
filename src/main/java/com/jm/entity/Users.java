@@ -89,7 +89,7 @@ public class Users {
     private List<Image> imagens = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Anamnese> anamneses = new ArrayList<>();
+    private List<Anamnesis> anamneses = new ArrayList<>();
 
     public enum Type {
         ADMIN, CLIENT

@@ -2,8 +2,14 @@ package com.jm.services;
 
 import com.jm.dto.MeasurementUnitDTO;
 import com.jm.entity.MeasurementUnits;
+import com.jm.execption.JMException;
+import com.jm.execption.ProblemType;
 import com.jm.repository.MeasurementUnitRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -18,6 +24,7 @@ import java.util.stream.Collectors;
 public class MeasurementUnitService {
 
     private final MeasurementUnitRepository repository;
+    private final MessageSource messageSource;
 
     public List<MeasurementUnitDTO> findAll(String language) {
         Map<UUID, MeasurementUnits> accumulator = new LinkedHashMap<>();
@@ -43,5 +50,17 @@ public class MeasurementUnitService {
                 .baseUnit(entity.getBaseUnit())
                 .description(entity.getDescription())
                 .build();
+    }
+
+    public MeasurementUnits findByEntityId(UUID id) {
+        return repository.findById(id).orElseThrow(this::measurementUnitsNotFound);
+    }
+
+    private JMException measurementUnitsNotFound() {
+        ProblemType problemType = ProblemType.USER_NOT_FOUND;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[] { "" },
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
     }
 }

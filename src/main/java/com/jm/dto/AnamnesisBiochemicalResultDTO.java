@@ -12,10 +12,11 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExameBioquimicoDTO {
+public class AnamnesisBiochemicalResultDTO {
 
     private UUID id;
-    private String nomeExame;
-    private String valor;
-    private LocalDate dataExame;
+    private UUID biochemicalExamId;
+    private String biochemicalExamName;
+    private String resultValue;
+    private LocalDate resultDate;
 }

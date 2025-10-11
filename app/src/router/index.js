@@ -39,10 +39,10 @@ const router = createRouter({
           meta: { titleKey: 'routes.users' },
         },
         {
-          path: 'anamnese',
-          name: 'anamnese',
-          component: () => import('@/views/anamnese/AnamneseWizard.vue'),
-          meta: { titleKey: 'routes.anamnese' },
+          path: 'anamnesis',
+          name: 'anamnesis',
+          component: () => import('@/views/anamnesis/AnamnesisWizard.vue'),
+          meta: { titleKey: 'routes.anamnesis' },
         },
         {
           path: 'diet',

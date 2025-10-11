@@ -12,7 +12,7 @@ public enum ProblemType {
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
     PERSON_NOT_FOUND("/person-not-found", "Person not found", "person_not.found"),
-    ANAMNESE_NOT_FOUND("/anamnese-not-found", "Anamnese not found", "anamnese.not-found"),
+    ANAMNESIS_NOT_FOUND("/anamnesis-not-found", "Anamnesis not found", "anamnesis.not-found"),
     COUNTRY_NOT_FOUND("/country-not-found", "Country not found", "country.not-found"),
     CITY_NOT_FOUND("/city-not-found", "City not found", "city.not-found"),
     EDUCATION_LEVEL_NOT_FOUND("/education-level-not-found", "Education level not found", "education-level.not-found"),
@@ -39,7 +39,8 @@ public enum ProblemType {
     NUTRITION_GOAL_TEMPLATE_NOT_FOUND("/nutrition-goal-template-not-found", "Nutrition goal template not found",
             "goal.template.not-found"),
     NUTRITION_GOAL_UNIT_NOT_FOUND("/nutrition-goal-unit-not-found", "Unit of measure not found",
-            "goal.unit.not-found");
+            "goal.unit.not-found"),
+    PATHOLOGY_NOT_FOUND("/pathology-not-found", "Pathology not found", "pathology.not-found");
 
     private String uri;
     private String title;

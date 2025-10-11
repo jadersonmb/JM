@@ -1,5 +1,6 @@
 package com.jm.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -11,25 +12,32 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "refeicao_24h")
+@Table(name = "anamnesis_biochemical_results")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Refeicao24h {
+public class AnamnesisBiochemicalResult {
 
     @Id
     @Builder.Default
     private UUID id = UUID.randomUUID();
 
-    private String nomeRefeicao;
-    private String alimentos;
-    private String quantidades;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "anamnesis_id", nullable = false)
+    private Anamnesis anamnesis;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "anamnese_id")
-    private Anamnese anamnese;
+    @JoinColumn(name = "biochemical_exam_id", nullable = false)
+    private BiochemicalExam biochemicalExam;
+
+    @Column(name = "result_value")
+    private String resultValue;
+
+    @Column(name = "result_date")
+    private LocalDate resultDate;
 }

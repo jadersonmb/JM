@@ -1,5 +1,6 @@
 package com.jm.dto;
 
+import com.jm.entity.AnamnesisFoodPreference.PreferenceType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,10 +12,11 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Refeicao24hDTO {
+public class AnamnesisFoodPreferenceDTO {
 
     private UUID id;
-    private String nomeRefeicao;
-    private String alimentos;
-    private String quantidades;
+    private UUID foodId;
+    private String foodName;
+    private PreferenceType preferenceType;
+    private String notes;
 }

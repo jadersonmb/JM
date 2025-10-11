@@ -1,5 +1,6 @@
 package com.jm.services;
 
+import com.flickr4java.flickr.people.User;
 import com.jm.dto.UserDTO;
 import com.jm.entity.Country;
 import com.jm.entity.Users;
@@ -52,6 +53,10 @@ public class UserService {
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
         return repository.findAll(UserSpeciation.search(filter), pageable).map(mapper::toDTO);
+    }
+
+    public void createUser(Users user) {
+        repository.save(user);
     }
 
     public UserDTO createUser(UserDTO dto) {
