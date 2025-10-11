@@ -196,6 +196,7 @@ import {
   ChatBubbleLeftRightIcon,
   CakeIcon,
   ClipboardDocumentListIcon,
+  ChartBarSquareIcon,
   RectangleStackIcon,
   GlobeAltIcon,
   Squares2X2Icon,
@@ -263,6 +264,13 @@ const navigation = computed(() => {
       label: t('routes.dashboard'),
       to: { name: 'dashboard' },
       icon: Squares2X2Icon,
+      adminOnly: false,
+    },
+    {
+      name: 'dashboard-nutrition',
+      label: t('routes.nutritionDashboard'),
+      to: { name: 'dashboard-nutrition' },
+      icon: ChartBarSquareIcon,
       adminOnly: false,
     },
     {
@@ -374,7 +382,9 @@ const currentTitle = computed(() => {
   }
   return route.meta.title ?? 'Overview';
 });
-const currentSection = computed(() => (route.name === 'dashboard' ? t('routes.dashboard') : t('menu.title')));
+const currentSection = computed(() => (['dashboard', 'dashboard-nutrition'].includes(route.name)
+  ? t('routes.dashboard')
+  : t('menu.title')));
 
 const handleClickOutside = (event) => {
   if (!menuOpen.value) return;

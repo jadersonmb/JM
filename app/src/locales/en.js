@@ -1,6 +1,7 @@
 export default {
   routes: {
     dashboard: 'Dashboard',
+    nutritionDashboard: 'Nutrition analytics',
     users: 'Users',
     anamnesis: 'Nutritional Anamnesis',
     diet: 'Diet Plans',
@@ -164,6 +165,88 @@ export default {
     diet: 'Diet Plans',
     goals: 'Nutrition Goals',
     reference: 'Reference data',
+  },
+  nutritionDashboard: {
+    title: 'Nutrition analytics',
+    subtitle: 'Interactive insights for adherence, macros, hydration, and body composition.',
+    filters: {
+      dateRange: 'Date range',
+      groupBy: 'Group by',
+      last7Days: 'Last 7 days',
+      last30Days: 'Last 30 days',
+      last90Days: 'Last 90 days',
+      groupByOptions: {
+        day: 'Day',
+        week: 'Week',
+        month: 'Month',
+      },
+      user: 'Client',
+      allUsers: 'All clients',
+    },
+    actions: {
+      refresh: 'Refresh',
+      refreshing: 'Refreshing...',
+    },
+    charts: {
+      goals: {
+        title: 'Goals adherence',
+        subtitle: 'Compare planned targets against achieved intake.',
+        target: 'Target',
+        achieved: 'Achieved',
+      },
+      macros: {
+        title: 'Macros over time',
+        subtitle: 'Stacked macro trends for the selected period.',
+      },
+      hydration: {
+        title: 'Hydration vs target',
+        subtitle: 'Daily water intake compared with the goal.',
+        intake: 'Water intake',
+        target: 'Target',
+      },
+      calories: {
+        title: 'Calories over time',
+        subtitle: 'Total energy intake for the selected range.',
+      },
+      foods: {
+        title: 'Top consumed foods',
+        subtitle: 'Most frequent foods by total quantity.',
+        quantity: 'Quantity',
+      },
+      body: {
+        title: 'Body composition',
+        subtitle: 'Weight, BMI, fat %, and muscle % evolution.',
+        weight: 'Weight',
+        bmi: 'BMI',
+        fat: 'Body fat %',
+        muscle: 'Muscle %',
+      },
+    },
+    metrics: {
+      protein: 'Protein',
+      carbs: 'Carbs',
+      fat: 'Fat',
+      water: 'Water',
+      fiber: 'Fiber',
+      calories: 'Calories',
+      total: 'Total',
+    },
+    labels: {
+      grams: 'Grams',
+      milliliters: 'Milliliters',
+      kcal: 'kcal',
+      percent: 'Percent',
+      percentAchieved: '% achieved',
+      weightKg: 'Kilograms',
+      unknown: 'Unknown',
+    },
+    empty: {
+      default: 'No data available for the selected filters.',
+    },
+    messages: {
+      loadFailed: 'Unable to load analytics data',
+      genericError: 'Try again or adjust the filters.',
+    },
   },
   goals: {
     title: 'Nutrition Goals',

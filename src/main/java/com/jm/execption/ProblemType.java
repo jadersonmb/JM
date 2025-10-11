@@ -42,6 +42,8 @@ public enum ProblemType {
     NUTRITION_GOAL_UNIT_NOT_FOUND("/nutrition-goal-unit-not-found", "Unit of measure not found",
             "goal.unit.not-found"),
     PATHOLOGY_NOT_FOUND("/pathology-not-found", "Pathology not found", "pathology.not-found"),
+    ANALYTICS_FORBIDDEN("/analytics-forbidden", "Analytics access forbidden", "analytics.forbidden"),
+    ANALYTICS_USER_NOT_FOUND("/analytics-user-not-found", "Analytics user not found", "analytics.user.not-found"),
     EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service");
 
     private String uri;

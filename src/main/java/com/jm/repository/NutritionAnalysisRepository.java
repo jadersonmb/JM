@@ -11,6 +11,10 @@ import java.util.UUID;
 
 public interface NutritionAnalysisRepository extends JpaRepository<NutritionAnalysis, UUID> {
     Optional<NutritionAnalysis> findByMessage(WhatsAppMessage message);
+
     List<NutritionAnalysis> findTop20ByOrderByCreatedAtDesc();
+
     List<NutritionAnalysis> findByCreatedAtAfter(OffsetDateTime createdAt);
+
+    List<NutritionAnalysis> findByCreatedAtBetween(OffsetDateTime start, OffsetDateTime end);
 }

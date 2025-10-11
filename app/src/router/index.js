@@ -33,6 +33,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.dashboard' },
         },
         {
+          path: 'dashboard/nutrition',
+          name: 'dashboard-nutrition',
+          component: () => import('@/views/dashboard/NutritionDashboard.vue'),
+          meta: { titleKey: 'routes.nutritionDashboard' },
+        },
+        {
           path: 'users',
           name: 'users',
           component: () => import('@/views/users/UsersListView.vue'),

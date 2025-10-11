@@ -1,6 +1,7 @@
 ﻿export default {
   routes: {
     dashboard: 'Painel',
+    nutritionDashboard: 'Analise nutricional',
     users: 'UsuÃ¡rios',
     anamnesis: 'Anamnese Nutricional',
     diet: 'Planos Alimentares',
@@ -164,6 +165,88 @@
     diet: 'Planos Alimentares',
     goals: 'Metas nutricionais',
     reference: 'Dados de referÃªncia',
+  },
+  nutritionDashboard: {
+    title: 'Analise nutricional',
+    subtitle: 'Insights interativos sobre aderencia, macros, hidratacao e composicao corporal.',
+    filters: {
+      dateRange: 'Intervalo de datas',
+      groupBy: 'Agrupar por',
+      last7Days: 'Ultimos 7 dias',
+      last30Days: 'Ultimos 30 dias',
+      last90Days: 'Ultimos 90 dias',
+      groupByOptions: {
+        day: 'Dia',
+        week: 'Semana',
+        month: 'Mes',
+      },
+      user: 'Cliente',
+      allUsers: 'Todos os clientes',
+    },
+    actions: {
+      refresh: 'Atualizar',
+      refreshing: 'Atualizando...',
+    },
+    charts: {
+      goals: {
+        title: 'Aderencia das metas',
+        subtitle: 'Compare metas planejadas com o consumo realizado.',
+        target: 'Meta',
+        achieved: 'Realizado',
+      },
+      macros: {
+        title: 'Macros ao longo do tempo',
+        subtitle: 'Tendencias empilhadas no periodo selecionado.',
+      },
+      hydration: {
+        title: 'Hidratacao x meta',
+        subtitle: 'Ingestao diaria de agua comparada com o objetivo.',
+        intake: 'Ingestao de agua',
+        target: 'Meta',
+      },
+      calories: {
+        title: 'Calorias ao longo do tempo',
+        subtitle: 'Energia total ingerida no intervalo escolhido.',
+      },
+      foods: {
+        title: 'Alimentos mais consumidos',
+        subtitle: 'Itens mais frequentes por quantidade total.',
+        quantity: 'Quantidade',
+      },
+      body: {
+        title: 'Composicao corporal',
+        subtitle: 'Peso, IMC, gordura % e musculo % ao longo do tempo.',
+        weight: 'Peso',
+        bmi: 'IMC',
+        fat: 'Gordura %',
+        muscle: 'Musculo %',
+      },
+    },
+    metrics: {
+      protein: 'Proteina',
+      carbs: 'Carboidratos',
+      fat: 'Gordura',
+      water: 'Agua',
+      fiber: 'Fibra',
+      calories: 'Calorias',
+      total: 'Total',
+    },
+    labels: {
+      grams: 'Gramas',
+      milliliters: 'Mililitros',
+      kcal: 'kcal',
+      percent: 'Percentual',
+      percentAchieved: '% cumprido',
+      weightKg: 'Quilogramas',
+      unknown: 'Desconhecido',
+    },
+    empty: {
+      default: 'Sem dados para os filtros selecionados.',
+    },
+    messages: {
+      loadFailed: 'Nao foi possivel carregar os dados analiticos',
+      genericError: 'Tente novamente ou ajuste os filtros.',
+    },
   },
   common: {
     stepIndicator: 'Etapa {current} de {total}',
