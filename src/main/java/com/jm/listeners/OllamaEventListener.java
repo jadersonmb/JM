@@ -1,8 +1,6 @@
 package com.jm.listeners;
 
 import com.jm.enums.OllamaStatus;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.auto.value.AutoValue.Builder;
 import com.jm.dto.OllamaRequestDTO;
 import com.jm.dto.OllamaResponseDTO;
 import com.jm.entity.Ollama;
@@ -14,6 +12,8 @@ import com.jm.services.WhatsAppNutritionService.GeminiNutritionResult;
 import com.jm.services.WhatsAppService;
 
 import lombok.RequiredArgsConstructor;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
@@ -21,7 +21,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 @Component
@@ -64,7 +63,7 @@ public class OllamaEventListener {
             ollamaRepository.save(entity);
 
             if (response.isDone()) {
-                if (Objects.nonNull(entity.getImages())) {
+                if (StringUtils.isNotBlank(entity.getImages()) && Objects.nonNull(entity.getImages())) {
                     logger.info("Ollama request image {} completed successfully", entity.getId());
                     GeminiNutritionResult deserializeNutritionResult = whatsAppNutritionService
                             .deserializeNutritionResult(sanitizeResponse(response.getResponse()));

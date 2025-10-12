@@ -176,7 +176,7 @@ public class WhatsAppNutritionService {
             Map<String, Object> textContent) {
         OllamaRequestDTOBuilder ollamaRequestDTO = OllamaRequestDTO.builder();
         ollamaRequestDTO.from(from);
-        ollamaRequestDTO.model("SISTCA-Team4/SISTCA-Team4-Nutrition:latest");
+        ollamaRequestDTO.model("ALIENTELLIGENCE/personalizednutrition:latest");
         ollamaRequestDTO.prompt((String) textContent.getOrDefault("body", ""));
         ollamaRequestDTO.stream(Boolean.FALSE);
         Optional<Users> owner = findUserByPhone(from);
@@ -234,7 +234,7 @@ public class WhatsAppNutritionService {
 
             OllamaRequestDTO dto = OllamaRequestDTO.builder()
                     .from(from)
-                    .model("gemma3:12b")
+                    .model("ALIENTELLIGENCE/personalizednutrition:latest")
                     .userId(owner.getId())
                     .prompt(prompt)
                     .stream(Boolean.FALSE)
@@ -747,7 +747,8 @@ public class WhatsAppNutritionService {
             case "DINNER", "JANTAR" -> "DINNER";
             case "SUPPER", "CEIA" -> "SUPPER";
             case "SNACK", "LANCHE", "AFTERNOONSNACK", "BRUNCH", "EVENINGSNACK",
-                    "LANCHEDATARDE", "LANCHEDAMANHA", "LANCHEDANOITE" -> "SNACK";
+                    "LANCHEDATARDE", "LANCHEDAMANHA", "LANCHEDANOITE" ->
+                "SNACK";
             default -> "OTHER_MEALS";
         };
     }
