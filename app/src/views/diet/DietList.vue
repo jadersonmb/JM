@@ -77,9 +77,9 @@
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="btn-ghost text-primary-600" @click="viewDiet(row)">{{ t('common.actions.view') }}</button>
-          <button type="button" class="btn-ghost text-primary-600" @click="editDiet(row)">{{ t('common.actions.edit') }}</button>
-          <button type="button" class="btn-ghost text-red-500" @click="confirmRemoval(row)">{{ t('diet.delete') }}</button>
+          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="viewDiet(row)">{{ t('common.actions.view') }}</button>
+          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="editDiet(row)">{{ t('common.actions.edit') }}</button>
+          <button type="button" class="btn-ghost text-red-500 font-semibold" @click="confirmRemoval(row)">{{ t('diet.delete') }}</button>
         </div>
       </template>
     </DataTable>

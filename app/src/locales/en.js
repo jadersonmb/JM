@@ -376,6 +376,7 @@ export default {
       view: 'View',
       cancel: 'Cancel',
       close: 'Close',
+      delete: 'Delete',
     },
     adminOnly: 'Personal patient information is visible only to administrators.',
     empty: {

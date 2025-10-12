@@ -32,7 +32,7 @@
           @click="openDelete(selected)"
         >
           <TrashIcon class="h-4 w-4" />
-          <span>{{ t('common.actions.remove') }}</span>
+          <span>{{ t('common.actions.delete') }}</span>
         </button>
       </template>
 
@@ -61,7 +61,7 @@
             {{ t('common.actions.edit') }}
           </button>
           <button type="button" class="text-sm font-semibold text-red-500" @click="openDelete([row.id])">
-            {{ t('common.actions.remove') }}
+            {{ t('common.actions.delete') }}
           </button>
         </div>
       </template>
@@ -83,7 +83,7 @@
       v-model="confirmOpen"
       :title="t('reference.title')"
       :message="confirmMessage"
-      :confirm-label="t('common.actions.remove')"
+      :confirm-label="t('common.actions.delete')"
       @confirm="handleConfirmDelete"
     />
   </div>

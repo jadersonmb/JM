@@ -77,9 +77,12 @@ public class AnalyticsService {
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)");
-    private static final Pattern MASS_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(kg|kilograms?|g|grams?|gramas?)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern VOLUME_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(ml|l|lt|litro?s?)", Pattern.CASE_INSENSITIVE);
-    private static final Pattern FIBER_PATTERN = Pattern.compile("(?:fiber|fibra)\\s*:?\\s*(\\d+(?:[\\.,]\\d+)?)\\s*g", Pattern.CASE_INSENSITIVE);
+    private static final Pattern MASS_PATTERN = Pattern
+            .compile("(\\d+(?:[\\.,]\\d+)?)\\s*(kg|kilograms?|g|grams?|gramas?)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern VOLUME_PATTERN = Pattern.compile("(\\d+(?:[\\.,]\\d+)?)\\s*(ml|l|lt|litro?s?)",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern FIBER_PATTERN = Pattern.compile("(?:fiber|fibra)\\s*:?\\s*(\\d+(?:[\\.,]\\d+)?)\\s*g",
+            Pattern.CASE_INSENSITIVE);
 
     private static final BigDecimal ONE_THOUSAND = BigDecimal.valueOf(1000);
     private static final BigDecimal SEVEN = BigDecimal.valueOf(7);
@@ -91,8 +94,7 @@ public class AnalyticsService {
             NutritionGoalType.FAT, "fat",
             NutritionGoalType.WATER, "water",
             NutritionGoalType.FIBER, "fiber",
-            NutritionGoalType.ENERGY, "calories"
-    );
+            NutritionGoalType.ENERGY, "calories");
 
     private static final List<String> METRIC_ORDER = List.of("protein", "carbs", "fat", "water", "fiber", "calories");
 
@@ -104,11 +106,11 @@ public class AnalyticsService {
     private final ObjectMapper objectMapper;
 
     public AnalyticsService(NutritionGoalRepository nutritionGoalRepository,
-                            NutritionAnalysisRepository nutritionAnalysisRepository,
-                            AnamnesisRepository anamnesisRepository,
-                            UserRepository userRepository,
-                            MessageSource messageSource,
-                            ObjectMapper objectMapper) {
+            NutritionAnalysisRepository nutritionAnalysisRepository,
+            AnamnesisRepository anamnesisRepository,
+            UserRepository userRepository,
+            MessageSource messageSource,
+            ObjectMapper objectMapper) {
         this.nutritionGoalRepository = nutritionGoalRepository;
         this.nutritionAnalysisRepository = nutritionAnalysisRepository;
         this.anamnesisRepository = anamnesisRepository;
@@ -131,7 +133,8 @@ public class AnalyticsService {
                     BigDecimal actual = scale(achieved.getOrDefault(metric, BigDecimal.ZERO));
                     BigDecimal percent = target.compareTo(BigDecimal.ZERO) == 0
                             ? BigDecimal.ZERO
-                            : actual.divide(target, MATH_CONTEXT).multiply(BigDecimal.valueOf(100)).setScale(1, ROUNDING_MODE);
+                            : actual.divide(target, MATH_CONTEXT).multiply(BigDecimal.valueOf(100)).setScale(1,
+                                    ROUNDING_MODE);
                     return GoalAdherenceMetricDTO.builder()
                             .key(metric)
                             .target(target)
@@ -233,10 +236,7 @@ public class AnalyticsService {
 
         Map<LocalDate, BodyAggregate> aggregates = new TreeMap<>();
         for (Anamnesis anamnesis : anamneses) {
-            LocalDate date = resolveUuidDate(anamnesis.getId(), context.zoneId());
-            if (date.isBefore(context.startDate()) || date.isAfter(context.endDate())) {
-                continue;
-            }
+            LocalDate date = LocalDate.from(anamnesis.getCreatedAt());
             BodyAggregate aggregate = aggregates.computeIfAbsent(date, key -> new BodyAggregate());
             aggregate.add(anamnesis.getWeightKg(), anamnesis.getBodyMassIndex(),
                     anamnesis.getBodyFatPercentage(), anamnesis.getMuscleMassPercentage());
@@ -308,8 +308,7 @@ public class AnalyticsService {
                 Collections.unmodifiableSet(userIds),
                 Collections.unmodifiableSet(phones),
                 new ConcurrentHashMap<>(),
-                new ConcurrentHashMap<>()
-        );
+                new ConcurrentHashMap<>());
     }
 
     private List<NutritionGoal> loadGoals(AnalyticsContext context) {
@@ -393,7 +392,8 @@ public class AnalyticsService {
             }
         }
 
-        return new AnalysisSnapshot(buckets, macroByBucket, totalMacros, hydration, totalWater, fiber, totalFiber, foods);
+        return new AnalysisSnapshot(buckets, macroByBucket, totalMacros, hydration, totalWater, fiber, totalFiber,
+                foods);
     }
 
     private List<NutritionAnalysis> loadAnalyses(AnalyticsContext context) {
@@ -556,22 +556,20 @@ public class AnalyticsService {
         if (userId == null) {
             return BigDecimal.ZERO;
         }
-        return context.weights().computeIfAbsent(userId, id ->
-                anamnesisRepository.findTopByUserIdOrderByIdDesc(id)
-                        .map(Anamnesis::getWeightKg)
-                        .filter(Objects::nonNull)
-                        .orElse(BigDecimal.ZERO));
+        return context.weights().computeIfAbsent(userId, id -> anamnesisRepository.findTopByUserIdOrderByIdDesc(id)
+                .map(Anamnesis::getWeightKg)
+                .filter(Objects::nonNull)
+                .orElse(BigDecimal.ZERO));
     }
 
     private BigDecimal resolveWaterIntake(UUID userId, AnalyticsContext context) {
         if (userId == null) {
             return BigDecimal.ZERO;
         }
-        return context.water().computeIfAbsent(userId, id ->
-                anamnesisRepository.findTopByUserIdOrderByIdDesc(id)
-                        .map(Anamnesis::getWaterIntake)
-                        .map(this::parseWater)
-                        .orElse(BigDecimal.ZERO));
+        return context.water().computeIfAbsent(userId, id -> anamnesisRepository.findTopByUserIdOrderByIdDesc(id)
+                .map(Anamnesis::getWaterIntake)
+                .map(this::parseWater)
+                .orElse(BigDecimal.ZERO));
     }
 
     private boolean isUserAllowed(AnalyticsContext context, UUID userId) {
@@ -825,15 +823,6 @@ public class AnalyticsService {
         return phone.replaceAll("\\D", "");
     }
 
-    private LocalDate resolveUuidDate(UUID uuid, ZoneId zoneId) {
-        if (uuid == null || uuid.version() != 1) {
-            return LocalDate.now(zoneId);
-        }
-        long timestamp = uuid.timestamp();
-        long milliseconds = (timestamp - 0x01b21dd213814000L) / 10000;
-        return Instant.ofEpochMilli(milliseconds).atZone(zoneId).toLocalDate();
-    }
-
     private JMException forbidden() {
         return exception(ProblemType.ANALYTICS_FORBIDDEN, HttpStatus.FORBIDDEN);
     }
@@ -844,9 +833,10 @@ public class AnalyticsService {
 
     private JMException exception(ProblemType type, HttpStatus status) {
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(status.value(), type.getTitle(), type.getUri(), message);
     }
+
     private record AnalyticsContext(
             LocalDate startDate,
             LocalDate endDate,
@@ -859,8 +849,7 @@ public class AnalyticsService {
             Set<UUID> userIds,
             Set<String> phones,
             Map<UUID, BigDecimal> weights,
-            Map<UUID, BigDecimal> water
-    ) {
+            Map<UUID, BigDecimal> water) {
     }
 
     private record Bucket(LocalDate anchor, LocalDate start, LocalDate end) {
@@ -952,8 +941,7 @@ public class AnalyticsService {
             BigDecimal totalWater,
             Map<Bucket, BigDecimal> fiberByBucket,
             BigDecimal totalFiber,
-            Map<String, FoodAggregate> foods
-    ) {
+            Map<String, FoodAggregate> foods) {
     }
 
     private static final class BodyAggregate {

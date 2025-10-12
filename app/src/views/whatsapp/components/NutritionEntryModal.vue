@@ -1,6 +1,6 @@
 <template>
   <transition name="modal">
-    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-10">
+    <div v-if="modelValue" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 px-4 py-10 sm:py-16">
       <div class="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
         <header class="flex items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>

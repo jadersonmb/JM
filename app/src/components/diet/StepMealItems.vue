@@ -114,7 +114,7 @@
                 :disabled="disabled"
                 @click="removeItem(mealIndex, itemIndex)"
               >
-                {{ t('common.actions.remove') }}
+                {{ t('common.actions.delete') }}
               </button>
             </div>
           </div>

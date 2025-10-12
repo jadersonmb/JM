@@ -215,7 +215,7 @@
                   </div>
                   <div class="text-right text-xs text-slate-500">
                     <p>{{ formatNumber(item.calories) }} kcal</p>
-                    <p>{{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.protein, true) }) }}</p>
+                    <p>{{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.protein, false) }) }}</p>
                   </div>
                 </div>
                 <p v-if="item.summary" class="mt-2 text-xs text-slate-500">{{ item.summary }}</p>

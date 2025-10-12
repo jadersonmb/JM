@@ -255,6 +255,7 @@ watch(
 const extractArray = (payload) => {
   if (!payload) return [];
   if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.series)) return payload.series;
   if (Array.isArray(payload?.data)) return payload.data;
   if (Array.isArray(payload?.content)) return payload.content;
   if (Array.isArray(payload?.items)) return payload.items;
@@ -680,7 +681,7 @@ const macrosOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {
@@ -748,7 +749,7 @@ const hydrationOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {
@@ -803,7 +804,7 @@ const caloriesOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {
@@ -858,7 +859,7 @@ const foodsOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {
@@ -907,7 +908,7 @@ const bodyOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       containLabel: true,
     },
     xAxis: {

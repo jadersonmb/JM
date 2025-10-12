@@ -71,11 +71,11 @@
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="btn-ghost text-primary-600" @click="editGoal(row)">
+          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="editGoal(row)">
             {{ t('common.actions.edit') }}
           </button>
-          <button type="button" class="btn-ghost text-red-500" @click="confirmRemoval(row)">
-            {{ t('common.actions.remove') }}
+          <button type="button" class="btn-ghost text-red-500 font-semibold" @click="confirmRemoval(row)">
+            {{ t('common.actions.delete') }}
           </button>
         </div>
       </template>
@@ -85,7 +85,7 @@
       v-model="confirmOpen"
       :title="t('goals.list.confirmDelete.title')"
       :message="t('goals.list.confirmDelete.message')"
-      :confirm-label="t('common.actions.remove')"
+      :confirm-label="t('common.actions.delete')"
       @confirm="removeGoal"
     />
   </div>

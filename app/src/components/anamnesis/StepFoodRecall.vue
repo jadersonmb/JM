@@ -43,7 +43,7 @@
               class="text-sm font-semibold text-red-600 hover:text-red-500"
               @click="removeMeal(mealIndex)"
             >
-              {{ t('common.actions.remove') }}
+              {{ t('common.actions.delete') }}
             </button>
           </div>
         </div>
@@ -102,7 +102,7 @@
                 class="text-sm font-semibold text-red-600 hover:text-red-500"
                 @click="removeItem(meal, itemIndex)"
               >
-                {{ t('common.actions.remove') }}
+                {{ t('common.actions.delete') }}
               </button>
             </div>
           </div>

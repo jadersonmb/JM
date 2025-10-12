@@ -18,14 +18,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "anamneses")
@@ -140,6 +143,14 @@ public class Anamnesis {
 
         @Column(name = "diet_summary", length = 4000)
         private String dietSummary;
+
+        @CreationTimestamp
+        @Column(name = "created_at", updatable = false)
+        private LocalDateTime createdAt;
+
+        @UpdateTimestamp
+        @Column(name = "updated_at")
+        private LocalDateTime updatedAt;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "user_id")

@@ -58,7 +58,7 @@
             class="btn-ghost text-red-500"
             @click="removeMeal(index)"
           >
-            {{ t('common.actions.remove') }}
+            {{ t('common.actions.delete') }}
           </button>
         </div>
       </div>
