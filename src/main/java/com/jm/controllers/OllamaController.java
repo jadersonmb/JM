@@ -3,6 +3,7 @@ package com.jm.controllers;
 
 import com.jm.dto.OllamaRequestDTO;
 import com.jm.dto.OllamaResponseDTO;
+import com.jm.entity.Ollama;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.OllamaService;
@@ -31,17 +32,25 @@ public class OllamaController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/process")
+    public ResponseEntity<?> process(@RequestBody OllamaRequestDTO dto) {
+        service.createAndDispatchRequest(dto);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    }
+
     @PostMapping(value = "/generate-with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> generateWithImage(
             @RequestPart("model") String model,
             @RequestPart("prompt") String prompt,
             @RequestPart(value = "stream", required = false) Boolean stream,
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
-        OllamaRequestDTO dto = new OllamaRequestDTO();
-        dto.setModel(model);
-        dto.setPrompt(prompt);
-        dto.setStream(stream != null ? stream : Boolean.FALSE);
-        dto.setImages(service.encodeImages(images));
+
+        OllamaRequestDTO dto = OllamaRequestDTO.builder()
+                .model(model)
+                .prompt(prompt)
+                .stream(stream != null ? stream : Boolean.FALSE)
+                .images(service.encodeImages(images))
+                .build();
 
         logger.info("REST request to Ollama (with images) model={}", model);
         OllamaResponseDTO response = service.generate(dto);

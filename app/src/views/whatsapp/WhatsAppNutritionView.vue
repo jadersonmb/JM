@@ -76,7 +76,7 @@
         <div v-else-if="!feed.length" class="flex h-64 items-center justify-center text-sm text-slate-500">
           {{ t('whatsappNutrition.feed.empty') }}
         </div>
-        <div v-else class="max-h-full space-y-6 overflow-y-auto pr-2">
+        <div v-else class="max-h-[84rem] space-y-6 overflow-y-auto pr-2">
           <div v-for="group in groupedFeed" :key="group.key" class="space-y-2">
             <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ group.label }}</h4>
             <ul class="space-y-4">
@@ -456,7 +456,7 @@ const groupedFeed = computed(() => {
         items: [],
       });
     }
-    groups.get(key).items.push(item);
+   groups.get(key).items.push(item);    
   });
 
   return Array.from(groups.values())
@@ -727,7 +727,7 @@ const loadData = async () => {
       fetchWhatsAppMessages(params),
       fetchNutritionDashboard(params),
     ]);
-    feed.value = messagesResponse.data ?? [];
+    feed.value = messagesResponse.data.filter((item) => item.messageType !== 'text') ?? [];
     dashboard.value = { ...dashboard.value, ...(dashboardResponse.data ?? {}) };
     if (!feed.value.some((item) => item.id === selectedMessageId.value)) {
       selectedMessageId.value = null;

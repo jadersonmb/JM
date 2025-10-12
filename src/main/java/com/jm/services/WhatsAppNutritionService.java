@@ -1,10 +1,13 @@
 package com.jm.services;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jm.dto.ImageDTO;
 import com.jm.dto.NutritionDashboardDTO;
+import com.jm.dto.OllamaRequestDTO;
+import com.jm.dto.OllamaRequestDTO.OllamaRequestDTOBuilder;
 import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
@@ -28,6 +31,7 @@ import com.jm.speciation.WhatsAppSpecification;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.utils.SecurityUtils;
+
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +48,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -72,6 +77,28 @@ public class WhatsAppNutritionService {
     private final ObjectMapper objectMapper;
     private final CloudflareR2Service cloudflareR2Service;
     private final UserService userService;
+    private final OllamaService ollamaService;
+    private static final String prompt = """
+            You are a nutritionist and must reply using JSON only.
+            Analyse the meal in the image and respond ONLY with this JSON structure:
+            {
+              "isFood": true|false,
+              "foodName": "name of the meal",
+              "calories": number in kcal,
+              "macronutrients": {
+                "protein_g": number in grams,
+                "carbs_g": number in grams,
+                "fat_g": number in grams
+              },
+              "categories": [
+                { "name": "category name", "confidence": value between 0 and 1 }
+              ],
+              "summary": "short sentence about the meal",
+              "confidence": value between 0 and 1
+            }
+            If the picture does not contain food, respond exactly with:
+            {"isFood": false, "summary": "brief explanation"}
+            """;
 
     @SuppressWarnings("unchecked")
     @Transactional
@@ -120,7 +147,10 @@ public class WhatsAppNutritionService {
         OffsetDateTime receivedAt = parseTimestamp((String) message.get("timestamp"));
 
         WhatsAppMessage.WhatsAppMessageBuilder builder = WhatsAppMessage.builder().whatsappMessageId(messageId)
-                .fromPhone(from).toPhone(to).messageType(messageType).receivedAt(receivedAt);
+                .fromPhone(from)
+                .toPhone(to)
+                .messageType(messageType)
+                .receivedAt(receivedAt);
 
         switch (messageType) {
             case "image" -> handleImageMessage(builder, message, from);
@@ -132,9 +162,25 @@ public class WhatsAppNutritionService {
     private void handleTextMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
             String from) {
         Map<String, Object> textContent = (Map<String, Object>) message.getOrDefault("text", Map.of());
-        findUserByPhone(from).ifPresent(builder::owner);
-        builder.textContent((String) textContent.getOrDefault("body", ""));
+
+        createAndDispatchRequest(builder, from, textContent);
         messageRepository.save(builder.build());
+    }
+
+    private void createAndDispatchRequest(WhatsAppMessage.WhatsAppMessageBuilder builder, String from,
+            Map<String, Object> textContent) {
+        OllamaRequestDTOBuilder ollamaRequestDTO = OllamaRequestDTO.builder();
+        ollamaRequestDTO.from(from);
+        ollamaRequestDTO.model("SISTCA-Team4/SISTCA-Team4-Nutrition:latest");
+        ollamaRequestDTO.prompt((String) textContent.getOrDefault("body", ""));
+        ollamaRequestDTO.stream(Boolean.FALSE);
+        Optional<Users> owner = findUserByPhone(from);
+        if (owner.isPresent()) {
+            ollamaRequestDTO.userId(owner.get().getId());
+            builder.owner(owner.get());
+        }
+        ollamaService.createAndDispatchRequest(ollamaRequestDTO.build());
+        builder.textContent((String) textContent.getOrDefault("body", ""));
     }
 
     private void handleImageMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
@@ -181,7 +227,18 @@ public class WhatsAppNutritionService {
 
             messageRepository.save(savedMessage);
 
-            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType());
+            OllamaRequestDTO dto = OllamaRequestDTO.builder()
+                    .from(from)
+                    .model("gemma3:12b")
+                    .userId(owner.getId())
+                    .prompt(prompt)
+                    .stream(Boolean.FALSE)
+                    .images(ollamaService.encodeImages(Collections.singletonList(imageFile)))
+                    .build();
+
+            ollamaService.createAndDispatchRequest(dto);
+
+            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), prompt);
             if (result == null) {
                 logger.warn("Gemini returned empty result for message {}", savedMessage.getId());
                 return;
@@ -228,7 +285,7 @@ public class WhatsAppNutritionService {
         }
     }
 
-    private void saveNutritionAnalysis(WhatsAppMessage message, GeminiNutritionResult result)
+    public void saveNutritionAnalysis(WhatsAppMessage message, GeminiNutritionResult result)
             throws JsonProcessingException {
         MeasurementUnits caloriesUnit = resolveMeasurementUnit(null, "KCAL");
         MeasurementUnits macroUnit = resolveMeasurementUnit(null, "G");
@@ -267,34 +324,12 @@ public class WhatsAppNutritionService {
                         .description("Categoria identificada automaticamente").build()));
     }
 
-    private GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType) {
-        String prompt = """
-                You are a nutritionist and must reply using JSON only.
-                Analyse the meal in the image and respond ONLY with this JSON structure:
-                {
-                  "isFood": true|false,
-                  "foodName": "name of the meal",
-                  "calories": number in kcal,
-                  "macronutrients": {
-                    "protein_g": number in grams,
-                    "carbs_g": number in grams,
-                    "fat_g": number in grams
-                  },
-                  "categories": [
-                    { "name": "category name", "confidence": value between 0 and 1 }
-                  ],
-                  "summary": "short sentence about the meal",
-                  "confidence": value between 0 and 1
-                }
-                If the picture does not contain food, respond exactly with:
-                {"isFood": false, "summary": "brief explanation"}
-                """;
-
+    public GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType, String prompt) {
         return geminiService.generateTextFromImage(prompt, imageBytes, mimeType).map(this::sanitizeGeminiResponse)
                 .map(this::deserializeNutritionResult).blockOptional(DEFAULT_TIMEOUT).orElse(null);
     }
 
-    private GeminiNutritionResult deserializeNutritionResult(String payload) {
+    public GeminiNutritionResult deserializeNutritionResult(String payload) {
         try {
             ObjectMapper mapper = objectMapper.copy().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
                     false);
@@ -330,7 +365,7 @@ public class WhatsAppNutritionService {
         }
     }
 
-    private String buildNutritionResponse(GeminiNutritionResult result) {
+    public String buildNutritionResponse(GeminiNutritionResult result) {
         String primaryCategory = result.categories != null && !result.categories.isEmpty()
                 ? result.categories.get(0).name
                 : "Alimento";
@@ -482,15 +517,22 @@ public class WhatsAppNutritionService {
                     .protein(optionalDouble(analysis.getProtein()))
                     .carbs(optionalDouble(analysis.getCarbs()))
                     .fat(optionalDouble(analysis.getFat()))
-                    .caloriesUnitId(Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getId).orElse(null))
-                    .caloriesUnitSymbol(Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getSymbol).orElse(null))
-                    .proteinUnitId(Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getId).orElse(null))
-                    .proteinUnitSymbol(Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .caloriesUnitId(
+                            Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .caloriesUnitSymbol(Optional.ofNullable(analysis.getCaloriesUnit()).map(MeasurementUnits::getSymbol)
+                            .orElse(null))
+                    .proteinUnitId(
+                            Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getId).orElse(null))
+                    .proteinUnitSymbol(Optional.ofNullable(analysis.getProteinUnit()).map(MeasurementUnits::getSymbol)
+                            .orElse(null))
                     .carbsUnitId(Optional.ofNullable(analysis.getCarbsUnit()).map(MeasurementUnits::getId).orElse(null))
-                    .carbsUnitSymbol(Optional.ofNullable(analysis.getCarbsUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .carbsUnitSymbol(
+                            Optional.ofNullable(analysis.getCarbsUnit()).map(MeasurementUnits::getSymbol).orElse(null))
                     .fatUnitId(Optional.ofNullable(analysis.getFatUnit()).map(MeasurementUnits::getId).orElse(null))
-                    .fatUnitSymbol(Optional.ofNullable(analysis.getFatUnit()).map(MeasurementUnits::getSymbol).orElse(null))
-                    .primaryCategoryId(Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getId).orElse(null))
+                    .fatUnitSymbol(
+                            Optional.ofNullable(analysis.getFatUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                    .primaryCategoryId(
+                            Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getId).orElse(null))
                     .primaryCategory(
                             Optional.ofNullable(analysis.getPrimaryCategory()).map(FoodCategory::getName).orElse(null))
                     .summary(analysis.getSummary())
@@ -514,7 +556,8 @@ public class WhatsAppNutritionService {
                         .name(food.getName())
                         .code(food.getCode())
                         .categoryId(Optional.ofNullable(food.getFoodCategory()).map(FoodCategory::getId).orElse(null))
-                        .categoryName(Optional.ofNullable(food.getFoodCategory()).map(FoodCategory::getName).orElse(null))
+                        .categoryName(
+                                Optional.ofNullable(food.getFoodCategory()).map(FoodCategory::getName).orElse(null))
                         .build();
             }
 
@@ -600,8 +643,9 @@ public class WhatsAppNutritionService {
     private MeasurementUnits resolveMeasurementUnit(UUID unitId, String fallbackCode) {
         if (unitId != null) {
             return measurementUnitRepository.findById(unitId)
-                    .orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
-                            ProblemType.INVALID_DATA.getTitle(), "Measurement unit not found"));
+                    .orElseThrow(
+                            () -> new JMException(HttpStatus.BAD_REQUEST.value(), ProblemType.INVALID_DATA.getUri(),
+                                    ProblemType.INVALID_DATA.getTitle(), "Measurement unit not found"));
         }
         if (!StringUtils.hasText(fallbackCode)) {
             return null;
@@ -639,8 +683,9 @@ public class WhatsAppNutritionService {
 
     private PermissionContext currentPermission() {
         UUID userId = SecurityUtils.getCurrentUserId()
-                .orElseThrow(() -> new JMException(HttpStatus.FORBIDDEN.value(), ProblemType.WHATSAPP_FORBIDDEN.getUri(),
-                        ProblemType.WHATSAPP_FORBIDDEN.getTitle(), "Unable to resolve authenticated user"));
+                .orElseThrow(
+                        () -> new JMException(HttpStatus.FORBIDDEN.value(), ProblemType.WHATSAPP_FORBIDDEN.getUri(),
+                                ProblemType.WHATSAPP_FORBIDDEN.getTitle(), "Unable to resolve authenticated user"));
         return new PermissionContext(userId, SecurityUtils.hasRole("ADMIN"));
     }
 
@@ -729,7 +774,8 @@ public class WhatsAppNutritionService {
                         .fat(optionalDouble(analysis.getFat()))
                         .liquidVolume(optionalDouble(analysis.getLiquidVolume()))
                         .liquidVolumeMl(convertToMilliliters(analysis.getLiquidVolume(), analysis.getLiquidUnit()))
-                        .liquidUnitSymbol(Optional.ofNullable(analysis.getLiquidUnit()).map(MeasurementUnits::getSymbol).orElse(null))
+                        .liquidUnitSymbol(Optional.ofNullable(analysis.getLiquidUnit()).map(MeasurementUnits::getSymbol)
+                                .orElse(null))
                         .mealId(Optional.ofNullable(analysis.getMeal()).map(Meal::getId).orElse(null))
                         .mealName(Optional.ofNullable(analysis.getMeal()).map(Meal::getName).orElse(null))
                         .primaryCategory(Optional.ofNullable(analysis.getPrimaryCategory())
@@ -844,12 +890,12 @@ public class WhatsAppNutritionService {
         return messageRepository.findById(messageId);
     }
 
-    private record GeminiNutritionResult(boolean isFood, String foodName, Double calories,
+    public record GeminiNutritionResult(boolean isFood, String foodName, Double calories,
             Macronutrients macronutrients, List<Category> categories, String summary, Double confidence) {
 
-        private record Macronutrients(@com.fasterxml.jackson.annotation.JsonProperty("protein_g") Double protein_g,
-                @com.fasterxml.jackson.annotation.JsonProperty("carbs_g") Double carbs_g,
-                @com.fasterxml.jackson.annotation.JsonProperty("fat_g") Double fat_g) {
+        private record Macronutrients(@JsonProperty("protein_g") Double protein_g,
+                @JsonProperty("carbs_g") Double carbs_g,
+                @JsonProperty("fat_g") Double fat_g) {
         }
 
         private record Category(String name, Double confidence) {
