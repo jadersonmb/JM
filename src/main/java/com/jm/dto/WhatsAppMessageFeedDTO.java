@@ -19,6 +19,7 @@ public class WhatsAppMessageFeedDTO {
     String cloudFlareImageUrl;
     OffsetDateTime receivedAt;
     boolean manualEntry;
+    boolean editedEntry;
     UUID ownerUserId;
     MealSummary meal;
     FoodSummary food;

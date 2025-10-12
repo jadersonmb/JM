@@ -46,7 +46,9 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,6 +67,7 @@ public class WhatsAppNutritionService {
 
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppNutritionService.class);
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+    private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
 
     private final WhatsAppService whatsAppService;
     private final GeminiService geminiService;
@@ -85,6 +88,7 @@ public class WhatsAppNutritionService {
               "isFood": true|false,
               "foodName": "name of the meal",
               "calories": number in kcal,
+              "mealType": "BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS",
               "macronutrients": {
                 "protein_g": number in grams,
                 "carbs_g": number in grams,
@@ -98,6 +102,7 @@ public class WhatsAppNutritionService {
             }
             If the picture does not contain food, respond exactly with:
             {"isFood": false, "summary": "brief explanation"}
+            Always choose the mealType that best matches the image. Use OTHER_MEALS when unsure.
             """;
 
     @SuppressWarnings("unchecked")
@@ -290,17 +295,24 @@ public class WhatsAppNutritionService {
         MeasurementUnits caloriesUnit = resolveMeasurementUnit(null, "KCAL");
         MeasurementUnits macroUnit = resolveMeasurementUnit(null, "G");
 
-        NutritionAnalysis analysis = NutritionAnalysis.builder().message(message).foodName(result.foodName)
+        Meal detectedMeal = resolveMealFromResult(result);
+
+        NutritionAnalysis analysis = NutritionAnalysis.builder()
+                .message(message)
+                .foodName(result.foodName)
                 .calories(toBigDecimal(result.calories))
                 .protein(toBigDecimal(result.macronutrients != null ? result.macronutrients.protein_g : null))
                 .carbs(toBigDecimal(result.macronutrients != null ? result.macronutrients.carbs_g : null))
                 .fat(toBigDecimal(result.macronutrients != null ? result.macronutrients.fat_g : null))
-                .summary(result.summary).categoriesJson(objectMapper.writeValueAsString(result.categories))
-                .confidence(toBigDecimal(result.confidence)).primaryCategory(resolvePrimaryCategory(result.categories))
+                .summary(result.summary)
+                .categoriesJson(objectMapper.writeValueAsString(result.categories))
+                .confidence(toBigDecimal(result.confidence))
+                .primaryCategory(resolvePrimaryCategory(result.categories))
                 .caloriesUnit(caloriesUnit)
                 .proteinUnit(macroUnit)
                 .carbsUnit(macroUnit)
                 .fatUnit(macroUnit)
+                .meal(detectedMeal)
                 .build();
 
         message.setNutritionAnalysis(analysis);
@@ -370,6 +382,7 @@ public class WhatsAppNutritionService {
                 ? result.categories.get(0).name
                 : "Alimento";
         String foodName = Optional.ofNullable(result.foodName).filter(s -> !s.isBlank()).orElse(primaryCategory);
+        String mealLabel = formatMealTypeLabel(result.mealType());
 
         return """
                 [Analysis Nutricional]
@@ -380,6 +393,7 @@ public class WhatsAppNutritionService {
                 Carboidratos: %.1f g
                 Gorduras: %.1f g
                 Categoria: %s
+                Refeição: %s
 
                 %s
                 """.formatted(foodName, Optional.ofNullable(result.calories).orElse(0.0),
@@ -390,7 +404,8 @@ public class WhatsAppNutritionService {
                         : 0.0,
                 result.macronutrients != null && result.macronutrients.fat_g != null ? result.macronutrients.fat_g
                         : 0.0,
-                primaryCategory, Optional.ofNullable(result.summary).orElse("Aproveite a sua meal!"));
+                primaryCategory, mealLabel,
+                Optional.ofNullable(result.summary).orElse("Aproveite a sua meal!"));
     }
 
     private String normalizeCategoryName(String name) {
@@ -405,14 +420,19 @@ public class WhatsAppNutritionService {
     }
 
     @Transactional(readOnly = true)
-    public List<WhatsAppMessageFeedDTO> getRecentMessagesWithFilter(WhatsAppMessageDTO filter, UUID userId) {
-        List<WhatsAppMessage> messages = messageRepository.findAll(WhatsAppSpecification.search(filter));
+    public List<WhatsAppMessageFeedDTO> getRecentMessagesWithFilter(WhatsAppMessageDTO filter, UUID userId,
+            LocalDate date) {
+        OffsetDateTime start = startOfDay(date);
+        OffsetDateTime end = endOfDayExclusive(date);
+
+        List<WhatsAppMessage> messages = messageRepository.findAll(WhatsAppSpecification.search(filter, start, end));
         Optional<String> normalizedPhone = resolveUserPhone(userId);
 
         Comparator<WhatsAppMessage> comparator = Comparator
                 .comparing(WhatsAppMessage::getReceivedAt, Comparator.nullsLast(Comparator.naturalOrder())).reversed();
 
         return messages.stream()
+                .filter(message -> date == null || matchesDate(message.getReceivedAt(), date))
                 .filter(message -> {
                     if (userId == null) {
                         return true;
@@ -478,7 +498,7 @@ public class WhatsAppNutritionService {
         message.setTextContent(request.getTextContent());
         message.setCloudflareImageUrl(request.getImageUrl());
         message.setMediaUrl(request.getImageUrl());
-        message.setManualEntry(true);
+        message.setEditedEntry(true);
 
         if (!StringUtils.hasText(message.getMessageType()) || "MANUAL".equalsIgnoreCase(message.getMessageType())) {
             message.setMessageType("MANUAL");
@@ -588,6 +608,7 @@ public class WhatsAppNutritionService {
                 .receivedAt(message.getReceivedAt())
                 .cloudFlareImageUrl(message.getCloudflareImageUrl())
                 .manualEntry(message.isManualEntry())
+                .editedEntry(message.isEditedEntry())
                 .ownerUserId(Optional.ofNullable(message.getOwner()).map(Users::getId).orElse(null))
                 .meal(mealSummary)
                 .food(foodSummary)
@@ -665,6 +686,102 @@ public class WhatsAppNutritionService {
                         ProblemType.INVALID_DATA.getTitle(), "Meal not found"));
     }
 
+    private Meal resolveMealFromResult(GeminiNutritionResult result) {
+        if (result == null) {
+            return resolveOtherMeal();
+        }
+        Meal resolved = resolveMealByType(result.mealType());
+        return resolved != null ? resolved : resolveOtherMeal();
+    }
+
+    private Meal resolveMealByType(String mealType) {
+        if (!StringUtils.hasText(mealType)) {
+            return null;
+        }
+        String trimmed = mealType.trim();
+        Meal direct = mealRepository.findByCodeIgnoreCase(trimmed)
+                .or(() -> mealRepository.findByCodeIgnoreCase(trimmed.replace(' ', '_')))
+                .or(() -> mealRepository.findByNameIgnoreCase(trimmed))
+                .orElse(null);
+        if (direct != null) {
+            return direct;
+        }
+
+        String normalized = normalizeMealKey(trimmed);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+
+        List<Meal> meals = mealRepository.findAll();
+        Optional<Meal> exact = meals.stream()
+                .filter(meal -> normalizeMealKey(meal.getCode()).equals(normalized)
+                        || normalizeMealKey(meal.getName()).equals(normalized))
+                .findFirst();
+        if (exact.isPresent()) {
+            return exact.get();
+        }
+
+        String aliasCode = mapMealAlias(normalized);
+        if (!StringUtils.hasText(aliasCode)) {
+            return null;
+        }
+        return mealRepository.findByCodeIgnoreCase(aliasCode)
+                .or(() -> meals.stream()
+                        .filter(meal -> normalizeMealKey(meal.getCode()).equals(normalizeMealKey(aliasCode)))
+                        .findFirst())
+                .orElse(null);
+    }
+
+    private String normalizeMealKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return normalized.replaceAll("[^A-Za-z]", "").toUpperCase(Locale.ROOT);
+    }
+
+    private String mapMealAlias(String normalized) {
+        return switch (normalized) {
+            case "BREAKFAST", "CAFEDAMANHA", "CAFE", "MORNINGMEAL", "MORNINGSNACK" -> "BREAKFAST";
+            case "LUNCH", "ALMOCO" -> "LUNCH";
+            case "DINNER", "JANTAR" -> "DINNER";
+            case "SUPPER", "CEIA" -> "SUPPER";
+            case "SNACK", "LANCHE", "AFTERNOONSNACK", "BRUNCH", "EVENINGSNACK",
+                    "LANCHEDATARDE", "LANCHEDAMANHA", "LANCHEDANOITE" -> "SNACK";
+            default -> "OTHER_MEALS";
+        };
+    }
+
+    private Meal resolveOtherMeal() {
+        return mealRepository.findByCodeIgnoreCase("OTHER_MEALS")
+                .or(() -> mealRepository.findByCodeIgnoreCase("OTHER"))
+                .or(() -> mealRepository.findByNameIgnoreCase("Other meals"))
+                .or(() -> mealRepository.findByNameIgnoreCase("Outras refeições"))
+                .orElse(null);
+    }
+
+    private String formatMealTypeLabel(String mealType) {
+        if (!StringUtils.hasText(mealType)) {
+            return "Outras refeições";
+        }
+        String normalized = mealType.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "BREAKFAST" -> "Café da manhã";
+            case "LUNCH" -> "Almoço";
+            case "DINNER" -> "Jantar";
+            case "SUPPER" -> "Ceia";
+            case "SNACK" -> "Lanche";
+            case "OTHER_MEALS", "OTHER" -> "Outras refeições";
+            default -> {
+                String alias = mapMealAlias(normalizeMealKey(mealType));
+                if (!StringUtils.hasText(alias) || alias.equalsIgnoreCase(normalized)) {
+                    yield "Outras refeições";
+                }
+                yield formatMealTypeLabel(alias);
+            }
+        };
+    }
+
     private Food resolveFood(UUID foodId) {
         if (foodId == null) {
             return null;
@@ -733,8 +850,17 @@ public class WhatsAppNutritionService {
     }
 
     @Transactional(readOnly = true)
-    public NutritionDashboardDTO getDashboard(UUID userId) {
-        List<NutritionAnalysis> analyses = nutritionAnalysisRepository.findTop20ByOrderByCreatedAtDesc();
+    public NutritionDashboardDTO getDashboard(UUID userId, LocalDate date) {
+        OffsetDateTime start = startOfDay(date);
+        OffsetDateTime endExclusive = endOfDayExclusive(date);
+
+        List<NutritionAnalysis> analyses;
+        if (start != null && endExclusive != null) {
+            OffsetDateTime endInclusive = endExclusive.minusNanos(1);
+            analyses = nutritionAnalysisRepository.findByCreatedAtBetween(start, endInclusive);
+        } else {
+            analyses = nutritionAnalysisRepository.findTop20ByOrderByCreatedAtDesc();
+        }
 
         Optional<String> normalizedPhone = resolveUserPhone(userId);
         if (normalizedPhone.isPresent()) {
@@ -742,6 +868,11 @@ public class WhatsAppNutritionService {
             analyses = analyses.stream()
                     .filter(analysis -> analysis.getMessage() != null
                             && phoneMatches(expected, analysis.getMessage().getFromPhone()))
+                    .collect(Collectors.toList());
+        }
+
+        if (date != null) {
+            analyses = analyses.stream().filter(analysis -> matchesAnalysisDate(analysis, date))
                     .collect(Collectors.toList());
         }
 
@@ -885,12 +1016,43 @@ public class WhatsAppNutritionService {
         return normalizedCandidate.equals(expected) || normalizedCandidate.endsWith(expected);
     }
 
+    private boolean matchesDate(OffsetDateTime timestamp, LocalDate date) {
+        if (timestamp == null || date == null) {
+            return false;
+        }
+        return timestamp.atZoneSameInstant(DEFAULT_ZONE).toLocalDate().isEqual(date);
+    }
+
+    private boolean matchesAnalysisDate(NutritionAnalysis analysis, LocalDate date) {
+        if (analysis == null || date == null) {
+            return false;
+        }
+        OffsetDateTime reference = Optional.ofNullable(analysis.getMessage())
+                .map(WhatsAppMessage::getReceivedAt)
+                .orElse(analysis.getCreatedAt());
+        return matchesDate(reference, date);
+    }
+
+    private OffsetDateTime startOfDay(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        return date.atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
+    }
+
+    private OffsetDateTime endOfDayExclusive(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        return date.plusDays(1).atStartOfDay(DEFAULT_ZONE).toOffsetDateTime();
+    }
+
     @Transactional(readOnly = true)
     public Optional<WhatsAppMessage> findMessage(UUID messageId) {
         return messageRepository.findById(messageId);
     }
 
-    public record GeminiNutritionResult(boolean isFood, String foodName, Double calories,
+    public record GeminiNutritionResult(boolean isFood, String foodName, Double calories, String mealType,
             Macronutrients macronutrients, List<Category> categories, String summary, Double confidence) {
 
         private record Macronutrients(@JsonProperty("protein_g") Double protein_g,

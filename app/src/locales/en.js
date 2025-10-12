@@ -1081,6 +1081,14 @@ export default {
       delete: 'Delete entry',
       deleting: 'Deleting...',
     },
+    dateNavigator: {
+      previous: '‹',
+      next: '›',
+      today: 'Today',
+      previousDayAria: 'View previous day',
+      nextDayAria: 'View next day',
+      pickDateAria: 'Choose a date',
+    },
     filters: {
       client: 'Patient',
       allClients: 'All patients',
@@ -1099,6 +1107,7 @@ export default {
       textPlaceholder: 'Text',
       unknownMeal: 'Unknown meal',
       manual: 'Manual',
+      edited: 'Edited',
       owner: 'Owner: {name}',
       source: 'From {phone} - {date}',
       groups: {
