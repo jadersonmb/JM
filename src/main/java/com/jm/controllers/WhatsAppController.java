@@ -9,6 +9,7 @@ import com.jm.services.WhatsAppService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,14 +57,16 @@ public class WhatsAppController {
 
     @GetMapping("/messages")
     public ResponseEntity<List<WhatsAppMessageFeedDTO>> listMessages(WhatsAppMessageDTO filter,
-            @RequestParam(required = false) UUID userId) {
-        return ResponseEntity.ok(whatsappNutritionService.getRecentMessagesWithFilter(filter, userId));
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(whatsappNutritionService.getRecentMessagesWithFilter(filter, userId, date));
     }
 
     @GetMapping("/dashboard")
     public ResponseEntity<NutritionDashboardDTO> getDashboard(
-            @RequestParam(required = false) UUID userId) {
-        return ResponseEntity.ok(whatsappNutritionService.getDashboard(userId));
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(whatsappNutritionService.getDashboard(userId, date));
     }
 
     @GetMapping(value = "/messages/{id}/image", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)

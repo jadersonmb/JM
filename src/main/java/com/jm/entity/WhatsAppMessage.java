@@ -72,6 +72,9 @@ public class WhatsAppMessage {
     @Column(name = "manual_entry", nullable = false)
     private boolean manualEntry;
 
+    @Column(name = "edited_entry", nullable = false)
+    private boolean editedEntry;
+
     @OneToOne(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true)
     private NutritionAnalysis nutritionAnalysis;
 

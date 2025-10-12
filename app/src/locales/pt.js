@@ -1080,6 +1080,14 @@
       delete: 'Excluir lançamento',
       deleting: 'Excluindo...',
     },
+    dateNavigator: {
+      previous: '‹',
+      next: '›',
+      today: 'Hoje',
+      previousDayAria: 'Voltar um dia',
+      nextDayAria: 'Avançar um dia',
+      pickDateAria: 'Selecionar data',
+    },
     filters: {
       client: 'Paciente',
       allClients: 'Todos os pacientes',
@@ -1098,6 +1106,10 @@
       textPlaceholder: 'Texto',
       unknownMeal: 'Refeição desconhecida',
       manual: 'Manual',
+      edited: 'Editado',
+      groups: {
+        unknown: 'Outras refeições',
+      },
       owner: 'Responsável: {name}',
       source: 'De {phone} - {date}',
       macros: {

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -14,4 +15,8 @@ public interface MealRepository extends JpaRepository<Meal, UUID>, JpaSpecificat
     List<Meal> findByLanguageIgnoreCaseOrLanguageIsNullOrderBySortOrderAscNameAsc(String language);
 
     List<Meal> findAllByOrderBySortOrderAscNameAsc();
+
+    Optional<Meal> findByCodeIgnoreCase(String code);
+
+    Optional<Meal> findByNameIgnoreCase(String name);
 }

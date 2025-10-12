@@ -8,6 +8,43 @@
         <p class="text-sm text-slate-500">{{ t('whatsappNutrition.subtitle') }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
+        <div
+          class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm"
+        >
+          <button
+            type="button"
+            class="text-sm font-medium text-slate-500 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-300"
+            :aria-label="t('whatsappNutrition.dateNavigator.previousDayAria')"
+            @click="goToPreviousDay"
+            :disabled="loading"
+          >
+            {{ t('whatsappNutrition.dateNavigator.previous') }}
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700 transition hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            :aria-label="t('whatsappNutrition.dateNavigator.pickDateAria')"
+            @click="openDatePicker"
+          >
+            <span>{{ isTodaySelected ? t('whatsappNutrition.dateNavigator.today') : selectedDateLabel }}</span>
+          </button>
+          <button
+            type="button"
+            class="text-sm font-medium text-slate-500 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-300"
+            :aria-label="t('whatsappNutrition.dateNavigator.nextDayAria')"
+            @click="goToNextDay"
+            :disabled="loading || isNextDisabled"
+          >
+            {{ t('whatsappNutrition.dateNavigator.next') }}
+          </button>
+          <input
+            ref="dateInputRef"
+            type="date"
+            class="sr-only"
+            :value="selectedDateInputValue"
+            @change="handleDateChange"
+          />
+        </div>
         <button class="btn-secondary" @click="refreshData" :disabled="loading">
           <span v-if="loading">{{ t('whatsappNutrition.actions.refreshing') }}</span>
           <span v-else>{{ t('whatsappNutrition.actions.refresh') }}</span>
@@ -121,7 +158,13 @@
                         {{ formatNumber(item.nutrition.calories) }} kcal
                       </span>
                       <span
-                        v-if="item.manualEntry"
+                        v-if="item.editedEntry"
+                        class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700"
+                      >
+                        {{ t('whatsappNutrition.feed.edited') }}
+                      </span>
+                      <span
+                        v-else-if="item.manualEntry"
                         class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700"
                       >
                         {{ t('whatsappNutrition.feed.manual') }}
@@ -204,26 +247,28 @@
             <p class="text-xs text-slate-500">
               {{ t('whatsappNutrition.dashboard.history.subtitle') }}
             </p>
-            <ul class="mt-3 space-y-3 text-xs text-slate-500">
-              <li v-for="item in history" :key="item.messageId" class="rounded-lg bg-slate-50 p-3">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-semibold text-slate-800">
-                      {{ item.foodName ?? t('whatsappNutrition.feed.unknownMeal') }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500">{{ formatDate(item.analyzedAt) }}</p>
+            <div class="mt-3 max-h-72 space-y-3 overflow-y-auto pr-2 text-xs text-slate-500">
+              <ul class="space-y-3">
+                <li v-for="item in history" :key="item.messageId" class="rounded-lg bg-slate-50 p-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-800">
+                        {{ item.foodName ?? t('whatsappNutrition.feed.unknownMeal') }}
+                      </p>
+                      <p class="mt-1 text-xs text-slate-500">{{ formatDay(item.analyzedAt) }}</p>
+                    </div>
+                    <div class="text-right text-xs text-slate-500">
+                      <p>{{ formatNumber(item.calories) }} kcal</p>
+                      <p>{{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.protein, false) }) }}</p>
+                    </div>
                   </div>
-                  <div class="text-right text-xs text-slate-500">
-                    <p>{{ formatNumber(item.calories) }} kcal</p>
-                    <p>{{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.protein, false) }) }}</p>
-                  </div>
-                </div>
-                <p v-if="item.summary" class="mt-2 text-xs text-slate-500">{{ item.summary }}</p>
-              </li>
-              <li v-if="!history.length" class="text-xs text-slate-500">
-                {{ t('whatsappNutrition.dashboard.history.empty') }}
-              </li>
-            </ul>
+                  <p v-if="item.summary" class="mt-2 text-xs text-slate-500">{{ item.summary }}</p>
+                </li>
+                <li v-if="!history.length" class="text-xs text-slate-500">
+                  {{ t('whatsappNutrition.dashboard.history.empty') }}
+                </li>
+              </ul>
+            </div>
           </section>
         </div>
       </section>
@@ -272,6 +317,7 @@ const auth = useAuthStore();
 const loading = ref(true);
 const deleting = ref(false);
 const feed = ref([]);
+const dateInputRef = ref(null);
 const dashboard = ref({
   totalCalories: 0,
   totalProtein: 0,
@@ -301,6 +347,30 @@ const modalEntry = ref(null);
 const entrySubmitting = ref(false);
 
 const selectedMessageId = ref(null);
+
+const normalizeDate = (value) => {
+  if (!(value instanceof Date)) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+    value = date;
+  }
+  const normalized = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  return Number.isNaN(normalized.getTime()) ? null : normalized;
+};
+
+const selectedDate = ref(normalizeDate(new Date()));
+
+const formatDateParam = (date) => {
+  if (!(date instanceof Date)) {
+    return '';
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const selectedUserId = ref(isAdmin.value ? '' : auth.user?.id ?? '');
@@ -481,10 +551,99 @@ const createDisabled = computed(() => isAdmin.value && !targetUserId.value);
 
 const currentLocaleTag = () => (locale.value === 'pt' ? 'pt-BR' : 'en-US');
 
+const selectedDateParam = computed(() => {
+  if (!selectedDate.value) {
+    return null;
+  }
+  return formatDateParam(selectedDate.value);
+});
+
+const selectedDateInputValue = computed(() => selectedDateParam.value ?? '');
+
+const selectedDateLabel = computed(() => {
+  if (!selectedDate.value) {
+    return '';
+  }
+  try {
+    return new Intl.DateTimeFormat(currentLocaleTag(), { dateStyle: 'medium' }).format(selectedDate.value);
+  } catch (error) {
+    return formatDateParam(selectedDate.value);
+  }
+});
+
+const isTodaySelected = computed(() => {
+  if (!selectedDate.value) {
+    return false;
+  }
+  const today = normalizeDate(new Date());
+  return today && selectedDate.value.getTime() === today.getTime();
+});
+
+const isNextDisabled = computed(() => {
+  if (!selectedDate.value) {
+    return false;
+  }
+  const today = normalizeDate(new Date());
+  return today ? selectedDate.value.getTime() >= today.getTime() : false;
+});
+
 const formatNumber = (value) => numberFormatter.value.format(value ?? 0);
 const formatMacro = (value, includeUnit = false) => {
   const formatted = macroFormatter.value.format(value ?? 0);
   return includeUnit ? `${formatted} g` : formatted;
+};
+
+const setSelectedDate = (value) => {
+  const normalized = normalizeDate(value ?? new Date());
+  if (!normalized) {
+    return;
+  }
+  if (!selectedDate.value || normalized.getTime() !== selectedDate.value.getTime()) {
+    selectedDate.value = normalized;
+  }
+};
+
+const goToPreviousDay = () => {
+  const base = selectedDate.value ? new Date(selectedDate.value) : new Date();
+  base.setDate(base.getDate() - 1);
+  setSelectedDate(base);
+};
+
+const goToNextDay = () => {
+  const base = selectedDate.value ? new Date(selectedDate.value) : new Date();
+  base.setDate(base.getDate() + 1);
+  const today = normalizeDate(new Date());
+  if (today && base.getTime() > today.getTime()) {
+    setSelectedDate(today);
+    return;
+  }
+  setSelectedDate(base);
+};
+
+const openDatePicker = () => {
+  if (dateInputRef.value?.showPicker) {
+    dateInputRef.value.showPicker();
+  } else {
+    dateInputRef.value?.click();
+  }
+};
+
+const handleDateChange = (event) => {
+  const value = event?.target?.value ?? '';
+  if (!value) {
+    return;
+  }
+  const [year, month, day] = value.split('-').map((part) => Number(part));
+  if ([year, month, day].some((part) => Number.isNaN(part))) {
+    return;
+  }
+  const candidate = new Date(year, month - 1, day);
+  const today = normalizeDate(new Date());
+  if (today && candidate.getTime() > today.getTime()) {
+    setSelectedDate(today);
+    return;
+  }
+  setSelectedDate(candidate);
 };
 
 const formatDate = (value) => {
@@ -493,6 +652,17 @@ const formatDate = (value) => {
     return new Intl.DateTimeFormat(currentLocaleTag(), {
       dateStyle: 'medium',
       timeStyle: 'short',
+    }).format(new Date(value));
+  } catch (error) {
+    return value;
+  }
+};
+
+const formatDay = (value) => {
+  if (!value) return t('whatsappNutrition.common.unknownDate');
+  try {
+    return new Intl.DateTimeFormat(currentLocaleTag(), {
+      dateStyle: 'long',
     }).format(new Date(value));
   } catch (error) {
     return value;
@@ -722,7 +892,10 @@ const loadFoods = async () => {
 const loadData = async () => {
   loading.value = true;
   try {
-    const params = targetUserId.value ? { userId: targetUserId.value } : {};
+    const params = {
+      ...(targetUserId.value ? { userId: targetUserId.value } : {}),
+      ...(selectedDateParam.value ? { date: selectedDateParam.value } : {}),
+    };
     const [messagesResponse, dashboardResponse] = await Promise.all([
       fetchWhatsAppMessages(params),
       fetchNutritionDashboard(params),
@@ -900,6 +1073,11 @@ watch(
 );
 
 watch(targetUserId, () => {
+  selectedMessageId.value = null;
+  void loadData();
+});
+
+watch(selectedDateParam, () => {
   selectedMessageId.value = null;
   void loadData();
 });
