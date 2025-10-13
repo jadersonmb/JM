@@ -1,6 +1,25 @@
 version: "3.9"
 
 services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jm-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    environment:
+      OLLAMA_ORIGINS: ${OLLAMA_ORIGINS:-*}
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - jm-network
+
   db:
     image: mariadb:11
     container_name: jm-db
@@ -30,6 +49,8 @@ services:
       target: development
     container_name: jm-backend
     depends_on:
+      ollama:
+        condition: service_healthy
       db:
         condition: service_healthy
     ports:
@@ -39,6 +60,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-jm}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-jm}
+      OLLAMA_API_URL: ${OLLAMA_API_URL:-http://ollama:11434}
       TZ: ${TZ:-UTC}
     working_dir: /workspace
     command: ["sh", "-c", "sed -i 's/\\r$//' mvnw && chmod +x mvnw && ./mvnw spring-boot:run"]
@@ -77,6 +99,7 @@ services:
 
 volumes:
   db-data:
+  ollama-data:
   maven-cache:
   node-modules:
 
