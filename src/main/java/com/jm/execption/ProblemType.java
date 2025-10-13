@@ -47,7 +47,14 @@ public enum ProblemType {
     WHATSAPP_MESSAGE_NOT_FOUND("/whatsapp-message-not-found", "WhatsApp message not found",
             "whatsapp.message.not-found"),
     WHATSAPP_FORBIDDEN("/whatsapp-forbidden", "WhatsApp nutrition forbidden", "whatsapp.nutrition.forbidden"),
-    EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service");
+    EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service"),
+    EMAIL_TEMPLATE_NOT_FOUND("/email-template-not-found", "Email template not found", "email.template.not-found"),
+    EMAIL_TEMPLATE_PROCESSING_ERROR("/email-template-processing-error", "Email template processing error",
+            "email.template.processing-error"),
+    EMAIL_SENDING_FAILED("/email-sending-failed", "Email sending failed", "email.sending.failed"),
+    EMAIL_CONFIGURATION_INVALID("/email-configuration-invalid", "Email configuration invalid",
+            "email.configuration.invalid"),
+    EMAIL_INVALID_RECIPIENT("/email-invalid-recipient", "Email recipient invalid", "email.invalid.recipient");
 
     private String uri;
     private String title;

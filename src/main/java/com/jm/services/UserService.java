@@ -1,9 +1,8 @@
 package com.jm.services;
 
-import com.flickr4java.flickr.people.User;
 import com.jm.dto.UserDTO;
-import com.jm.entity.Country;
 import com.jm.entity.Users;
+import com.jm.email.EmailNotificationService;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.UserMapper;
@@ -37,10 +36,12 @@ public class UserService {
     private final CityRepository cityRepository;
     private final EducationLevelRepository educationLevelRepository;
     private final ProfessionRepository professionRepository;
+    private final EmailNotificationService emailNotificationService;
 
     public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
             PasswordEncoder passwordEncoder, CountryRepository countriesRepository, CityRepository cityRepository,
-            EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository) {
+            EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository,
+            EmailNotificationService emailNotificationService) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
@@ -49,6 +50,7 @@ public class UserService {
         this.cityRepository = cityRepository;
         this.educationLevelRepository = educationLevelRepository;
         this.professionRepository = professionRepository;
+        this.emailNotificationService = emailNotificationService;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -56,7 +58,11 @@ public class UserService {
     }
 
     public void createUser(Users user) {
-        repository.save(user);
+        boolean isNew = user.getId() == null;
+        Users saved = repository.save(user);
+        if (isNew) {
+            emailNotificationService.sendUserConfirmation(saved);
+        }
     }
 
     public UserDTO createUser(UserDTO dto) {
@@ -76,7 +82,11 @@ public class UserService {
             entity.setType(Users.Type.CLIENT);
         }
 
+        boolean isNew = entity.getId() == null;
         Users saved = repository.save(entity);
+        if (isNew) {
+            emailNotificationService.sendUserConfirmation(saved);
+        }
         logger.debug("User {} saved with id {}", saved.getEmail(), saved.getId());
         return mapper.toDTO(saved);
     }

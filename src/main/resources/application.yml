@@ -13,6 +13,17 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
+  mail:
+    host: ${SPRING_MAIL_HOST:}
+    port: ${SPRING_MAIL_PORT:0}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   sql:
     init:
       mode: always
@@ -109,3 +120,7 @@ payments:
     pix-key: ${ASAAS_PIX_KEY:}
     base-url: https://www.asaas.com/api/v3
     webhook-token: ${ASAAS_WEBHOOK_TOKEN:}
+email:
+  from: ${EMAIL_FROM:no-reply@jm.com}
+  confirmation-base-url: ${EMAIL_CONFIRMATION_BASE_URL:https://app.jm.com/confirm-account}
+  default-language: ${EMAIL_DEFAULT_LANGUAGE:pt-BR}
