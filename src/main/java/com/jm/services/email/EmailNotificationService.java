@@ -1,4 +1,4 @@
-package com.jm.email;
+package com.jm.services.email;
 
 import com.jm.configuration.config.EmailProperties;
 import com.jm.entity.UserConfiguration;

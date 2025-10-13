@@ -1,4 +1,4 @@
-package com.jm.email;
+package com.jm.services.email;
 
 import java.util.Locale;
 import java.util.Map;

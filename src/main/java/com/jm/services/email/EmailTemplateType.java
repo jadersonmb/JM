@@ -1,4 +1,4 @@
-package com.jm.email;
+package com.jm.services.email;
 
 public enum EmailTemplateType {
 

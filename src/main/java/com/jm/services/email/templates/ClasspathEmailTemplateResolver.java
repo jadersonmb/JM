@@ -1,11 +1,12 @@
-package com.jm.email.templates;
+package com.jm.services.email.templates;
 
 import com.jm.configuration.config.EmailProperties;
-import com.jm.email.EmailTemplateResolver;
-import com.jm.email.EmailTemplateType;
-import com.jm.email.TemplateEmailContent;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.services.email.EmailTemplateResolver;
+import com.jm.services.email.EmailTemplateType;
+import com.jm.services.email.TemplateEmailContent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
