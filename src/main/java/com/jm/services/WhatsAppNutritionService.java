@@ -234,7 +234,7 @@ public class WhatsAppNutritionService {
 
             OllamaRequestDTO dto = OllamaRequestDTO.builder()
                     .from(from)
-                    .model("llava-llama3:latest")
+                    .model("llava:34b")
                     .userId(owner.getId())
                     .prompt(prompt)
                     .stream(Boolean.FALSE)

@@ -1,8 +1,8 @@
 package com.jm.services;
 
 import com.jm.dto.UserDTO;
+import com.jm.services.email.*;
 import com.jm.entity.Users;
-import com.jm.email.EmailNotificationService;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.UserMapper;
