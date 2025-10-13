@@ -28,3 +28,8 @@ export const listMeals = (params = {}) => api.get('/api/v1/reference-management/
 export const createMeal = (payload) => api.post('/api/v1/reference-management/meals', payload);
 export const updateMeal = (id, payload) => api.put(`/api/v1/reference-management/meals/${id}`, payload);
 export const deleteMeal = (id) => api.delete(`/api/v1/reference-management/meals/${id}`);
+
+export const listAiPrompts = (params = {}) => api.get('/api/v1/reference-management/ai-prompts', { params });
+export const createAiPrompt = (payload) => api.post('/api/v1/reference-management/ai-prompts', payload);
+export const updateAiPrompt = (id, payload) => api.put(`/api/v1/reference-management/ai-prompts/${id}`, payload);
+export const deleteAiPrompt = (id) => api.delete(`/api/v1/reference-management/ai-prompts/${id}`);
