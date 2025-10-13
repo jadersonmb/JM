@@ -1,0 +1,9 @@
+Subject: Confirm your JM account
+Hi {{name}},
+
+Thank you for creating your JM account. Please confirm your registration using the link below:
+{{confirmationLink}}
+
+If you did not request this account, simply ignore this email.
+
+JM Team

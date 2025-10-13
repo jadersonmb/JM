@@ -1,0 +1,9 @@
+Subject: Confirm your JM account
+Hello {{name}},
+
+We created this message to confirm your JM account. Access the link below to finish the activation:
+{{confirmationLink}}
+
+If you did not create this account, you can disregard this message.
+
+JM Team

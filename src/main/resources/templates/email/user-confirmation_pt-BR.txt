@@ -1,0 +1,9 @@
+Subject: Confirme seu cadastro na JM
+Olá {{name}},
+
+Obrigado por criar sua conta na JM. Para confirmar o seu cadastro, acesse o link abaixo:
+{{confirmationLink}}
+
+Se você não reconhece este pedido, basta ignorar esta mensagem.
+
+Equipe JM
