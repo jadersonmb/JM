@@ -27,7 +27,7 @@ ALTER TABLE payments_recurring
 ALTER TABLE payments_recurring
     ADD COLUMN IF NOT EXISTS payment_plan_id CHAR(36) AFTER customer_id;
 
-ALTER TABLE payments_recurring DROP CONSTRAINT fk_recurring_payment_plan;
+ALTER TABLE payments_recurring DROP CONSTRAINT IF EXISTS fk_recurring_payment_plan;
 
 ALTER TABLE payments_recurring
     ADD CONSTRAINT fk_recurring_payment_plan FOREIGN KEY (payment_plan_id) REFERENCES payment_plans(id);

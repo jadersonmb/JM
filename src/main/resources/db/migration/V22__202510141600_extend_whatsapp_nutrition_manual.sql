@@ -5,7 +5,7 @@ ALTER TABLE whatsapp_messages
 CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_owner ON whatsapp_messages(owner_user_id);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_manual_entry ON whatsapp_messages(manual_entry);
 
-ALTER TABLE whatsapp_messages DROP CONSTRAINT fk_whatsapp_messages_owner;
+ALTER TABLE whatsapp_messages DROP CONSTRAINT IF EXISTS fk_whatsapp_messages_owner;
 ALTER TABLE whatsapp_messages
     ADD CONSTRAINT fk_whatsapp_messages_owner
     FOREIGN KEY (owner_user_id) REFERENCES user_entity(id);
@@ -16,10 +16,10 @@ ALTER TABLE nutrition_analysis
     ADD COLUMN IF NOT EXISTS carbs_unit_id CHAR(36),
     ADD COLUMN IF NOT EXISTS fat_unit_id CHAR(36);
 
-ALTER TABLE nutrition_analysis DROP CONSTRAINT fk_nutrition_analysis_calories_unit;
-ALTER TABLE nutrition_analysis DROP CONSTRAINT fk_nutrition_analysis_protein_unit;
-ALTER TABLE nutrition_analysis DROP CONSTRAINT fk_nutrition_analysis_carbs_unit;
-ALTER TABLE nutrition_analysis DROP CONSTRAINT fk_nutrition_analysis_fat_unit;
+ALTER TABLE nutrition_analysis DROP CONSTRAINT IF EXISTS fk_nutrition_analysis_calories_unit;
+ALTER TABLE nutrition_analysis DROP CONSTRAINT IF EXISTS fk_nutrition_analysis_protein_unit;
+ALTER TABLE nutrition_analysis DROP CONSTRAINT IF EXISTS fk_nutrition_analysis_carbs_unit;
+ALTER TABLE nutrition_analysis DROP CONSTRAINT IF EXISTS fk_nutrition_analysis_fat_unit;
 
 ALTER TABLE nutrition_analysis
     ADD CONSTRAINT fk_nutrition_analysis_calories_unit FOREIGN KEY (calories_unit_id) REFERENCES measurement_units(id);
