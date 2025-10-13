@@ -73,6 +73,7 @@ public class AuthSecurityConfig {
     @Order(Ordered.LOWEST_PRECEDENCE - 1)
     public SecurityFilterChain authFilterChain(HttpSecurity http) throws Exception {
         http
+                .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**", "/api/auth/**", "/oauth2/token", "/oauth2/jwks").permitAll()

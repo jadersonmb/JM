@@ -14,24 +14,25 @@ import java.util.Collections;
 
 @Configuration
 public class CorsConfig {
-	
-	@Bean
-	public FilterRegistrationBean<CorsFilter> corsFilterRegistrationBean() {
-		CorsConfiguration config = new CorsConfiguration();
-		
-		config.setAllowedOrigins(Collections.singletonList("*"));
-		config.setAllowedMethods(Collections.singletonList("*"));
-		config.setAllowedHeaders(Collections.singletonList("*"));
-		
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", config);
-		
-		FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>();
-		bean.setFilter(new CorsFilter(source));
-		bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-		
-		return bean;
-	}
+
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistrationBean() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOriginPatterns(Collections.singletonList("*"));
+        config.setAllowedMethods(Collections.singletonList("*"));
+        config.setAllowedHeaders(Collections.singletonList("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>();
+        bean.setFilter(new CorsFilter(source));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+
+        return bean;
+    }
 
     @Bean
     public RestTemplate restTemplate() {
@@ -42,5 +43,4 @@ public class CorsConfig {
     public WebClient.Builder webClientBuilder() {
         return WebClient.builder();
     }
-
 }
