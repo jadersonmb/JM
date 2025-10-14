@@ -325,69 +325,76 @@
     </section>
 
     <section v-if="comparisonEntries.length" class="rounded-3xl border border-primary-100 bg-primary-50/60 p-6 shadow-sm">
-      <div class="flex items-start justify-between gap-4">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <h2 class="text-lg font-semibold text-primary-700">{{ t('photoEvolution.comparison.title') }}</h2>
           <p class="text-sm text-primary-600">{{ t('photoEvolution.comparison.subtitle') }}</p>
+          <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-primary-500">
+            {{ t('photoEvolution.comparison.selectedCount', { count: comparisonIds.length }) }}
+          </p>
         </div>
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-500"
-          @click="clearComparison"
-        >
-          <XMarkIcon class="h-4 w-4" />
-          {{ t('photoEvolution.comparison.reset') }}
-        </button>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="comparisonIds.length < 2"
+            @click="openComparison"
+          >
+            <ArrowsPointingOutIcon class="h-4 w-4" />
+            {{ t('photoEvolution.comparison.open') }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-primary-100 px-4 py-2 text-sm font-semibold text-primary-700 transition hover:bg-primary-200"
+            @click="clearComparison"
+          >
+            <XMarkIcon class="h-4 w-4" />
+            {{ t('photoEvolution.comparison.reset') }}
+          </button>
+        </div>
       </div>
 
-      <div class="mt-6 grid gap-6 md:grid-cols-3">
-        <div
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <article
           v-for="(entry, index) in comparisonEntries"
           :key="entry.id"
           class="rounded-2xl bg-white p-4 shadow-sm"
         >
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-            {{ index === 0 ? t('photoEvolution.comparison.first') : t('photoEvolution.comparison.second') }}
-          </p>
-          <p class="mt-1 text-base font-semibold text-slate-800">
-            {{ formatDate(entry.capturedAt || entry.createdAt) }}
-          </p>
-          <p class="text-xs text-slate-400">{{ bodyPartLabel(entry.bodyPart) }}</p>
-          <img
-            v-if="entry.imageUrl"
-            :src="entry.imageUrl"
-            alt="comparison"
-            class="mt-4 h-48 w-full rounded-xl object-cover"
-          />
-          <ul class="mt-4 space-y-2 text-sm text-slate-600">
-            <li v-for="metric in comparisonMetrics(entry)" :key="metric.key" class="flex items-center justify-between">
-              <span class="text-slate-500">{{ metric.label }}</span>
-              <span class="font-semibold text-slate-700">
-                {{ metric.value }}
-                <span v-if="metric.unit" class="text-xs font-normal text-slate-400">{{ metric.unit }}</span>
-              </span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="rounded-2xl bg-white p-4 shadow-sm">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ t('photoEvolution.comparison.difference') }}</p>
-          <p class="mt-1 text-base font-semibold text-slate-800">{{ bodyPartLabel(comparisonBodyPart) }}</p>
-          <ul class="mt-4 space-y-2 text-sm">
-            <li
-              v-for="metric in comparisonDifference"
-              :key="metric.key"
-              class="flex items-center justify-between"
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {{ index === 0 ? t('photoEvolution.comparison.first') : t('photoEvolution.comparison.second') }}
+              </p>
+              <p class="mt-1 text-base font-semibold text-slate-800">
+                {{ formatDate(entry.capturedAt || entry.createdAt) }}
+              </p>
+              <p class="text-xs text-slate-400">{{ bodyPartLabel(entry.bodyPart) }}</p>
+            </div>
+            <button
+              type="button"
+              class="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:border-primary-200 hover:text-primary-600"
+              @click="toggleComparison(entry)"
             >
-              <span class="text-slate-500">{{ metric.label }}</span>
-              <span :class="metric.class">
-                {{ metric.value }}
-                <span v-if="metric.unit" class="text-xs font-normal text-slate-400">{{ metric.unit }}</span>
-              </span>
-            </li>
-          </ul>
-        </div>
+              <XMarkIcon class="h-4 w-4" />
+            </button>
+          </div>
+          <div class="mt-4 overflow-hidden rounded-xl bg-slate-50">
+            <img
+              v-if="entry.imageUrl"
+              :src="entry.imageUrl"
+              alt="comparison preview"
+              class="h-40 w-full object-cover"
+            />
+            <div v-else class="flex h-40 items-center justify-center text-slate-400">
+              <PhotoIcon class="h-8 w-8" />
+            </div>
+          </div>
+        </article>
       </div>
+
+      <p v-if="comparisonIds.length < 2" class="mt-4 text-sm text-primary-600">
+        {{ t('photoEvolution.comparison.missingSelection') }}
+      </p>
     </section>
 
     <section class="space-y-6">
@@ -494,11 +501,13 @@
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import photoEvolutionService from '@/services/photoEvolution';
 import {
+  ArrowsPointingOutIcon,
   ArrowsRightLeftIcon,
   ArrowPathIcon,
   PencilSquareIcon,
@@ -511,6 +520,8 @@ import {
 const { t, locale } = useI18n();
 const auth = useAuthStore();
 const notifications = useNotificationStore();
+const router = useRouter();
+const route = useRoute();
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const selectedUserId = ref(isAdmin.value ? null : auth.user?.id ?? null);
@@ -679,38 +690,6 @@ function resetEditing() {
   editingEntry.value = null;
 }
 
-const comparisonDifference = computed(() => {
-  if (comparisonEntries.value.length < 2) {
-    return [];
-  }
-  const [first, second] = comparisonEntries.value;
-  return numericFields.value.map((metric) => {
-    const initial = toNumber(first[metric.key]);
-    const latest = toNumber(second[metric.key]);
-    if (initial === null || latest === null) {
-      return {
-        key: metric.key,
-        label: metric.label,
-        unit: metric.unit,
-        value: '—',
-        class: 'text-slate-500',
-      };
-    }
-    const diff = latest - initial;
-    const formatted = `${diff > 0 ? '+' : diff < 0 ? '' : ''}${numberFormatter.value.format(diff)}`;
-    const diffClass = diff > 0 ? 'text-emerald-600 font-semibold'
-      : diff < 0 ? 'text-red-500 font-semibold'
-        : 'text-slate-600';
-    return {
-      key: metric.key,
-      label: metric.label,
-      unit: metric.unit,
-      value: formatted,
-      class: diffClass,
-    };
-  });
-});
-
 const groupedEntries = computed(() => {
   const groups = new Map();
   entries.value.forEach((entry) => {
@@ -820,6 +799,7 @@ async function loadEntries() {
     if (comparisonIds.value.length === 0) {
       comparisonBodyPart.value = null;
     }
+    applyComparisonFromRoute();
   } catch (error) {
     notifications.push({
       type: 'error',
@@ -1000,34 +980,161 @@ async function deleteEntry(entry) {
 }
 
 function toggleComparison(entry) {
-  const index = comparisonIds.value.indexOf(entry.id);
-  if (index >= 0) {
-    comparisonIds.value.splice(index, 1);
-    if (!comparisonIds.value.length) {
+  if (!entry?.id) {
+    return;
+  }
+  const ids = [...comparisonIds.value];
+  const existingIndex = ids.indexOf(entry.id);
+
+  if (existingIndex >= 0) {
+    ids.splice(existingIndex, 1);
+    comparisonIds.value = ids;
+    if (!ids.length) {
       comparisonBodyPart.value = null;
     }
     return;
   }
-  if (comparisonBodyPart.value && comparisonBodyPart.value !== entry.bodyPart) {
+
+  const entryBodyPart = entry.bodyPart ?? null;
+  const expectedBodyPart = comparisonBodyPart.value ?? entryBodyPart;
+
+  if (ids.length && expectedBodyPart && expectedBodyPart !== entryBodyPart) {
     notifications.push({
       type: 'warning',
       title: t('photoEvolution.notifications.warningTitle'),
       message: t('photoEvolution.notifications.comparisonMismatch'),
     });
     comparisonIds.value = [entry.id];
-    comparisonBodyPart.value = entry.bodyPart;
+    comparisonBodyPart.value = entryBodyPart;
     return;
   }
-  if (comparisonIds.value.length === 2) {
-    comparisonIds.value.shift();
+
+  if (ids.length >= 2) {
+    ids.shift();
   }
-  comparisonIds.value.push(entry.id);
-  comparisonBodyPart.value = entry.bodyPart;
+
+  ids.push(entry.id);
+  comparisonIds.value = ids;
+  comparisonBodyPart.value = entryBodyPart;
 }
 
 function clearComparison() {
   comparisonIds.value = [];
   comparisonBodyPart.value = null;
+}
+
+function arraysEqual(first, second) {
+  if (first.length !== second.length) {
+    return false;
+  }
+  return first.every((value, index) => value === second[index]);
+}
+
+function extractComparisonIdsFromRoute() {
+  const ids = [];
+  const collect = (value) => {
+    if (!value) {
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+      return;
+    }
+    ids.push(String(value));
+  };
+  collect(route.query.first);
+  collect(route.query.second);
+  return [...new Set(ids)].slice(0, 2);
+}
+
+function applyComparisonFromRoute() {
+  const ids = extractComparisonIdsFromRoute();
+  if (!ids.length) {
+    if (comparisonIds.value.length) {
+      comparisonIds.value = [];
+      comparisonBodyPart.value = null;
+    }
+    return;
+  }
+  const matched = ids
+    .map((id) => entries.value.find((entry) => entry.id === id))
+    .filter((entry) => Boolean(entry));
+
+  if (!matched.length) {
+    return;
+  }
+
+  const firstEntry = matched[0];
+  const sameBodyPart = matched.every((entry) => entry.bodyPart === firstEntry.bodyPart);
+  const nextIds = sameBodyPart ? matched.map((entry) => entry.id).slice(0, 2) : [firstEntry.id];
+
+  if (!arraysEqual(comparisonIds.value, nextIds)) {
+    comparisonIds.value = nextIds;
+  }
+  comparisonBodyPart.value = firstEntry.bodyPart ?? null;
+}
+
+function serializeQuery(query) {
+  return Object.keys(query)
+    .sort()
+    .map((key) => {
+      const value = query[key];
+      if (Array.isArray(value)) {
+        return `${key}=[${value.map(String).join(',')}]`;
+      }
+      if (value === undefined || value === null) {
+        return `${key}=`;
+      }
+      return `${key}=${value}`;
+    })
+    .join('&');
+}
+
+function buildComparisonQuery(ids = [], baseQuery = {}) {
+  const [first, second] = ids;
+  const query = { ...baseQuery };
+  if (first) {
+    query.first = first;
+  } else {
+    delete query.first;
+  }
+  if (second) {
+    query.second = second;
+  } else {
+    delete query.second;
+  }
+  return query;
+}
+
+function updateRouteComparisonQuery(ids) {
+  if (route.name !== 'photo-evolution') {
+    return;
+  }
+  const base = { ...route.query };
+  delete base.first;
+  delete base.second;
+  const nextQuery = buildComparisonQuery(ids, base);
+  const currentSerialized = serializeQuery(route.query);
+  const nextSerialized = serializeQuery(nextQuery);
+  if (currentSerialized === nextSerialized) {
+    return;
+  }
+  router.replace({ query: nextQuery }).catch(() => {});
+}
+
+function openComparison() {
+  if (comparisonIds.value.length < 2) {
+    notifications.push({
+      type: 'warning',
+      title: t('photoEvolution.notifications.warningTitle'),
+      message: t('photoEvolution.comparison.missingSelection'),
+    });
+    return;
+  }
+  router.push({
+    name: 'photo-evolution-comparison',
+    query: buildComparisonQuery(comparisonIds.value),
+  });
 }
 
 function comparisonMetrics(entry) {
@@ -1050,6 +1157,22 @@ function cardMetrics(entry) {
     unit: '',
   }];
 }
+
+watch(comparisonIds, (ids) => {
+  updateRouteComparisonQuery(ids);
+  if (!ids.length) {
+    comparisonBodyPart.value = null;
+  }
+});
+
+watch(
+  () => [route.query.first, route.query.second],
+  () => {
+    if (entries.value.length) {
+      applyComparisonFromRoute();
+    }
+  },
+);
 
 watch(() => auth.user?.id, (newId) => {
   if (!isAdmin.value) {

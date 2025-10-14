@@ -1,6 +1,5 @@
 package com.jm.services;
 
-import com.jm.dto.ImageDTO;
 import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
 import com.jm.dto.PhotoEvolutionOwnerDTO;
@@ -45,20 +44,18 @@ public class PhotoEvolutionService {
     private final PhotoEvolutionRepository repository;
     private final PhotoEvolutionMapper mapper;
     private final UserRepository userRepository;
-    private final ImageService imageService;
     private final CloudflareR2Service cloudflareR2Service;
     private final AnamnesisRepository anamnesisRepository;
     private final MessageSource messageSource;
     private final ImageMapper imageMapper;
 
     public PhotoEvolutionService(PhotoEvolutionRepository repository, PhotoEvolutionMapper mapper,
-            UserRepository userRepository, ImageService imageService,
+            UserRepository userRepository,
             CloudflareR2Service cloudflareR2Service, AnamnesisRepository anamnesisRepository,
             MessageSource messageSource, ImageMapper imageMapper) {
         this.repository = repository;
         this.mapper = mapper;
         this.userRepository = userRepository;
-        this.imageService = imageService;
         this.cloudflareR2Service = cloudflareR2Service;
         this.anamnesisRepository = anamnesisRepository;
         this.messageSource = messageSource;
@@ -115,11 +112,17 @@ public class PhotoEvolutionService {
 
         mapper.updateEntityFromUpdateRequest(request, entity);
 
+        Image previousImage = entity.getImage();
+        Image newImage = null;
         if (imageFile != null && !imageFile.isEmpty()) {
-            Image image = uploadImageForUser(imageFile, entity.getUser().getId());
-            entity.setImage(image);
+            newImage = uploadImageForUser(imageFile, entity.getUser().getId());
+            entity.setImage(newImage);
         }
         PhotoEvolution saved = repository.save(entity);
+        if (newImage != null && previousImage != null && previousImage.getId() != null
+                && !previousImage.getId().equals(newImage.getId())) {
+            deleteImage(previousImage, entity.getUser().getId());
+        }
         logger.debug("Photo evolution {} updated", saved.getId());
         return mapper.toDTO(saved);
     }
@@ -184,7 +187,10 @@ public class PhotoEvolutionService {
         }
         PhotoEvolution entity = repository.findById(id).orElseThrow(this::photoEvolutionNotFound);
         enforceOwnership(entity);
+        Image image = entity.getImage();
+        UUID userId = entity.getUser() != null ? entity.getUser().getId() : null;
         repository.delete(entity);
+        deleteImage(image, userId);
         logger.debug("Photo evolution {} deleted", id);
     }
 
@@ -258,6 +264,16 @@ public class PhotoEvolutionService {
             logger.debug("Failed to upload image for user {}: {}", userId, ex.getMessage());
             throw invalidImage();
         }
+    }
+
+    private void deleteImage(Image image, UUID userId) {
+        if (image == null || userId == null) {
+            return;
+        }
+        if (!StringUtils.hasText(image.getFileName())) {
+            return;
+        }
+        cloudflareR2Service.deleteFileByGeneratedName(userId, image.getFileName());
     }
 
     private JMException invalidBodyException() {

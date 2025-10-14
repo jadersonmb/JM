@@ -81,6 +81,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.photoEvolution' },
         },
         {
+          path: 'photo-evolution/comparison',
+          name: 'photo-evolution-comparison',
+          component: () => import('@/views/photoEvolution/PhotoEvolutionCompareView.vue'),
+          meta: { titleKey: 'routes.photoEvolution' },
+        },
+        {
           path: 'goals/new',
           name: 'goals-new',
           component: () => import('@/views/goals/GoalWizard.vue'),
