@@ -209,30 +209,33 @@ public class WhatsAppNutritionService {
     private void handleTextMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
             String from) {
         Map<String, Object> textContent = (Map<String, Object>) message.getOrDefault("text", Map.of());
+        String body = (String) textContent.getOrDefault("body", "");
 
-        createAndDispatchRequest(builder, from, textContent);
+        builder.textContent(body);
+        findUserByPhone(from).ifPresent(builder::owner);
+
         WhatsAppMessage savedMessage = messageRepository.save(builder.build());
+        dispatchToAssistant(savedMessage, body);
         processCommandFromText(savedMessage, from);
     }
 
-    private void createAndDispatchRequest(WhatsAppMessage.WhatsAppMessageBuilder builder, String from,
-            Map<String, Object> textContent) {
-        String body = (String) textContent.getOrDefault("body", "");
+    private void dispatchToAssistant(WhatsAppMessage message, String body) {
+        if (!StringUtils.hasText(body)) {
+            return;
+        }
+
         AiRequest.AiRequestBuilder requestBuilder = AiRequest.builder()
                 .type(AiRequestType.TEXT)
                 .model(OLLAMA_TEXT_MODEL)
                 .prompt(body)
                 .stream(Boolean.FALSE)
-                .from(from);
+                .from(message.getFromPhone());
 
-        Optional<Users> owner = findUserByPhone(from);
-        owner.ifPresent(user -> {
-            requestBuilder.userId(user.getId());
-            builder.owner(user);
-        });
+        Optional.ofNullable(message.getOwner())
+                .map(Users::getId)
+                .ifPresent(requestBuilder::userId);
 
         resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(requestBuilder.build()));
-        builder.textContent(body);
     }
 
     private void handleImageMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
@@ -354,6 +357,7 @@ public class WhatsAppNutritionService {
 
             savedMessage.setTextContent(transcript);
             messageRepository.save(savedMessage);
+            dispatchToAssistant(savedMessage, transcript);
             processCommandFromText(savedMessage, from);
         } catch (Exception ex) {
             logger.error("Failed to process WhatsApp audio message", ex);
