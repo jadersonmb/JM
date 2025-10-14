@@ -42,7 +42,7 @@
       </template>
 
       <template #filters>
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <div>
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {{ t('reference.aiPrompts.filters.search') }}
@@ -70,7 +70,7 @@
               </option>
             </select>
           </div>
-          <div>
+          <!-- <div>
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {{ t('reference.aiPrompts.filters.owner') }}
             </label>
@@ -80,7 +80,7 @@
               class="input mt-1"
               :placeholder="t('reference.aiPrompts.filters.ownerPlaceholder')"
             />
-          </div>
+          </div> -->
         </div>
       </template>
 
