@@ -1,14 +1,17 @@
 package com.jm.controllers;
 
+import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.CityDTO;
 import com.jm.dto.CountryDTO;
 import com.jm.dto.EducationLevelDTO;
 import com.jm.dto.MealDTO;
 import com.jm.dto.ProfessionDTO;
+import com.jm.enums.AiProvider;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
 import com.jm.services.EducationLevelService;
 import com.jm.services.MealService;
+import com.jm.services.AiPromptReferenceService;
 import com.jm.services.ProfessionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -42,6 +45,7 @@ public class ReferenceManagementController {
     private final EducationLevelService educationLevelService;
     private final ProfessionService professionService;
     private final MealService mealService;
+    private final AiPromptReferenceService aiPromptReferenceService;
 
     @GetMapping("/countries")
     public ResponseEntity<Page<CountryDTO>> listCountries(Pageable pageable,
@@ -192,6 +196,40 @@ public class ReferenceManagementController {
     public ResponseEntity<Void> deleteMeal(@PathVariable UUID id) {
         ensureAdmin();
         mealService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/ai-prompts")
+    public ResponseEntity<Page<AiPromptReferenceDTO>> listAiPrompts(Pageable pageable,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String model,
+            @RequestParam(required = false) AiProvider provider,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String owner) {
+        ensureAdmin();
+        return ResponseEntity.ok(aiPromptReferenceService.search(pageable, code, name, model, provider, active, owner));
+    }
+
+    @PostMapping("/ai-prompts")
+    public ResponseEntity<AiPromptReferenceDTO> createAiPrompt(@RequestBody AiPromptReferenceDTO dto) {
+        ensureAdmin();
+        AiPromptReferenceDTO created = aiPromptReferenceService.save(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/ai-prompts/{id}")
+    public ResponseEntity<AiPromptReferenceDTO> updateAiPrompt(@PathVariable UUID id,
+            @RequestBody AiPromptReferenceDTO dto) {
+        ensureAdmin();
+        dto.setId(id);
+        return ResponseEntity.ok(aiPromptReferenceService.save(dto));
+    }
+
+    @DeleteMapping("/ai-prompts/{id}")
+    public ResponseEntity<Void> deleteAiPrompt(@PathVariable UUID id) {
+        ensureAdmin();
+        aiPromptReferenceService.delete(id);
         return ResponseEntity.noContent().build();
     }
 

@@ -349,6 +349,7 @@ const navigation = computed(() => {
   if (isAdmin.value) {
     const referenceChildren = [
       { name: 'reference-countries', label: t('routes.referenceCountries') },
+      { name: 'reference-ai-prompts', label: t('routes.referenceAiPrompts') },
       { name: 'reference-cities', label: t('routes.referenceCities') },
       { name: 'reference-education-levels', label: t('routes.referenceEducationLevels') },
       { name: 'reference-meals', label: t('routes.referenceMeals') },

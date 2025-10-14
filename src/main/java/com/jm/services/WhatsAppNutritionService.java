@@ -4,10 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.ImageDTO;
 import com.jm.dto.NutritionDashboardDTO;
-import com.jm.dto.OllamaRequestDTO;
-import com.jm.dto.OllamaRequestDTO.OllamaRequestDTOBuilder;
 import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
@@ -31,6 +30,13 @@ import com.jm.speciation.WhatsAppSpecification;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.utils.SecurityUtils;
+import com.jm.services.AiPromptReferenceService;
+import com.jm.enums.AiProvider;
+import com.jm.services.ai.AiClient;
+import com.jm.services.ai.AiClientFactory;
+import com.jm.services.ai.AiRequest;
+import com.jm.services.ai.AiRequestType;
+import com.jm.services.ai.AiResponse;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -68,9 +74,35 @@ public class WhatsAppNutritionService {
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppNutritionService.class);
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
     private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
+    private static final String PROMPT_CODE = "WHATSAPP_NUTRITION_ANALYSIS";
+    private static final String OLLAMA_TEXT_MODEL = "ALIENTELLIGENCE/personalizednutrition:latest";
+    private static final String OLLAMA_VISION_MODEL = "llava:34b";
+    private static final String GEMINI_VISION_MODEL = "gemini-pro-vision";
+    private static final String DEFAULT_IMAGE_PROMPT = """
+            You are a nutritionist and must reply using JSON only.
+            Analyse the meal in the image and respond ONLY with this JSON structure:
+            {
+              \"isFood\": true|false,
+              \"foodName\": \"name of the meal\",
+              \"calories\": number in kcal,
+              \"mealType\": \"BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS\",
+              \"macronutrients\": {
+                \"protein_g\": number in grams,
+                \"carbs_g\": number in grams,
+                \"fat_g\": number in grams
+              },
+              \"categories\": [
+                { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
+              ],
+              \"summary\": \"short sentence about the meal\",
+              \"confidence\": value between 0 and 1
+            }
+            If the picture does not contain food, respond exactly with:
+            {\"isFood\": false, \"summary\": \"brief explanation\"}
+            Always choose the mealType that best matches the image. Use OTHER_MEALS when unsure.
+            """;
 
     private final WhatsAppService whatsAppService;
-    private final GeminiService geminiService;
     private final WhatsAppMessageRepository messageRepository;
     private final NutritionAnalysisRepository nutritionAnalysisRepository;
     private final FoodCategoryRepository foodCategoryRepository;
@@ -80,30 +112,8 @@ public class WhatsAppNutritionService {
     private final ObjectMapper objectMapper;
     private final CloudflareR2Service cloudflareR2Service;
     private final UserService userService;
-    private final OllamaService ollamaService;
-    private static final String prompt = """
-            You are a nutritionist and must reply using JSON only.
-            Analyse the meal in the image and respond ONLY with this JSON structure:
-            {
-              "isFood": true|false,
-              "foodName": "name of the meal",
-              "calories": number in kcal,
-              "mealType": "BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS",
-              "macronutrients": {
-                "protein_g": number in grams,
-                "carbs_g": number in grams,
-                "fat_g": number in grams
-              },
-              "categories": [
-                { "name": "category name", "confidence": value between 0 and 1 }
-              ],
-              "summary": "short sentence about the meal",
-              "confidence": value between 0 and 1
-            }
-            If the picture does not contain food, respond exactly with:
-            {"isFood": false, "summary": "brief explanation"}
-            Always choose the mealType that best matches the image. Use OTHER_MEALS when unsure.
-            """;
+    private final AiClientFactory aiClientFactory;
+    private final AiPromptReferenceService aiPromptReferenceService;
 
     @SuppressWarnings("unchecked")
     @Transactional
@@ -174,18 +184,22 @@ public class WhatsAppNutritionService {
 
     private void createAndDispatchRequest(WhatsAppMessage.WhatsAppMessageBuilder builder, String from,
             Map<String, Object> textContent) {
-        OllamaRequestDTOBuilder ollamaRequestDTO = OllamaRequestDTO.builder();
-        ollamaRequestDTO.from(from);
-        ollamaRequestDTO.model("ALIENTELLIGENCE/personalizednutrition:latest");
-        ollamaRequestDTO.prompt((String) textContent.getOrDefault("body", ""));
-        ollamaRequestDTO.stream(Boolean.FALSE);
+        String body = (String) textContent.getOrDefault("body", "");
+        AiRequest.AiRequestBuilder requestBuilder = AiRequest.builder()
+                .type(AiRequestType.TEXT)
+                .model(OLLAMA_TEXT_MODEL)
+                .prompt(body)
+                .stream(Boolean.FALSE)
+                .from(from);
+
         Optional<Users> owner = findUserByPhone(from);
-        if (owner.isPresent()) {
-            ollamaRequestDTO.userId(owner.get().getId());
-            builder.owner(owner.get());
-        }
-        ollamaService.createAndDispatchRequest(ollamaRequestDTO.build());
-        builder.textContent((String) textContent.getOrDefault("body", ""));
+        owner.ifPresent(user -> {
+            requestBuilder.userId(user.getId());
+            builder.owner(user);
+        });
+
+        resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(requestBuilder.build()));
+        builder.textContent(body);
     }
 
     private void handleImageMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
@@ -232,18 +246,21 @@ public class WhatsAppNutritionService {
 
             messageRepository.save(savedMessage);
 
-            OllamaRequestDTO dto = OllamaRequestDTO.builder()
-                    .from(from)
-                    .model("llava:34b")
-                    .userId(owner.getId())
-                    .prompt(prompt)
+            AiRequest.AiRequestBuilder visionRequest = AiRequest.builder()
+                    .type(AiRequestType.IMAGE)
+                    .model(OLLAMA_VISION_MODEL)
+                    .prompt(resolvePrompt(owner, AiProvider.OLLAMA, OLLAMA_VISION_MODEL))
                     .stream(Boolean.FALSE)
-                    .images(ollamaService.encodeImages(Collections.singletonList(imageFile)))
-                    .build();
+                    .from(from)
+                    .attachments(Collections.singletonList(imageFile));
 
-            ollamaService.createAndDispatchRequest(dto);
+            if (owner != null) {
+                visionRequest.userId(owner.getId());
+            }
 
-            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), prompt);
+            resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(visionRequest.build()));
+
+            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), owner);
             if (result == null) {
                 logger.warn("Gemini returned empty result for message {}", savedMessage.getId());
                 return;
@@ -336,9 +353,30 @@ public class WhatsAppNutritionService {
                         .description("Categoria identificada automaticamente").build()));
     }
 
-    public GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType, String prompt) {
-        return geminiService.generateTextFromImage(prompt, imageBytes, mimeType).map(this::sanitizeGeminiResponse)
-                .map(this::deserializeNutritionResult).blockOptional(DEFAULT_TIMEOUT).orElse(null);
+    public GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType, Users owner) {
+        Optional<AiClient> geminiClient = resolveClient(AiProvider.GEMINI);
+        if (geminiClient.isEmpty()) {
+            logger.warn("AI provider {} not available for nutrition analysis", AiProvider.GEMINI);
+            return null;
+        }
+        AiRequest request = AiRequest.builder()
+                .type(AiRequestType.IMAGE)
+                .model(GEMINI_VISION_MODEL)
+                .prompt(resolvePrompt(owner, AiProvider.GEMINI, GEMINI_VISION_MODEL))
+                .imageBytes(imageBytes)
+                .mimeType(mimeType)
+                .timeout(DEFAULT_TIMEOUT)
+                .build();
+
+        AiResponse response = geminiClient.get().execute(request);
+        if (response == null || response.content() == null) {
+            return null;
+        }
+
+        return Optional.ofNullable(response.content())
+                .map(this::sanitizeGeminiResponse)
+                .map(this::deserializeNutritionResult)
+                .orElse(null);
     }
 
     public GeminiNutritionResult deserializeNutritionResult(String payload) {
@@ -359,6 +397,24 @@ public class WhatsAppNutritionService {
         String cleaned = raw.trim();
         cleaned = cleaned.replace("```json", "").replace("```", "").trim();
         return cleaned;
+    }
+
+    private String resolvePrompt(Users owner, AiProvider provider, String model) {
+        String ownerReference = owner != null ? owner.getId().toString() : null;
+        return aiPromptReferenceService.resolvePrompt(PROMPT_CODE, provider, model, ownerReference)
+                .map(AiPromptReferenceDTO::getPrompt)
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .orElse(DEFAULT_IMAGE_PROMPT);
+    }
+
+    private Optional<AiClient> resolveClient(AiProvider provider) {
+        try {
+            return Optional.of(aiClientFactory.createClient(provider));
+        } catch (IllegalArgumentException ex) {
+            logger.error("AI provider {} is not configured", provider, ex);
+            return Optional.empty();
+        }
     }
 
     private BigDecimal toBigDecimal(Double value) {

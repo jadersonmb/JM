@@ -38,6 +38,7 @@ const { t } = useI18n();
 
 const links = computed(() => [
   { name: 'reference-countries', label: t('routes.referenceCountries') },
+  { name: 'reference-ai-prompts', label: t('routes.referenceAiPrompts') },
   { name: 'reference-cities', label: t('routes.referenceCities') },
   { name: 'reference-education-levels', label: t('routes.referenceEducationLevels') },
   { name: 'reference-meals', label: t('routes.referenceMeals') },

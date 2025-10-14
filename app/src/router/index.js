@@ -129,6 +129,12 @@ const router = createRouter({
               meta: { titleKey: 'routes.referenceCountries', requiresAdmin: true },
             },
             {
+              path: 'ai-prompts',
+              name: 'reference-ai-prompts',
+              component: () => import('@/views/reference/ReferenceAiPromptsView.vue'),
+              meta: { titleKey: 'routes.referenceAiPrompts', requiresAdmin: true },
+            },
+            {
               path: 'cities',
               name: 'reference-cities',
               component: () => import('@/views/reference/ReferenceCitiesView.vue'),
