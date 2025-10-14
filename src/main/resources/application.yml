@@ -5,9 +5,9 @@ spring:
     url: jdbc:mariadb://localhost:3306/jm?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     #username: 
     #password: 
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    #url: ${SPRING_DATASOURCE_URL}
+    #username: ${SPRING_DATASOURCE_USERNAME}
+    #password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
   servlet:
     multipart:
@@ -69,7 +69,7 @@ cloudflare:
     access-key-id: ${CLOUDFLARE_ACCESS_KEY_ID:}
     secret-access-key: ${CLOUDFLARE_SECRET_ACCESS_KEY:}
     bucket-name: ${CLOUDFLARE_BUCKET_NAME:}
-    public-url=https://pub-1234567890.r2.dev
+    public-url: https://pub-1234567890.r2.dev
 
 ollama:
   api:

@@ -13,8 +13,8 @@
             Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis
             directly to your WhatsApp! With NutriVision AI, this reality is within reach on your phone.</p>
           <div class="mt-8 flex items-center gap-2 ml-20">
-            <img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
-              class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" />
+            <!--<img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
+              class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" /> -->
           </div>
         </div>
       </div>
