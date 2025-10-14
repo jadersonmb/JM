@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-8">
+  <div class="space-y-0">
     <DataTable
       :title="t('reference.educationLevels.title')"
       :subtitle="t('reference.educationLevels.subtitle')"
