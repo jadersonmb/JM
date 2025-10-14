@@ -99,16 +99,18 @@
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 class="text-xl font-semibold text-slate-900">
-            {{ form.id ? t('photoEvolution.form.editTitle') : t('photoEvolution.form.title') }}
+            {{ editingEntry ? t('photoEvolution.form.editTitle') : t('photoEvolution.form.title') }}
           </h2>
-          <p class="text-sm text-slate-500">{{ t('photoEvolution.form.helper') }}</p>
+          <p class="text-sm text-slate-500">
+            {{ editingEntry ? t('photoEvolution.form.editHelper') : t('photoEvolution.form.helper') }}
+          </p>
         </div>
         <div class="flex items-center gap-3">
           <button
-            v-if="form.id"
+            v-if="editingEntry"
             type="button"
             class="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-200"
-            @click="resetForm"
+            @click="resetEditing"
           >
             <XMarkIcon class="h-4 w-4" />
             {{ t('photoEvolution.form.actions.cancel') }}
@@ -116,85 +118,210 @@
         </div>
       </div>
 
-      <form class="mt-6 space-y-6" @submit.prevent="saveEntry">
-        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          <div>
-            <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.capturedAt.label') }}</label>
-            <input
-              v-model="form.capturedAt"
-              type="date"
-              class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
-            <select
-              v-model="form.bodyPart"
-              class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-            >
-              <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-          <div v-for="metric in numericFields" :key="metric.key">
-            <label class="block text-sm font-medium text-slate-600">
-              {{ metric.label }}
-              <span v-if="metric.unit" class="font-normal text-slate-400">({{ metric.unit }})</span>
-            </label>
-            <input
-              v-model="form[metric.key]"
-              type="number"
-              step="0.01"
-              class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.notes.label') }}</label>
-          <textarea
-            v-model="form.notes"
-            rows="3"
-            class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
-          ></textarea>
-        </div>
-
-        <div class="grid gap-6 md:grid-cols-2">
-          <div>
-            <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.image.label') }}</label>
-            <div class="mt-1 flex items-center gap-4">
-              <div
-                class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50"
+      <template v-if="editingEntry">
+        <form class="mt-6 space-y-6" @submit.prevent="saveEditedEntry">
+          <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div>
+              <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.capturedAt.label') }}</label>
+              <input
+                v-model="editingEntry.capturedAt"
+                type="date"
+                class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
+              <select
+                v-model="editingEntry.bodyPart"
+                class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
               >
-                <img v-if="form.imagePreview" :src="form.imagePreview" alt="preview" class="h-full w-full object-cover" />
-                <PhotoIcon v-else class="h-12 w-12 text-slate-300" />
-              </div>
-              <div class="space-y-2 text-sm text-slate-500">
-                <p>{{ t('photoEvolution.form.fields.image.helper') }}</p>
-                <label
-                  class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-2 font-semibold text-primary-600 transition hover:bg-primary-100"
+                <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div v-for="metric in numericFields" :key="metric.key">
+              <label class="block text-sm font-medium text-slate-600">
+                {{ metric.label }}
+                <span v-if="metric.unit" class="font-normal text-slate-400">({{ metric.unit }})</span>
+              </label>
+              <input
+                v-model="editingEntry[metric.key]"
+                type="number"
+                step="0.01"
+                class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.notes.label') }}</label>
+            <textarea
+              v-model="editingEntry.notes"
+              rows="3"
+              class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            ></textarea>
+          </div>
+
+          <div class="grid gap-6 md:grid-cols-2">
+            <div>
+              <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.image.label') }}</label>
+              <div class="mt-1 flex items-center gap-4">
+                <div
+                  class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50"
                 >
-                  <PhotoIcon class="h-4 w-4" />
-                  {{ form.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.form.fields.image.select') }}
-                  <input type="file" accept="image/*" class="hidden" @change="handleFileChange" />
-                </label>
+                  <img
+                    v-if="editingEntry.imagePreview"
+                    :src="editingEntry.imagePreview"
+                    alt="preview"
+                    class="h-full w-full object-cover"
+                  />
+                  <PhotoIcon v-else class="h-12 w-12 text-slate-300" />
+                </div>
+                <div class="space-y-2 text-sm text-slate-500">
+                  <p>{{ t('photoEvolution.form.fields.image.helper') }}</p>
+                  <label
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-2 font-semibold text-primary-600 transition hover:bg-primary-100"
+                  >
+                    <PhotoIcon class="h-4 w-4" />
+                    {{ editingEntry.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.form.fields.image.select') }}
+                    <input type="file" accept="image/*" class="hidden" @change="handleEditFileChange" />
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-end">
+              <button
+                type="submit"
+                :disabled="saving"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <ArrowPathIcon v-if="saving" class="h-5 w-5 animate-spin" />
+                <PlusIcon v-else class="h-5 w-5" />
+                {{ t('photoEvolution.form.actions.update') }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </template>
+      <template v-else>
+        <form class="mt-6 space-y-6" @submit.prevent="saveDraftEntries">
+          <div class="space-y-6">
+            <div
+              v-for="(entryForm, index) in draftEntries"
+              :key="entryForm.uid"
+              class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-800">
+                  {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
+                </h3>
+                <button
+                  v-if="draftEntries.length > 1"
+                  type="button"
+                  class="rounded-full border border-slate-200 p-2 text-slate-400 transition hover:border-red-200 hover:text-red-500"
+                  @click="removeDraftEntry(index)"
+                >
+                  <TrashIcon class="h-4 w-4" />
+                </button>
+              </div>
+
+              <div class="mt-4 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.capturedAt.label') }}</label>
+                  <input
+                    v-model="entryForm.capturedAt"
+                    type="date"
+                    class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
+                  <select
+                    v-model="entryForm.bodyPart"
+                    class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  >
+                    <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+                <div v-for="metric in numericFields" :key="metric.key">
+                  <label class="block text-sm font-medium text-slate-600">
+                    {{ metric.label }}
+                    <span v-if="metric.unit" class="font-normal text-slate-400">({{ metric.unit }})</span>
+                  </label>
+                  <input
+                    v-model="entryForm[metric.key]"
+                    type="number"
+                    step="0.01"
+                    class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-600">{{ t('photoEvolution.form.fields.notes.label') }}</label>
+                <textarea
+                  v-model="entryForm.notes"
+                  rows="3"
+                  class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 shadow-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100"
+                ></textarea>
+              </div>
+
+              <div class="grid gap-6 md:grid-cols-[auto,1fr] md:items-center">
+                <div
+                  class="flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-slate-50"
+                >
+                  <img
+                    v-if="entryForm.imagePreview"
+                    :src="entryForm.imagePreview"
+                    alt="preview"
+                    class="h-full w-full object-cover"
+                  />
+                  <PhotoIcon v-else class="h-12 w-12 text-slate-300" />
+                </div>
+                <div class="space-y-2 text-sm text-slate-500">
+                  <p>{{ t('photoEvolution.form.fields.image.batchHelper') }}</p>
+                  <label
+                    class="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-primary-200 bg-primary-50 px-4 py-2 font-semibold text-primary-600 transition hover:bg-primary-100"
+                  >
+                    <PhotoIcon class="h-4 w-4" />
+                    {{ entryForm.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.form.fields.image.selectMultiple') }}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      class="hidden"
+                      @change="(event) => handleDraftFileChange(event, index)"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
-          <div class="flex items-end">
+
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-2xl border border-dashed border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300"
+              @click="addDraftEntry"
+            >
+              <PlusIcon class="h-4 w-4" />
+              {{ t('photoEvolution.form.actions.addPhoto') }}
+            </button>
             <button
               type="submit"
               :disabled="saving"
-              class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+              class="inline-flex items-center justify-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowPathIcon v-if="saving" class="h-5 w-5 animate-spin" />
               <PlusIcon v-else class="h-5 w-5" />
-              {{ form.id ? t('photoEvolution.form.actions.update') : t('photoEvolution.form.actions.save') }}
+              {{ t('photoEvolution.form.actions.saveBatch') }}
             </button>
           </div>
-        </div>
-      </form>
+        </form>
+      </template>
     </section>
 
     <section v-if="comparisonEntries.length" class="rounded-3xl border border-primary-100 bg-primary-50/60 p-6 shadow-sm">
@@ -366,12 +493,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch, onMounted } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 import photoEvolutionService from '@/services/photoEvolution';
-import { uploadFile } from '@/services/cloudFlare';
 import {
   ArrowsRightLeftIcon,
   ArrowPathIcon,
@@ -435,36 +561,123 @@ const numericFields = computed(() => [
   { key: 'fatIntake', label: t('photoEvolution.form.fields.fatIntake.label'), unit: t('photoEvolution.form.fields.fatIntake.unit') },
 ]);
 
-const form = reactive({
-  id: null,
-  capturedAt: '',
-  bodyPart: bodyPartOptions.value[0]?.value ?? 'FRONT',
-  weight: '',
-  bodyFatPercentage: '',
-  muscleMass: '',
-  visceralFat: '',
-  waistCircumference: '',
-  hipCircumference: '',
-  chestCircumference: '',
-  leftArmCircumference: '',
-  rightArmCircumference: '',
-  leftThighCircumference: '',
-  rightThighCircumference: '',
-  caloricIntake: '',
-  proteinIntake: '',
-  carbohydrateIntake: '',
-  fatIntake: '',
-  notes: '',
-  imageFile: null,
-  imagePreview: '',
-  imageId: null,
-});
+const prefillData = ref({});
+let draftIdCounter = 0;
+const draftEntries = ref([]);
+const editingEntry = ref(null);
 
 const saving = ref(false);
 
 const comparisonEntries = computed(() => comparisonIds.value
   .map((id) => entries.value.find((entry) => entry.id === id))
   .filter((entry) => Boolean(entry)));
+
+function generateDraftId() {
+  draftIdCounter += 1;
+  return `draft-${Date.now()}-${draftIdCounter}`;
+}
+
+function formatPrefillValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '';
+  }
+  return String(value);
+}
+
+function createDraftEntry() {
+  const entry = {
+    uid: generateDraftId(),
+    capturedAt: '',
+    bodyPart: bodyPartOptions.value[0]?.value ?? 'FRONT',
+    notes: '',
+    imageFile: null,
+    imagePreview: '',
+    temporaryPreview: false,
+  };
+  numericFields.value.forEach((metric) => {
+    entry[metric.key] = formatPrefillValue(prefillData.value?.[metric.key]);
+  });
+  return entry;
+}
+
+function cleanupEntryPreview(entry) {
+  if (entry?.temporaryPreview && entry.imagePreview) {
+    URL.revokeObjectURL(entry.imagePreview);
+    entry.temporaryPreview = false;
+  }
+}
+
+function resetDraftEntries() {
+  draftEntries.value.forEach((entry) => cleanupEntryPreview(entry));
+  draftEntries.value = [createDraftEntry()];
+}
+
+function addDraftEntry() {
+  draftEntries.value.push(createDraftEntry());
+}
+
+function removeDraftEntry(index) {
+  if (index < 0 || index >= draftEntries.value.length) {
+    return;
+  }
+  const [removed] = draftEntries.value.splice(index, 1);
+  cleanupEntryPreview(removed);
+  if (!draftEntries.value.length) {
+    resetDraftEntries();
+  }
+}
+
+function setEntryFile(entry, file) {
+  cleanupEntryPreview(entry);
+  if (!file) {
+    entry.imageFile = null;
+    entry.imagePreview = '';
+    return;
+  }
+  entry.imageFile = file;
+  entry.imagePreview = URL.createObjectURL(file);
+  entry.temporaryPreview = true;
+}
+
+function handleDraftFileChange(event, index) {
+  const files = Array.from(event?.target?.files ?? []);
+  if (!files.length) {
+    return;
+  }
+  const target = draftEntries.value[index];
+  if (target) {
+    const [first, ...rest] = files;
+    setEntryFile(target, first);
+    rest.forEach((file) => {
+      const extra = createDraftEntry();
+      setEntryFile(extra, file);
+      draftEntries.value.push(extra);
+    });
+  }
+  if (event?.target) {
+    event.target.value = '';
+  }
+}
+
+function handleEditFileChange(event) {
+  const file = event?.target?.files?.[0];
+  if (!editingEntry.value) {
+    return;
+  }
+  if (file) {
+    setEntryFile(editingEntry.value, file);
+  }
+  if (event?.target) {
+    event.target.value = '';
+  }
+}
+
+function resetEditing() {
+  if (editingEntry.value) {
+    cleanupEntryPreview(editingEntry.value);
+  }
+  editingEntry.value = null;
+}
 
 const comparisonDifference = computed(() => {
   if (comparisonEntries.value.length < 2) {
@@ -565,28 +778,6 @@ function bodyPartLabel(value) {
   return translation === key ? value : translation;
 }
 
-function resetForm() {
-  form.id = null;
-  form.capturedAt = '';
-  form.bodyPart = bodyPartOptions.value[0]?.value ?? 'FRONT';
-  numericFields.value.forEach((metric) => {
-    form[metric.key] = '';
-  });
-  form.notes = '';
-  form.imageFile = null;
-  form.imagePreview = '';
-  form.imageId = null;
-}
-
-async function handleFileChange(event) {
-  const [file] = event.target.files ?? [];
-  if (!file) {
-    return;
-  }
-  form.imageFile = file;
-  form.imagePreview = URL.createObjectURL(file);
-}
-
 async function loadOwners(query = '') {
   if (!isAdmin.value) {
     return;
@@ -640,6 +831,19 @@ async function loadEntries() {
   }
 }
 
+async function loadPrefill() {
+  if (!selectedUserId.value) {
+    prefillData.value = {};
+    return;
+  }
+  try {
+    const { data } = await photoEvolutionService.prefill({ userId: selectedUserId.value });
+    prefillData.value = data ?? {};
+  } catch (error) {
+    prefillData.value = {};
+  }
+}
+
 function clearFilters() {
   filterBodyPart.value = null;
   loadEntries();
@@ -650,26 +854,32 @@ function parsePayloadNumber(value) {
   return numeric === null ? null : numeric;
 }
 
-async function ensureImageId() {
-  if (form.imageId && !form.imageFile) {
-    return form.imageId;
-  }
-  if (!form.imageFile) {
-    notifications.push({
-      type: 'warning',
-      title: t('photoEvolution.notifications.warningTitle'),
-      message: t('photoEvolution.notifications.invalidImage'),
-    });
-    throw new Error('IMAGE_REQUIRED');
-  }
-  const { data } = await uploadFile({ file: form.imageFile, userId: selectedUserId.value });
-  form.imageId = data.id;
-  form.imagePreview = data.url;
-  form.imageFile = null;
-  return form.imageId;
+function buildCreatePayload(entry) {
+  const payload = {
+    userId: selectedUserId.value,
+    bodyPart: entry.bodyPart,
+    capturedAt: entry.capturedAt || null,
+    notes: entry.notes || null,
+  };
+  numericFields.value.forEach((metric) => {
+    payload[metric.key] = parsePayloadNumber(entry[metric.key]);
+  });
+  return payload;
 }
 
-async function saveEntry() {
+function buildUpdatePayload(entry) {
+  const payload = {
+    bodyPart: entry.bodyPart,
+    capturedAt: entry.capturedAt || null,
+    notes: entry.notes || null,
+  };
+  numericFields.value.forEach((metric) => {
+    payload[metric.key] = parsePayloadNumber(entry[metric.key]);
+  });
+  return payload;
+}
+
+async function saveDraftEntries() {
   if (!selectedUserId.value) {
     notifications.push({
       type: 'warning',
@@ -678,67 +888,103 @@ async function saveEntry() {
     });
     return;
   }
+  const validEntries = draftEntries.value.filter((entry) => entry.imageFile);
+  if (!validEntries.length) {
+    notifications.push({
+      type: 'warning',
+      title: t('photoEvolution.notifications.warningTitle'),
+      message: t('photoEvolution.notifications.invalidImage'),
+    });
+    return;
+  }
   saving.value = true;
   try {
-    const imageId = await ensureImageId();
-    const payload = {
-      userId: selectedUserId.value,
-      imageId,
-      bodyPart: form.bodyPart,
-      capturedAt: form.capturedAt || null,
-      notes: form.notes || null,
-    };
-    numericFields.value.forEach((metric) => {
-      payload[metric.key] = parsePayloadNumber(form[metric.key]);
+    const formData = new FormData();
+    const payload = validEntries.map((entry) => buildCreatePayload(entry));
+    formData.append('entries', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    validEntries.forEach((entry) => {
+      formData.append('images', entry.imageFile);
     });
-
-    if (form.id) {
-      await photoEvolutionService.update(form.id, payload);
-      notifications.push({
-        type: 'success',
-        title: t('photoEvolution.notifications.successTitle'),
-        message: t('photoEvolution.notifications.updated'),
-      });
-    } else {
-      await photoEvolutionService.create(payload);
-      notifications.push({
-        type: 'success',
-        title: t('photoEvolution.notifications.successTitle'),
-        message: t('photoEvolution.notifications.created'),
-      });
-    }
+    await photoEvolutionService.create(formData);
+    notifications.push({
+      type: 'success',
+      title: t('photoEvolution.notifications.successTitle'),
+      message: validEntries.length > 1
+        ? t('photoEvolution.notifications.bulkCreated', { count: validEntries.length })
+        : t('photoEvolution.notifications.created'),
+    });
+    validEntries.forEach((entry) => cleanupEntryPreview(entry));
     await loadEntries();
-    resetForm();
+    resetDraftEntries();
   } catch (error) {
-    if (error?.message !== 'IMAGE_REQUIRED') {
-      notifications.push({
-        type: 'error',
-        title: t('photoEvolution.notifications.errorTitle'),
-        message: t('photoEvolution.notifications.saveFailed'),
-      });
+    notifications.push({
+      type: 'error',
+      title: t('photoEvolution.notifications.errorTitle'),
+      message: t('photoEvolution.notifications.saveFailed'),
+    });
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function saveEditedEntry() {
+  if (!editingEntry.value) {
+    return;
+  }
+  saving.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('payload', new Blob([JSON.stringify(buildUpdatePayload(editingEntry.value))], {
+      type: 'application/json',
+    }));
+    if (editingEntry.value.imageFile) {
+      formData.append('image', editingEntry.value.imageFile);
     }
+    await photoEvolutionService.update(editingEntry.value.id, formData);
+    notifications.push({
+      type: 'success',
+      title: t('photoEvolution.notifications.successTitle'),
+      message: t('photoEvolution.notifications.updated'),
+    });
+    cleanupEntryPreview(editingEntry.value);
+    await loadEntries();
+    await loadPrefill();
+    resetEditing();
+  } catch (error) {
+    notifications.push({
+      type: 'error',
+      title: t('photoEvolution.notifications.errorTitle'),
+      message: t('photoEvolution.notifications.saveFailed'),
+    });
   } finally {
     saving.value = false;
   }
 }
 
 function startEdit(entry) {
-  form.id = entry.id;
-  form.capturedAt = entry.capturedAt ?? '';
-  form.bodyPart = entry.bodyPart ?? bodyPartOptions.value[0]?.value ?? 'FRONT';
+  resetEditing();
+  editingEntry.value = {
+    id: entry.id,
+    capturedAt: entry.capturedAt ?? '',
+    bodyPart: entry.bodyPart ?? bodyPartOptions.value[0]?.value ?? 'FRONT',
+    notes: entry.notes ?? '',
+    imageFile: null,
+    imagePreview: entry.imageUrl ?? '',
+    temporaryPreview: false,
+  };
   numericFields.value.forEach((metric) => {
-    form[metric.key] = entry[metric.key] ?? '';
+    editingEntry.value[metric.key] = formatPrefillValue(entry[metric.key]);
   });
-  form.notes = entry.notes ?? '';
-  form.imageId = entry.imageId ?? null;
-  form.imagePreview = entry.imageUrl ?? '';
-  form.imageFile = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function deleteEntry(entry) {
   const confirmed = window.confirm(t('photoEvolution.notifications.confirmDelete'));
   if (!confirmed) {
     return;
+  }
+  if (editingEntry.value?.id === entry.id) {
+    resetEditing();
   }
   await photoEvolutionService.remove(entry.id);
   notifications.push({
@@ -819,15 +1065,25 @@ watch(ownerSearch, (value) => {
   ownerSearchTimer = setTimeout(() => loadOwners(value), 300);
 });
 
-watch([selectedUserId, filterBodyPart], () => {
+watch(filterBodyPart, () => {
   loadEntries();
 });
 
-onMounted(() => {
+watch(selectedUserId, async () => {
+  comparisonIds.value = [];
+  comparisonBodyPart.value = null;
+  resetEditing();
+  await loadEntries();
+  await loadPrefill();
+  resetDraftEntries();
+});
+
+onMounted(async () => {
   if (isAdmin.value) {
     loadOwners();
-  } else {
-    loadEntries();
   }
+  await loadEntries();
+  await loadPrefill();
+  resetDraftEntries();
 });
 </script>

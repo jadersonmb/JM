@@ -1,7 +1,10 @@
 package com.jm.controllers;
 
+import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
 import com.jm.dto.PhotoEvolutionOwnerDTO;
+import com.jm.dto.PhotoEvolutionPrefillDTO;
+import com.jm.dto.PhotoEvolutionUpdateRequest;
 import com.jm.enums.BodyPart;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
@@ -12,16 +15,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,17 +41,21 @@ public class PhotoEvolutionController {
 
     private final PhotoEvolutionService service;
 
-    @PostMapping
-    public ResponseEntity<PhotoEvolutionDTO> create(@RequestBody PhotoEvolutionDTO dto) {
-        logger.debug("REST request to create photo evolution entry");
-        PhotoEvolutionDTO created = service.create(dto);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<List<PhotoEvolutionDTO>> create(
+            @RequestPart("entries") List<PhotoEvolutionCreateRequest> requests,
+            @RequestPart("images") List<MultipartFile> images) {
+        logger.debug("REST request to create photo evolution entries");
+        List<PhotoEvolutionDTO> created = service.create(requests, images);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<PhotoEvolutionDTO> update(@PathVariable UUID id, @RequestBody PhotoEvolutionDTO dto) {
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PhotoEvolutionDTO> update(@PathVariable UUID id,
+                                                    @RequestPart("payload") PhotoEvolutionUpdateRequest request,
+                                                    @RequestPart(value = "image", required = false) MultipartFile image) {
         logger.debug("REST request to update photo evolution entry {}", id);
-        return ResponseEntity.ok(service.update(id, dto));
+        return ResponseEntity.ok(service.update(id, request, image));
     }
 
     @GetMapping
@@ -54,6 +63,12 @@ public class PhotoEvolutionController {
                                                         @RequestParam(required = false) BodyPart bodyPart) {
         logger.debug("REST request to list photo evolutions for user {}", userId);
         return ResponseEntity.ok(service.list(userId, bodyPart));
+    }
+
+    @GetMapping("/prefill")
+    public ResponseEntity<PhotoEvolutionPrefillDTO> prefill(@RequestParam(required = false) UUID userId) {
+        logger.debug("REST request to prefill photo evolution metrics for user {}", userId);
+        return ResponseEntity.ok(service.prefill(userId));
     }
 
     @GetMapping("/{id}")

@@ -1,7 +1,10 @@
 package com.jm.services;
 
+import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
 import com.jm.dto.PhotoEvolutionOwnerDTO;
+import com.jm.dto.PhotoEvolutionPrefillDTO;
+import com.jm.dto.PhotoEvolutionUpdateRequest;
 import com.jm.entity.Image;
 import com.jm.entity.PhotoEvolution;
 import com.jm.entity.Users;
@@ -9,8 +12,10 @@ import com.jm.enums.BodyPart;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.PhotoEvolutionMapper;
+import com.jm.repository.AnamnesisRepository;
 import com.jm.repository.PhotoEvolutionRepository;
 import com.jm.repository.UserRepository;
+import com.jm.services.CloudflareR2Service;
 import com.jm.utils.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -39,59 +45,77 @@ public class PhotoEvolutionService {
     private final PhotoEvolutionMapper mapper;
     private final UserRepository userRepository;
     private final ImageService imageService;
+    private final CloudflareR2Service cloudflareR2Service;
+    private final AnamnesisRepository anamnesisRepository;
     private final MessageSource messageSource;
 
     public PhotoEvolutionService(PhotoEvolutionRepository repository, PhotoEvolutionMapper mapper,
-                                 UserRepository userRepository, ImageService imageService, MessageSource messageSource) {
+                                 UserRepository userRepository, ImageService imageService,
+                                 CloudflareR2Service cloudflareR2Service, AnamnesisRepository anamnesisRepository,
+                                 MessageSource messageSource) {
         this.repository = repository;
         this.mapper = mapper;
         this.userRepository = userRepository;
         this.imageService = imageService;
+        this.cloudflareR2Service = cloudflareR2Service;
+        this.anamnesisRepository = anamnesisRepository;
         this.messageSource = messageSource;
     }
 
     @Transactional
-    public PhotoEvolutionDTO create(PhotoEvolutionDTO dto) {
-        logger.debug("Creating photo evolution entry");
-        if (dto == null || dto.getBodyPart() == null) {
+    public List<PhotoEvolutionDTO> create(List<PhotoEvolutionCreateRequest> requests, List<MultipartFile> images) {
+        logger.debug("Creating photo evolution entries");
+        if (requests == null || requests.isEmpty()) {
             throw invalidBodyException();
         }
-        Users owner = resolveOwnerForMutation(dto.getUserId());
-        Image image = resolveImage(dto.getImageId(), owner.getId());
+        if (images == null || images.isEmpty()) {
+            throw invalidImage();
+        }
+        if (requests.size() != images.size()) {
+            throw invalidImage();
+        }
 
-        PhotoEvolution entity = mapper.toEntity(dto);
-        entity.setUser(owner);
-        entity.setImage(image);
+        List<PhotoEvolutionDTO> results = new ArrayList<>();
+        for (int i = 0; i < requests.size(); i++) {
+            PhotoEvolutionCreateRequest request = requests.get(i);
+            MultipartFile file = images.get(i);
+            if (request == null || request.getBodyPart() == null) {
+                throw invalidBodyException();
+            }
+            if (file == null || file.isEmpty()) {
+                throw invalidImage();
+            }
+            Users owner = resolveOwnerForMutation(request.getUserId());
+            Image image = uploadImageForUser(file, owner.getId());
 
-        PhotoEvolution saved = repository.save(entity);
-        logger.debug("Photo evolution {} created for user {}", saved.getId(), owner.getId());
-        return mapper.toDTO(saved);
+            PhotoEvolution entity = new PhotoEvolution();
+            entity.setUser(owner);
+            entity.setImage(image);
+            mapper.updateEntityFromCreateRequest(request, entity);
+
+            PhotoEvolution saved = repository.save(entity);
+            logger.debug("Photo evolution {} created for user {}", saved.getId(), owner.getId());
+            results.add(mapper.toDTO(saved));
+        }
+
+        return results;
     }
 
     @Transactional
-    public PhotoEvolutionDTO update(UUID id, PhotoEvolutionDTO dto) {
+    public PhotoEvolutionDTO update(UUID id, PhotoEvolutionUpdateRequest request, MultipartFile imageFile) {
         logger.debug("Updating photo evolution entry {}", id);
-        if (id == null || dto == null) {
+        if (id == null || request == null) {
             throw invalidBodyException();
         }
         PhotoEvolution entity = repository.findById(id).orElseThrow(this::photoEvolutionNotFound);
         enforceOwnership(entity);
 
-        if (dto.getBodyPart() != null) {
-            entity.setBodyPart(dto.getBodyPart());
-        }
-        mapper.updateEntityFromDto(dto, entity);
+        mapper.updateEntityFromUpdateRequest(request, entity);
 
-        if (dto.getImageId() != null
-                && (entity.getImage() == null || !dto.getImageId().equals(entity.getImage().getId()))) {
-            Image image = resolveImage(dto.getImageId(), entity.getUser().getId());
+        if (imageFile != null && !imageFile.isEmpty()) {
+            Image image = uploadImageForUser(imageFile, entity.getUser().getId());
             entity.setImage(image);
         }
-
-        if (dto.getCapturedAt() != null) {
-            entity.setCapturedAt(dto.getCapturedAt());
-        }
-
         PhotoEvolution saved = repository.save(entity);
         logger.debug("Photo evolution {} updated", saved.getId());
         return mapper.toDTO(saved);
@@ -125,6 +149,29 @@ public class PhotoEvolutionService {
         }
 
         return results.stream().map(mapper::toDTO).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public PhotoEvolutionPrefillDTO prefill(UUID userId) {
+        UUID targetUserId = resolveUserForQuery(userId);
+        if (targetUserId == null) {
+            targetUserId = SecurityUtils.getCurrentUserId().orElseThrow(this::photoEvolutionForbidden);
+        }
+
+        return anamnesisRepository.findTopByUserIdOrderByIdDesc(targetUserId)
+                .map(anamnesis -> PhotoEvolutionPrefillDTO.builder()
+                        .weight(anamnesis.getWeightKg())
+                        .bodyFatPercentage(anamnesis.getBodyFatPercentage())
+                        .muscleMass(anamnesis.getMuscleMassPercentage())
+                        .waistCircumference(anamnesis.getWaistCircumference())
+                        .hipCircumference(anamnesis.getHipCircumference())
+                        .chestCircumference(anamnesis.getThoraxCircumference())
+                        .leftArmCircumference(anamnesis.getArmCircumference())
+                        .rightArmCircumference(anamnesis.getArmCircumference())
+                        .leftThighCircumference(anamnesis.getKneeCircumference())
+                        .rightThighCircumference(anamnesis.getKneeCircumference())
+                        .build())
+                .orElseGet(() -> PhotoEvolutionPrefillDTO.builder().build());
     }
 
     @Transactional
@@ -201,15 +248,13 @@ public class PhotoEvolutionService {
         }
     }
 
-    private Image resolveImage(UUID imageId, UUID expectedUserId) {
-        if (imageId == null) {
+    private Image uploadImageForUser(MultipartFile file, UUID userId) {
+        try {
+            return imageService.findEntityById(cloudflareR2Service.uploadImage(file, userId).getId());
+        } catch (Exception ex) {
+            logger.debug("Failed to upload image for user {}: {}", userId, ex.getMessage());
             throw invalidImage();
         }
-        Image image = imageService.findEntityById(imageId);
-        if (image.getUsers() != null && expectedUserId != null && !expectedUserId.equals(image.getUsers().getId())) {
-            throw invalidImage();
-        }
-        return image;
     }
 
     private JMException invalidBodyException() {

@@ -1,6 +1,8 @@
 package com.jm.mappers;
 
+import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
+import com.jm.dto.PhotoEvolutionUpdateRequest;
 import com.jm.entity.Image;
 import com.jm.entity.PhotoEvolution;
 import com.jm.entity.Users;
@@ -46,15 +48,6 @@ public class PhotoEvolutionMapper {
                 .build();
     }
 
-    public PhotoEvolution toEntity(PhotoEvolutionDTO dto) {
-        if (dto == null) {
-            return null;
-        }
-        PhotoEvolution entity = new PhotoEvolution();
-        updateEntityFromDto(dto, entity);
-        return entity;
-    }
-
     public void updateEntityFromDto(PhotoEvolutionDTO dto, PhotoEvolution entity) {
         if (dto == null || entity == null) {
             return;
@@ -62,6 +55,37 @@ public class PhotoEvolutionMapper {
         if (dto.getBodyPart() != null) {
             entity.setBodyPart(dto.getBodyPart());
         }
+        applyMetrics(dto, entity);
+        entity.setCapturedAt(dto.getCapturedAt());
+    }
+
+    public void updateEntityFromCreateRequest(PhotoEvolutionCreateRequest request, PhotoEvolution entity) {
+        if (request == null || entity == null) {
+            return;
+        }
+        if (request.getBodyPart() != null) {
+            entity.setBodyPart(request.getBodyPart());
+        }
+        applyMetrics(request, entity);
+        entity.setCapturedAt(request.getCapturedAt());
+        entity.setNotes(request.getNotes());
+    }
+
+    public void updateEntityFromUpdateRequest(PhotoEvolutionUpdateRequest request, PhotoEvolution entity) {
+        if (request == null || entity == null) {
+            return;
+        }
+        if (request.getBodyPart() != null) {
+            entity.setBodyPart(request.getBodyPart());
+        }
+        applyMetrics(request, entity);
+        if (request.getCapturedAt() != null) {
+            entity.setCapturedAt(request.getCapturedAt());
+        }
+        entity.setNotes(request.getNotes());
+    }
+
+    private void applyMetrics(PhotoEvolutionDTO dto, PhotoEvolution entity) {
         entity.setWeight(dto.getWeight());
         entity.setBodyFatPercentage(dto.getBodyFatPercentage());
         entity.setMuscleMass(dto.getMuscleMass());
@@ -78,7 +102,42 @@ public class PhotoEvolutionMapper {
         entity.setCarbohydrateIntake(dto.getCarbohydrateIntake());
         entity.setFatIntake(dto.getFatIntake());
         entity.setNotes(dto.getNotes());
-        entity.setCapturedAt(dto.getCapturedAt());
+    }
+
+    private void applyMetrics(PhotoEvolutionCreateRequest request, PhotoEvolution entity) {
+        entity.setWeight(request.getWeight());
+        entity.setBodyFatPercentage(request.getBodyFatPercentage());
+        entity.setMuscleMass(request.getMuscleMass());
+        entity.setVisceralFat(request.getVisceralFat());
+        entity.setWaistCircumference(request.getWaistCircumference());
+        entity.setHipCircumference(request.getHipCircumference());
+        entity.setChestCircumference(request.getChestCircumference());
+        entity.setLeftArmCircumference(request.getLeftArmCircumference());
+        entity.setRightArmCircumference(request.getRightArmCircumference());
+        entity.setLeftThighCircumference(request.getLeftThighCircumference());
+        entity.setRightThighCircumference(request.getRightThighCircumference());
+        entity.setCaloricIntake(request.getCaloricIntake());
+        entity.setProteinIntake(request.getProteinIntake());
+        entity.setCarbohydrateIntake(request.getCarbohydrateIntake());
+        entity.setFatIntake(request.getFatIntake());
+    }
+
+    private void applyMetrics(PhotoEvolutionUpdateRequest request, PhotoEvolution entity) {
+        entity.setWeight(request.getWeight());
+        entity.setBodyFatPercentage(request.getBodyFatPercentage());
+        entity.setMuscleMass(request.getMuscleMass());
+        entity.setVisceralFat(request.getVisceralFat());
+        entity.setWaistCircumference(request.getWaistCircumference());
+        entity.setHipCircumference(request.getHipCircumference());
+        entity.setChestCircumference(request.getChestCircumference());
+        entity.setLeftArmCircumference(request.getLeftArmCircumference());
+        entity.setRightArmCircumference(request.getRightArmCircumference());
+        entity.setLeftThighCircumference(request.getLeftThighCircumference());
+        entity.setRightThighCircumference(request.getRightThighCircumference());
+        entity.setCaloricIntake(request.getCaloricIntake());
+        entity.setProteinIntake(request.getProteinIntake());
+        entity.setCarbohydrateIntake(request.getCarbohydrateIntake());
+        entity.setFatIntake(request.getFatIntake());
     }
 
     private String buildDisplayName(Users user) {

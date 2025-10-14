@@ -7,16 +7,19 @@ export default {
   get(id) {
     return api.get(`/api/v1/photo-evolutions/${id}`);
   },
-  create(data) {
-    return api.post('/api/v1/photo-evolutions', data);
+  create(formData) {
+    return api.post('/api/v1/photo-evolutions', formData);
   },
-  update(id, data) {
-    return api.put(`/api/v1/photo-evolutions/${id}`, data);
+  update(id, formData) {
+    return api.put(`/api/v1/photo-evolutions/${id}`, formData);
   },
   remove(id) {
     return api.delete(`/api/v1/photo-evolutions/${id}`);
   },
   listOwners(params) {
     return api.get('/api/v1/photo-evolutions/owners', { params });
+  },
+  prefill(params) {
+    return api.get('/api/v1/photo-evolutions/prefill', { params });
   },
 };
