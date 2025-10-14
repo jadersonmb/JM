@@ -55,4 +55,13 @@ public class ImageService {
     public void updateImage(Image entity) {
         repository.save(entity);
     }
+
+    public Image findEntityById(UUID id) {
+        ProblemType problemType = ProblemType.IMAGE_NOT_FOUND;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), new Object[]{""},
+                LocaleContextHolder.getLocale());
+
+        return repository.findById(id).orElseThrow(() -> new JMException(HttpStatus.BAD_REQUEST.value(),
+                problemType.getTitle(), problemType.getUri(), messageDetails));
+    }
 }

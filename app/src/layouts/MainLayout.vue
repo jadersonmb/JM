@@ -199,6 +199,7 @@ import {
   ChartBarSquareIcon,
   RectangleStackIcon,
   GlobeAltIcon,
+  PhotoIcon,
   Squares2X2Icon,
   UserGroupIcon,
   UserCircleIcon,
@@ -299,6 +300,13 @@ const navigation = computed(() => {
       label: t('menu.goals'),
       to: { name: 'goals' },
       icon: MdiTargetIcon,
+      adminOnly: false,
+    },
+    {
+      name: 'photo-evolution',
+      label: t('routes.photoEvolution'),
+      to: { name: 'photo-evolution' },
+      icon: PhotoIcon,
       adminOnly: false,
     },
     {

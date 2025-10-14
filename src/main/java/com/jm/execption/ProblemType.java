@@ -12,6 +12,10 @@ public enum ProblemType {
 
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
+    PHOTO_EVOLUTION_NOT_FOUND("/photo-evolution-not-found", "Photo evolution not found", "photo.evolution.not-found"),
+    PHOTO_EVOLUTION_FORBIDDEN("/photo-evolution-forbidden", "Photo evolution forbidden", "photo.evolution.forbidden"),
+    PHOTO_EVOLUTION_INVALID_IMAGE("/photo-evolution-invalid-image", "Photo evolution image invalid",
+            "photo.evolution.invalid-image"),
     PERSON_NOT_FOUND("/person-not-found", "Person not found", "person_not.found"),
     ANAMNESIS_NOT_FOUND("/anamnesis-not-found", "Anamnesis not found", "anamnesis.not-found"),
     COUNTRY_NOT_FOUND("/country-not-found", "Country not found", "country.not-found"),
