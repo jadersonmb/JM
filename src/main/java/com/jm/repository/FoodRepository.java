@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -21,4 +22,8 @@ public interface FoodRepository extends JpaRepository<Food, UUID> {
     List<Food> findAllByOrderByNameAsc();
 
     List<Food> findByIsActiveTrueOrderByNameAsc();
+
+    Optional<Food> findFirstByNameIgnoreCase(String name);
+
+    Optional<Food> findFirstByNameContainingIgnoreCase(String name);
 }

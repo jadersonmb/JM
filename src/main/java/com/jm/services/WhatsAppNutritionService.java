@@ -49,6 +49,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.time.Instant;
@@ -56,13 +57,17 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -78,6 +83,7 @@ public class WhatsAppNutritionService {
     private static final String OLLAMA_TEXT_MODEL = "ALIENTELLIGENCE/personalizednutrition:latest";
     private static final String OLLAMA_VISION_MODEL = "llava:34b";
     private static final String GEMINI_VISION_MODEL = "gemini-pro-vision";
+    private static final String GEMINI_TEXT_MODEL = "gemini-pro";
     private static final String DEFAULT_IMAGE_PROMPT = """
             You are a nutritionist and must reply using JSON only.
             Analyse the meal in the image and respond ONLY with this JSON structure:
@@ -101,7 +107,26 @@ public class WhatsAppNutritionService {
             {\"isFood\": false, \"summary\": \"brief explanation\"}
             Always choose the mealType that best matches the image. Use OTHER_MEALS when unsure.
             """;
-
+    private static final String COMMAND_EXTRACTION_PROMPT = """
+            You are an assistant that extracts structured nutrition instructions from WhatsApp messages in Portuguese or English.
+            Analyse the user message and output ONLY a JSON object with this structure:
+            {
+              "action": "ADD|EDIT|DELETE|UNKNOWN",
+              "meal": "BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS|null",
+              "items": [
+                 {
+                   "food": "name of the food",
+                   "quantity": number or null,
+                   "unit": "textual unit (e.g. gramas, ml, unidade) or null",
+                   "observation": "notes about this food or null"
+                 }
+              ],
+              "observation": "general observation or null"
+            }
+            Use action UNKNOWN when there is no nutrition command.
+            Keep the food names concise and in Portuguese when the request is in Portuguese.
+            Do not include extra text outside the JSON.
+            """;
     private final WhatsAppService whatsAppService;
     private final WhatsAppMessageRepository messageRepository;
     private final NutritionAnalysisRepository nutritionAnalysisRepository;
@@ -114,6 +139,12 @@ public class WhatsAppNutritionService {
     private final UserService userService;
     private final AiClientFactory aiClientFactory;
     private final AiPromptReferenceService aiPromptReferenceService;
+
+    private final Map<String, MeasurementUnits> measurementUnitByKeyword = new ConcurrentHashMap<>();
+    private final Map<String, Food> foodByNormalizedName = new ConcurrentHashMap<>();
+    private volatile List<MeasurementUnits> cachedMeasurementUnits;
+    private volatile Map<String, MeasurementUnits> measurementUnitAliasIndex;
+    private volatile List<Food> cachedFoods;
 
     @SuppressWarnings("unchecked")
     @Transactional
@@ -170,6 +201,7 @@ public class WhatsAppNutritionService {
         switch (messageType) {
             case "image" -> handleImageMessage(builder, message, from);
             case "text" -> handleTextMessage(builder, message, from);
+            case "audio", "voice" -> handleAudioMessage(builder, message, from);
             default -> logger.info("Message type {} not handled", messageType);
         }
     }
@@ -179,7 +211,8 @@ public class WhatsAppNutritionService {
         Map<String, Object> textContent = (Map<String, Object>) message.getOrDefault("text", Map.of());
 
         createAndDispatchRequest(builder, from, textContent);
-        messageRepository.save(builder.build());
+        WhatsAppMessage savedMessage = messageRepository.save(builder.build());
+        processCommandFromText(savedMessage, from);
     }
 
     private void createAndDispatchRequest(WhatsAppMessage.WhatsAppMessageBuilder builder, String from,
@@ -281,6 +314,764 @@ public class WhatsAppNutritionService {
                     .subscribe();
         }
     }
+
+    private void handleAudioMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
+            String from) {
+        Map<String, Object> audio = (Map<String, Object>) message.getOrDefault("audio", Map.of());
+        String mediaId = (String) audio.get("id");
+        String mimeType = (String) audio.getOrDefault("mime_type", "");
+
+        builder.mediaId(mediaId);
+        builder.mimeType(mimeType);
+        findUserByPhone(from).ifPresent(builder::owner);
+
+        WhatsAppMessage savedMessage = messageRepository.save(builder.build());
+        if (mediaId == null) {
+            logger.warn("Audio message without media id");
+            return;
+        }
+
+        try {
+            WhatsAppMediaMetadata metadata = whatsAppService.fetchMediaMetadata(mediaId)
+                    .blockOptional(DEFAULT_TIMEOUT)
+                    .orElseThrow(() -> new IllegalStateException("Unable to fetch audio metadata"));
+
+            byte[] audioBytes = whatsAppService.downloadMedia(metadata.getUrl())
+                    .blockOptional(DEFAULT_TIMEOUT)
+                    .orElseThrow(() -> new IllegalStateException("Unable to download audio"));
+
+            savedMessage.setMediaUrl(metadata.getUrl());
+            savedMessage.setMimeType(metadata.getMimeType());
+
+            String transcript = transcribeAudio(audioBytes, metadata.getMimeType());
+            if (!StringUtils.hasText(transcript)) {
+                logger.warn("Transcription returned empty for audio message {}", savedMessage.getId());
+                whatsAppService.sendTextMessage(from,
+                        "Não consegui transcrever esse áudio. Poderia enviar a instrução em texto?").subscribe();
+                messageRepository.save(savedMessage);
+                return;
+            }
+
+            savedMessage.setTextContent(transcript);
+            messageRepository.save(savedMessage);
+            processCommandFromText(savedMessage, from);
+        } catch (Exception ex) {
+            logger.error("Failed to process WhatsApp audio message", ex);
+            whatsAppService.sendTextMessage(from,
+                    "Desculpe, não consegui processar seu áudio agora. Pode tentar novamente em instantes?").subscribe();
+        }
+    }
+
+    private String transcribeAudio(byte[] audioBytes, String mimeType) {
+        if (audioBytes == null || audioBytes.length == 0) {
+            return null;
+        }
+        Optional<AiClient> client = resolveClient(AiProvider.GEMINI);
+        if (client.isEmpty()) {
+            logger.warn("No AI client available to transcribe audio");
+            return null;
+        }
+
+        String encoded = Base64.getEncoder().encodeToString(audioBytes);
+        String prompt = """
+                Transcreva o áudio enviado pelo usuário. O conteúdo do áudio está codificado em Base64 logo abaixo.
+                Responda apenas com a transcrição no mesmo idioma do áudio, sem comentários adicionais.
+                Tipo do arquivo: %s
+                Base64: %s
+                """.formatted(StringUtils.hasText(mimeType) ? mimeType : "audio/mpeg", encoded);
+
+        AiRequest request = AiRequest.builder()
+                .type(AiRequestType.TEXT)
+                .model(GEMINI_TEXT_MODEL)
+                .prompt(prompt)
+                .timeout(DEFAULT_TIMEOUT)
+                .build();
+
+        AiResponse response = client.get().execute(request);
+        return response != null ? sanitizeGeminiResponse(response.content()) : null;
+    }
+
+    private void processCommandFromText(WhatsAppMessage message, String from) {
+        String body = Optional.ofNullable(message.getTextContent()).map(String::trim).orElse("");
+        if (!StringUtils.hasText(body)) {
+            return;
+        }
+
+        Users owner = Optional.ofNullable(message.getOwner())
+                .or(() -> findUserByPhone(message.getFromPhone()))
+                .orElse(null);
+        if (owner == null) {
+            logger.debug("Ignoring nutrition command because owner could not be resolved for message {}", message.getId());
+            return;
+        }
+
+        Optional<NutritionCommand> commandOpt = parseNutritionCommand(body);
+        if (commandOpt.isEmpty()) {
+            return;
+        }
+
+        NutritionCommand command = commandOpt.get();
+        if (command.action() == NutritionCommandAction.UNKNOWN) {
+            logger.debug("Message {} does not contain a nutrition command", message.getId());
+            return;
+        }
+
+        Optional<String> response = executeNutritionCommand(owner, message, command);
+        response.ifPresent(reply -> {
+            String target = StringUtils.hasText(from) ? from : message.getFromPhone();
+            if (StringUtils.hasText(target)) {
+                whatsAppService.sendTextMessage(target, reply).subscribe();
+            }
+        });
+    }
+
+    private Optional<NutritionCommand> parseNutritionCommand(String body) {
+        Optional<AiClient> client = resolveClient(AiProvider.GEMINI);
+        if (client.isEmpty()) {
+            logger.warn("Gemini client not configured; skipping nutrition command extraction");
+            return Optional.empty();
+        }
+
+        String prompt = COMMAND_EXTRACTION_PROMPT + "\nMensagem do usuário:\n" + body;
+        AiRequest request = AiRequest.builder()
+                .type(AiRequestType.TEXT)
+                .model(GEMINI_TEXT_MODEL)
+                .prompt(prompt)
+                .timeout(DEFAULT_TIMEOUT)
+                .build();
+
+        AiResponse response = client.get().execute(request);
+        if (response == null || !StringUtils.hasText(response.content())) {
+            return Optional.empty();
+        }
+
+        String sanitized = sanitizeGeminiResponse(response.content());
+        try {
+            NutritionCommandPayload payload = objectMapper.readValue(sanitized, NutritionCommandPayload.class);
+            NutritionCommand command = toNutritionCommand(payload);
+            return Optional.ofNullable(command);
+        } catch (JsonProcessingException ex) {
+            logger.error("Failed to parse nutrition command payload: {}", sanitized, ex);
+            return Optional.empty();
+        }
+    }
+
+    private NutritionCommand toNutritionCommand(NutritionCommandPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        NutritionCommandAction action = NutritionCommandAction.from(payload.action());
+        String mealCode = normalizeMealCode(payload.meal());
+        List<NutritionCommandItem> items = Optional.ofNullable(payload.items())
+                .orElse(List.of())
+                .stream()
+                .map(this::toNutritionCommandItem)
+                .filter(item -> item != null && StringUtils.hasText(item.foodName()))
+                .collect(Collectors.toList());
+        String observation = sanitizeObservation(payload.observation());
+        return new NutritionCommand(action, mealCode, items, observation);
+    }
+
+    private NutritionCommandItem toNutritionCommandItem(NutritionCommandItemPayload payload) {
+        if (payload == null) {
+            return null;
+        }
+        String food = sanitizeFoodName(payload.food());
+        Double quantity = payload.quantity();
+        String unit = sanitizeUnit(payload.unit());
+        String observation = sanitizeObservation(payload.observation());
+        return new NutritionCommandItem(food, quantity, unit, observation);
+    }
+
+    private String sanitizeFoodName(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String sanitizeObservation(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private String sanitizeUnit(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeMealCode(String meal) {
+        if (!StringUtils.hasText(meal)) {
+            return null;
+        }
+        String normalized = normalizeMealKey(meal);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        return switch (normalized) {
+            case "BREAKFAST", "CAFEDAMANHA" -> "BREAKFAST";
+            case "LUNCH", "ALMOCO" -> "LUNCH";
+            case "DINNER", "JANTAR" -> "DINNER";
+            case "SNACK", "LANCHE" -> "SNACK";
+            case "SUPPER", "CEIA" -> "SUPPER";
+            default -> "OTHER_MEALS";
+        };
+    }
+
+    private Optional<String> executeNutritionCommand(Users owner, WhatsAppMessage source, NutritionCommand command) {
+        List<String> successes = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        try {
+            switch (command.action()) {
+                case ADD -> processAddCommand(owner, source, command, successes, errors);
+                case DELETE -> processDeleteCommand(owner, command, successes, errors);
+                case EDIT -> processEditCommand(owner, source, command, successes, errors);
+                default -> {
+                    return Optional.empty();
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Failed to execute nutrition command", ex);
+            errors.add("Ocorreu um erro ao processar sua solicitação.");
+        }
+
+        String response = buildCommandResponse(command.action(), command.mealCode(), successes, errors);
+        if (!StringUtils.hasText(response)) {
+            return Optional.empty();
+        }
+        return Optional.of(response);
+    }
+
+    private void processAddCommand(Users owner, WhatsAppMessage source, NutritionCommand command,
+            List<String> successes, List<String> errors) {
+        Meal meal = resolveCommandMeal(command.mealCode());
+        if (meal == null) {
+            errors.add("Não consegui identificar a refeição mencionada.");
+            return;
+        }
+        if (command.items().isEmpty()) {
+            errors.add("Não encontrei alimentos para adicionar.");
+            return;
+        }
+
+        for (NutritionCommandItem item : command.items()) {
+            try {
+                WhatsAppMessage entry = upsertCommandEntry(owner, source, meal, command, item);
+                if (entry != null) {
+                    successes.add(describeItem(item));
+                }
+            } catch (Exception ex) {
+                logger.error("Failed to add nutrition entry {}", item.foodName(), ex);
+                errors.add("Não consegui adicionar " + item.foodName());
+            }
+        }
+    }
+
+    private void processDeleteCommand(Users owner, NutritionCommand command, List<String> successes,
+            List<String> errors) {
+        Meal meal = resolveCommandMeal(command.mealCode());
+        if (meal == null) {
+            errors.add("Não consegui identificar a refeição mencionada.");
+            return;
+        }
+        if (owner.getId() == null) {
+            errors.add("Usuário não identificado para remover itens.");
+            return;
+        }
+
+        List<WhatsAppMessage> entries = messageRepository
+                .findByOwnerIdAndNutritionAnalysisMealCodeIgnoreCase(owner.getId(), meal.getCode());
+        if (entries.isEmpty()) {
+            errors.add("Não encontrei registros dessa refeição para remover.");
+            return;
+        }
+
+        if (command.items().isEmpty()) {
+            entries.forEach(messageRepository::delete);
+            successes.add("todos os itens");
+            return;
+        }
+
+        for (NutritionCommandItem item : command.items()) {
+            Optional<WhatsAppMessage> match = findExistingEntry(entries, item.foodName());
+            if (match.isPresent()) {
+                messageRepository.delete(match.get());
+                successes.add(describeItem(item));
+            } else {
+                errors.add("Não encontrei " + item.foodName() + " nessa refeição.");
+            }
+        }
+    }
+
+    private void processEditCommand(Users owner, WhatsAppMessage source, NutritionCommand command,
+            List<String> successes, List<String> errors) {
+        Meal meal = resolveCommandMeal(command.mealCode());
+        if (meal == null) {
+            errors.add("Não consegui identificar a refeição mencionada.");
+            return;
+        }
+        if (owner.getId() == null) {
+            errors.add("Usuário não identificado para atualizar itens.");
+            return;
+        }
+
+        List<WhatsAppMessage> existing = messageRepository
+                .findByOwnerIdAndNutritionAnalysisMealCodeIgnoreCase(owner.getId(), meal.getCode());
+        existing.forEach(messageRepository::delete);
+
+        if (command.items().isEmpty()) {
+            successes.add("Removi os registros do " + formatMealTypeLabel(meal.getCode()));
+            return;
+        }
+
+        for (NutritionCommandItem item : command.items()) {
+            try {
+                WhatsAppMessage entry = upsertCommandEntry(owner, source, meal, command, item);
+                if (entry != null) {
+                    successes.add(describeItem(item));
+                }
+            } catch (Exception ex) {
+                logger.error("Failed to edit nutrition entry {}", item.foodName(), ex);
+                errors.add("Não consegui atualizar " + item.foodName());
+            }
+        }
+    }
+
+    private String buildCommandResponse(NutritionCommandAction action, String mealCode, List<String> successes,
+            List<String> errors) {
+        StringBuilder builder = new StringBuilder();
+        String mealLabel = formatMealTypeLabel(mealCode);
+
+        if (!successes.isEmpty()) {
+            String items = String.join(", ", successes);
+            builder.append(switch (action) {
+                case ADD -> "Adicionei %s em %s.".formatted(items, mealLabel);
+                case DELETE -> "Removi %s de %s.".formatted(items, mealLabel);
+                case EDIT -> "Atualizei %s em %s.".formatted(items, mealLabel);
+                default -> "";
+            });
+        }
+
+        if (!errors.isEmpty()) {
+            if (builder.length() > 0) {
+                builder.append(" ");
+            }
+            builder.append(String.join(" ", errors));
+        }
+
+        return builder.toString().trim();
+    }
+
+    private Meal resolveCommandMeal(String mealCode) {
+        Meal meal = null;
+        if (StringUtils.hasText(mealCode)) {
+            meal = resolveMealByType(mealCode);
+        }
+        return meal != null ? meal : resolveOtherMeal();
+    }
+
+    private Optional<WhatsAppMessage> findExistingEntry(Users owner, Meal meal, String foodName) {
+        if (owner == null || owner.getId() == null || meal == null || !StringUtils.hasText(foodName)) {
+            return Optional.empty();
+        }
+        List<WhatsAppMessage> entries = messageRepository
+                .findByOwnerIdAndNutritionAnalysisMealCodeIgnoreCase(owner.getId(), meal.getCode());
+        return findExistingEntry(entries, foodName);
+    }
+
+    private Optional<WhatsAppMessage> findExistingEntry(List<WhatsAppMessage> entries, String foodName) {
+        if (entries == null || entries.isEmpty() || !StringUtils.hasText(foodName)) {
+            return Optional.empty();
+        }
+        String target = normalizeFoodKey(foodName);
+        return entries.stream()
+                .filter(msg -> msg.getNutritionAnalysis() != null)
+                .filter(msg -> {
+                    String candidate = Optional.ofNullable(msg.getNutritionAnalysis().getFoodName()).orElse("");
+                    return normalizeFoodKey(candidate).equals(target);
+                })
+                .findFirst();
+    }
+
+    private String normalizeFoodKey(String value) {
+        return StringUtils.hasText(value) ? normalizeMealKey(value) : "";
+    }
+
+    private WhatsAppMessage upsertCommandEntry(Users owner, WhatsAppMessage source, Meal meal, NutritionCommand command,
+            NutritionCommandItem item) {
+        Optional<WhatsAppMessage> existing = findExistingEntry(owner, meal, item.foodName());
+        WhatsAppMessage target = existing.orElseGet(() -> WhatsAppMessage.builder()
+                .owner(owner)
+                .manualEntry(true)
+                .editedEntry(false)
+                .messageType("MANUAL")
+                .fromPhone(source.getFromPhone())
+                .toPhone(source.getToPhone())
+                .receivedAt(OffsetDateTime.now())
+                .build());
+
+        target.setOwner(owner);
+        target.setManualEntry(true);
+        target.setEditedEntry(existing.isPresent());
+        target.setMessageType(existing.map(WhatsAppMessage::getMessageType).orElse("MANUAL"));
+        target.setTextContent(buildCommandText(item, meal));
+
+        WhatsAppMessage savedMessage = messageRepository.save(target);
+
+        NutritionAnalysis analysis = Optional.ofNullable(savedMessage.getNutritionAnalysis())
+                .orElse(new NutritionAnalysis());
+        analysis.setMessage(savedMessage);
+        analysis.setMeal(meal);
+
+        Food resolvedFood = resolveFoodEntity(item.foodName());
+        if (resolvedFood != null) {
+            analysis.setFood(resolvedFood);
+            analysis.setFoodName(resolvedFood.getName());
+            analysis.setPrimaryCategory(resolvedFood.getFoodCategory());
+        } else {
+            analysis.setFood(null);
+            analysis.setFoodName(item.foodName());
+            analysis.setPrimaryCategory(null);
+        }
+
+        analysis.setSummary(buildCommandSummary(item, command.observation()));
+        analysis.setCaloriesUnit(resolveMeasurementUnit(Optional.ofNullable(analysis.getCaloriesUnit())
+                .map(MeasurementUnits::getId).orElse(null), "KCAL"));
+        analysis.setProteinUnit(resolveMeasurementUnit(Optional.ofNullable(analysis.getProteinUnit())
+                .map(MeasurementUnits::getId).orElse(null), "G"));
+        analysis.setCarbsUnit(resolveMeasurementUnit(Optional.ofNullable(analysis.getCarbsUnit())
+                .map(MeasurementUnits::getId).orElse(null), "G"));
+        analysis.setFatUnit(resolveMeasurementUnit(Optional.ofNullable(analysis.getFatUnit())
+                .map(MeasurementUnits::getId).orElse(null), "G"));
+
+        MeasurementUnits quantityUnit = resolveUnitByKeyword(item.unitKeyword());
+        if (quantityUnit != null && quantityUnit.getUnitType() == MeasurementUnits.UnitType.VOLUME) {
+            analysis.setLiquidUnit(quantityUnit);
+            analysis.setLiquidVolume(toBigDecimal(item.quantity()));
+        } else {
+            analysis.setLiquidUnit(null);
+            analysis.setLiquidVolume(null);
+        }
+
+        NutritionAnalysis savedAnalysis = nutritionAnalysisRepository.save(analysis);
+        savedMessage.setNutritionAnalysis(savedAnalysis);
+        return messageRepository.save(savedMessage);
+    }
+
+    private String buildCommandSummary(NutritionCommandItem item, String generalObservation) {
+        List<String> parts = new ArrayList<>();
+        if (item.quantity() != null) {
+            String quantity = formatQuantity(item.quantity());
+            String unit = StringUtils.hasText(item.unitKeyword()) ? item.unitKeyword() : "";
+            parts.add("Quantidade: " + quantity + (StringUtils.hasText(unit) ? " " + unit : ""));
+        }
+        if (StringUtils.hasText(item.observation())) {
+            parts.add(item.observation());
+        }
+        if (StringUtils.hasText(generalObservation)) {
+            parts.add(generalObservation);
+        }
+        return parts.isEmpty() ? null : String.join(" | ", parts);
+    }
+
+    private String buildCommandText(NutritionCommandItem item, Meal meal) {
+        String description = describeItem(item);
+        String mealLabel = formatMealTypeLabel(meal != null ? meal.getCode() : null);
+        return StringUtils.hasText(description) ? description + " - " + mealLabel : mealLabel;
+    }
+
+    private String describeItem(NutritionCommandItem item) {
+        StringBuilder builder = new StringBuilder();
+        if (item.quantity() != null) {
+            builder.append(formatQuantity(item.quantity()));
+        }
+        if (StringUtils.hasText(item.unitKeyword())) {
+            if (builder.length() > 0) {
+                builder.append(' ');
+            }
+            builder.append(item.unitKeyword());
+        }
+        if (builder.length() > 0) {
+            builder.append(" de ");
+        }
+        builder.append(item.foodName());
+        return builder.toString().trim();
+    }
+
+    private String formatQuantity(Double value) {
+        if (value == null) {
+            return "";
+        }
+        BigDecimal decimal = BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros();
+        return decimal.scale() <= 0 ? String.valueOf(decimal.longValue()) : decimal.toPlainString();
+    }
+
+    private Food resolveFoodEntity(String foodName) {
+        if (!StringUtils.hasText(foodName)) {
+            return null;
+        }
+        String normalized = normalizeFoodKey(foodName);
+        Food cached = foodByNormalizedName.get(normalized);
+        if (cached != null) {
+            return cached;
+        }
+
+        Food resolved = foodRepository.findFirstByNameIgnoreCase(foodName)
+                .or(() -> foodRepository.findFirstByNameContainingIgnoreCase(foodName))
+                .orElseGet(() -> foods().stream()
+                        .filter(food -> normalizeFoodKey(food.getName()).equals(normalized))
+                        .findFirst()
+                        .orElse(null));
+
+        if (resolved != null) {
+            foodByNormalizedName.put(normalized, resolved);
+        }
+        return resolved;
+    }
+
+    private MeasurementUnits resolveUnitByKeyword(String keyword) {
+        if (!StringUtils.hasText(keyword)) {
+            return null;
+        }
+        String normalized = normalizeUnitKeyword(keyword);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        MeasurementUnits cached = measurementUnitByKeyword.get(normalized);
+        if (cached != null) {
+            return cached;
+        }
+
+        MeasurementUnits resolved = findMeasurementUnit(normalized);
+        if (resolved != null) {
+            measurementUnitByKeyword.put(normalized, resolved);
+        }
+        return resolved;
+    }
+
+    private MeasurementUnits findMeasurementUnit(String normalized) {
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+
+        MeasurementUnits aliasMatch = measurementUnitAliases().get(normalized);
+        if (aliasMatch != null) {
+            return aliasMatch;
+        }
+
+        Optional<MeasurementUnits> direct = measurementUnitRepository
+                .findByCodeIgnoreCase(normalized.toUpperCase(Locale.ROOT));
+        if (direct.isPresent()) {
+            MeasurementUnits unit = direct.get();
+            registerMeasurementUnitAliases(unit);
+            return unit;
+        }
+
+        return measurementUnits().stream()
+                .filter(unit -> unitMatchesKeyword(unit, normalized))
+                .findFirst()
+                .map(unit -> {
+                    registerMeasurementUnitAliases(unit);
+                    return unit;
+                })
+                .orElse(null);
+    }
+
+    private boolean unitMatchesKeyword(MeasurementUnits unit, String normalizedKeyword) {
+        if (unit == null || !StringUtils.hasText(normalizedKeyword)) {
+            return false;
+        }
+        return measurementUnitKeywords(unit).stream()
+                .anyMatch(candidate -> normalizedKeyword.equals(candidate)
+                        || candidate.contains(normalizedKeyword)
+                        || normalizedKeyword.contains(candidate));
+    }
+
+    private String normalizeUnitKeyword(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return normalized.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
+    }
+
+    private List<MeasurementUnits> measurementUnits() {
+        List<MeasurementUnits> snapshot = cachedMeasurementUnits;
+        if (snapshot == null) {
+            snapshot = measurementUnitRepository.findAll();
+            cachedMeasurementUnits = snapshot;
+            measurementUnitAliasIndex = null;
+        }
+        return snapshot;
+    }
+
+    private Map<String, MeasurementUnits> measurementUnitAliases() {
+        Map<String, MeasurementUnits> snapshot = measurementUnitAliasIndex;
+        if (snapshot == null) {
+            synchronized (this) {
+                snapshot = measurementUnitAliasIndex;
+                if (snapshot == null) {
+                    snapshot = buildMeasurementUnitAliasIndex(measurementUnits());
+                    measurementUnitAliasIndex = snapshot;
+                }
+            }
+        }
+        return snapshot;
+    }
+
+    private Map<String, MeasurementUnits> buildMeasurementUnitAliasIndex(List<MeasurementUnits> units) {
+        Map<String, MeasurementUnits> aliases = new ConcurrentHashMap<>();
+        if (units == null) {
+            return aliases;
+        }
+        for (MeasurementUnits unit : units) {
+            registerMeasurementUnitAliases(unit, aliases);
+        }
+        return aliases;
+    }
+
+    private void registerMeasurementUnitAliases(MeasurementUnits unit) {
+        Map<String, MeasurementUnits> aliases = measurementUnitAliases();
+        registerMeasurementUnitAliases(unit, aliases);
+    }
+
+    private void registerMeasurementUnitAliases(MeasurementUnits unit, Map<String, MeasurementUnits> aliases) {
+        if (unit == null || aliases == null) {
+            return;
+        }
+        for (String keyword : measurementUnitKeywords(unit)) {
+            if (StringUtils.hasText(keyword)) {
+                aliases.putIfAbsent(keyword, unit);
+            }
+        }
+    }
+
+    private Set<String> measurementUnitKeywords(MeasurementUnits unit) {
+        if (unit == null) {
+            return Set.of();
+        }
+        Set<String> keywords = new LinkedHashSet<>();
+        addKeywordVariants(keywords, unit.getCode());
+        addKeywordVariants(keywords, unit.getSymbol());
+        addKeywordVariants(keywords, unit.getDescription());
+        if (StringUtils.hasText(unit.getDescription())) {
+            String[] segments = unit.getDescription().split("[\\s,;/()]+");
+            for (String segment : segments) {
+                addKeywordVariants(keywords, segment);
+            }
+        }
+        return keywords;
+    }
+
+    private void addKeywordVariants(Set<String> keywords, String value) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        String normalized = normalizeUnitKeyword(value);
+        if (!StringUtils.hasText(normalized)) {
+            return;
+        }
+        keywords.add(normalized);
+        for (String plural : buildPluralForms(normalized)) {
+            if (StringUtils.hasText(plural)) {
+                keywords.add(plural);
+            }
+        }
+    }
+
+    private Set<String> buildPluralForms(String keyword) {
+        if (!StringUtils.hasText(keyword)) {
+            return Set.of();
+        }
+        Set<String> forms = new LinkedHashSet<>();
+        if (!keyword.endsWith("s")) {
+            forms.add(keyword + "s");
+        }
+        if (keyword.endsWith("m") && keyword.length() > 1) {
+            forms.add(keyword.substring(0, keyword.length() - 1) + "ns");
+        }
+        if (keyword.endsWith("l") && keyword.length() > 1) {
+            forms.add(keyword.substring(0, keyword.length() - 1) + "is");
+        }
+        if (keyword.endsWith("cao") && keyword.length() > 3) {
+            forms.add(keyword.substring(0, keyword.length() - 3) + "coes");
+        } else if (keyword.endsWith("sao") && keyword.length() > 3) {
+            forms.add(keyword.substring(0, keyword.length() - 3) + "soes");
+        } else if (keyword.endsWith("ao") && keyword.length() > 2) {
+            forms.add(keyword.substring(0, keyword.length() - 2) + "oes");
+        }
+        if (keyword.endsWith("r") || keyword.endsWith("z") || keyword.endsWith("x")) {
+            forms.add(keyword + "es");
+        }
+        if (keyword.endsWith("y") && keyword.length() > 1 && !isVowel(keyword.charAt(keyword.length() - 2))) {
+            forms.add(keyword.substring(0, keyword.length() - 1) + "ies");
+        }
+        if (keyword.endsWith("f") && keyword.length() > 1) {
+            forms.add(keyword.substring(0, keyword.length() - 1) + "ves");
+        } else if (keyword.endsWith("fe") && keyword.length() > 2) {
+            forms.add(keyword.substring(0, keyword.length() - 2) + "ves");
+        }
+        return forms;
+    }
+
+    private boolean isVowel(char value) {
+        char normalized = Character.toLowerCase(value);
+        return normalized == 'a' || normalized == 'e' || normalized == 'i' || normalized == 'o' || normalized == 'u';
+    }
+
+    private List<Food> foods() {
+        List<Food> snapshot = cachedFoods;
+        if (snapshot == null) {
+            snapshot = foodRepository.findAll();
+            cachedFoods = snapshot;
+        }
+        return snapshot;
+    }
+
+    private enum NutritionCommandAction {
+        ADD,
+        EDIT,
+        DELETE,
+        UNKNOWN;
+
+        static NutritionCommandAction from(String value) {
+            if (!StringUtils.hasText(value)) {
+                return UNKNOWN;
+            }
+            String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+            normalized = normalized.replaceAll("[^A-Za-z]", "").toUpperCase(Locale.ROOT);
+            return switch (normalized) {
+                case "ADD", "ADICIONAR", "ADICIONE", "INCLUIR", "INCLUA", "INSERIR", "INSIRA", "COLOCAR",
+                        "COLOQUE" -> ADD;
+                case "EDIT", "EDITAR", "EDITE", "ALTERAR", "ALTERE", "ATUALIZAR", "ATUALIZE", "MODIFICAR",
+                        "MODIFIQUE", "AJUSTAR", "AJUSTE" -> EDIT;
+                case "DELETE", "REMOVER", "REMOVE", "REMOVA", "EXCLUIR", "EXCLUA", "RETIRAR", "RETIRE", "TIRAR",
+                        "TIRE" -> DELETE;
+                default -> UNKNOWN;
+            };
+        }
+    }
+
+    private record NutritionCommand(NutritionCommandAction action, String mealCode, List<NutritionCommandItem> items,
+            String observation) {
+    }
+
+    private record NutritionCommandItem(String foodName, Double quantity, String unitKeyword, String observation) {
+    }
+
+    private record NutritionCommandPayload(String action, String meal, List<NutritionCommandItemPayload> items,
+            String observation) {
+    }
+
+    private record NutritionCommandItemPayload(String food, Double quantity, String unit, String observation) {
+    }
+
+
 
     private Optional<Users> findUserByPhone(String phone) {
         if (!StringUtils.hasText(phone)) {
