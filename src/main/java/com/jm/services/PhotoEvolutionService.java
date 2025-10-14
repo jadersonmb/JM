@@ -1,5 +1,6 @@
 package com.jm.services;
 
+import com.jm.dto.ImageDTO;
 import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
 import com.jm.dto.PhotoEvolutionOwnerDTO;
@@ -11,11 +12,11 @@ import com.jm.entity.Users;
 import com.jm.enums.BodyPart;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.mappers.ImageMapper;
 import com.jm.mappers.PhotoEvolutionMapper;
 import com.jm.repository.AnamnesisRepository;
 import com.jm.repository.PhotoEvolutionRepository;
 import com.jm.repository.UserRepository;
-import com.jm.services.CloudflareR2Service;
 import com.jm.utils.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +49,12 @@ public class PhotoEvolutionService {
     private final CloudflareR2Service cloudflareR2Service;
     private final AnamnesisRepository anamnesisRepository;
     private final MessageSource messageSource;
+    private final ImageMapper imageMapper;
 
     public PhotoEvolutionService(PhotoEvolutionRepository repository, PhotoEvolutionMapper mapper,
-                                 UserRepository userRepository, ImageService imageService,
-                                 CloudflareR2Service cloudflareR2Service, AnamnesisRepository anamnesisRepository,
-                                 MessageSource messageSource) {
+            UserRepository userRepository, ImageService imageService,
+            CloudflareR2Service cloudflareR2Service, AnamnesisRepository anamnesisRepository,
+            MessageSource messageSource, ImageMapper imageMapper) {
         this.repository = repository;
         this.mapper = mapper;
         this.userRepository = userRepository;
@@ -60,6 +62,7 @@ public class PhotoEvolutionService {
         this.cloudflareR2Service = cloudflareR2Service;
         this.anamnesisRepository = anamnesisRepository;
         this.messageSource = messageSource;
+        this.imageMapper = imageMapper;
     }
 
     @Transactional
@@ -250,7 +253,7 @@ public class PhotoEvolutionService {
 
     private Image uploadImageForUser(MultipartFile file, UUID userId) {
         try {
-            return imageService.findEntityById(cloudflareR2Service.uploadImage(file, userId).getId());
+            return imageMapper.toEntity(cloudflareR2Service.uploadImage(file, userId));
         } catch (Exception ex) {
             logger.debug("Failed to upload image for user {}: {}", userId, ex.getMessage());
             throw invalidImage();
@@ -260,35 +263,35 @@ public class PhotoEvolutionService {
     private JMException invalidBodyException() {
         ProblemType type = ProblemType.INVALID_BODY;
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.BAD_REQUEST.value(), type.getTitle(), type.getUri(), message);
     }
 
     private JMException photoEvolutionNotFound() {
         ProblemType type = ProblemType.PHOTO_EVOLUTION_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.NOT_FOUND.value(), type.getTitle(), type.getUri(), message);
     }
 
     private JMException photoEvolutionForbidden() {
         ProblemType type = ProblemType.PHOTO_EVOLUTION_FORBIDDEN;
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.FORBIDDEN.value(), type.getTitle(), type.getUri(), message);
     }
 
     private JMException userNotFound() {
         ProblemType type = ProblemType.USER_NOT_FOUND;
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.BAD_REQUEST.value(), type.getTitle(), type.getUri(), message);
     }
 
     private JMException invalidImage() {
         ProblemType type = ProblemType.PHOTO_EVOLUTION_INVALID_IMAGE;
         Locale locale = LocaleContextHolder.getLocale();
-        String message = messageSource.getMessage(type.getMessageSource(), new Object[]{""}, locale);
+        String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.BAD_REQUEST.value(), type.getTitle(), type.getUri(), message);
     }
 

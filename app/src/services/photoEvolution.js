@@ -8,7 +8,9 @@ export default {
     return api.get(`/api/v1/photo-evolutions/${id}`);
   },
   create(formData) {
-    return api.post('/api/v1/photo-evolutions', formData);
+    return api.post('/api/v1/photo-evolutions', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   },
   update(id, formData) {
     return api.put(`/api/v1/photo-evolutions/${id}`, formData);
