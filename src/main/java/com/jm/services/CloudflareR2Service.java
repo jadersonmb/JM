@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -124,6 +125,24 @@ public class CloudflareR2Service {
 
             s3Client.deleteObject(deleteObjectRequest);
             imageService.delete(fileName);
+        } catch (Exception e) {
+            logger.info("Error to delete file: {}", e.getMessage());
+            ProblemType problemType = ProblemType.ERROR_DELETE_FILE;
+            throw new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getUri(), problemType.getTitle(),
+                    "Error to delete file: " + e.getMessage());
+        }
+    }
+
+    public void deleteFileByGeneratedName(UUID userId, String generatedFileName) {
+        if (userId == null || !StringUtils.hasText(generatedFileName)) {
+            return;
+        }
+        try {
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(bucketName)
+                    .key(userId + "/" + generatedFileName).build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+            imageService.delete(generatedFileName);
         } catch (Exception e) {
             logger.info("Error to delete file: {}", e.getMessage());
             ProblemType problemType = ProblemType.ERROR_DELETE_FILE;
