@@ -319,6 +319,13 @@
       difference: 'Diferença',
       first: 'Primeira foto',
       second: 'Segunda foto',
+      open: 'Abrir comparação detalhada',
+      selectedCount: 'Fotos selecionadas: {count}/2',
+      missingSelection: 'Selecione duas fotos para abrir a comparação detalhada.',
+      goBack: 'Voltar para o cadastro',
+      fullTitle: 'Comparação detalhada',
+      fullSubtitle: 'Visualize as fotos lado a lado e acompanhe a variação das métricas.',
+      mismatch: 'Escolha duas fotos da mesma parte do corpo para continuar.',
     },
     notifications: {
       successTitle: 'Tudo certo!',

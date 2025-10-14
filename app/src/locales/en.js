@@ -319,6 +319,13 @@ export default {
       difference: 'Difference',
       first: 'First photo',
       second: 'Second photo',
+      open: 'Open detailed comparison',
+      selectedCount: 'Selected photos: {count}/2',
+      missingSelection: 'Select two photos to open the detailed comparison.',
+      goBack: 'Back to photo records',
+      fullTitle: 'Detailed comparison',
+      fullSubtitle: 'View both photos side by side and analyze measurement changes.',
+      mismatch: 'Select two photos from the same body part to continue.',
     },
     notifications: {
       successTitle: 'All set!',
