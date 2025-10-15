@@ -6,12 +6,18 @@ import com.jm.dto.WhatsAppMessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 @Service
@@ -29,17 +35,22 @@ public class WhatsAppService {
     private String apiToken;
     @Value("${whatsapp.phone.number.id}")
     private String phoneNumberId;
+    @Value("${whatsapp.hug.token}")
+    private String apiTokenHug;
 
     public WhatsAppService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
 
     public Mono<WhatsAppMessageResponse> sendMessage(WhatsAppMessageDTO dto) {
-        return webClient.post().uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken).contentType(MediaType.APPLICATION_JSON)
+        return webClient.post()
+                .uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(Map.of("messaging_product", "whatsapp", "to", dto.getPhoneNumber(), "type", "text", "text",
                         Map.of("body", dto.getMessage())))
-                .retrieve().bodyToMono(WhatsAppMessageResponse.class)
+                .retrieve()
+                .bodyToMono(WhatsAppMessageResponse.class)
                 .doOnError(error -> logger.error("Failed to send WhatsApp message", error));
     }
 
@@ -51,22 +62,67 @@ public class WhatsAppService {
     }
 
     public WhatsAppMessageResponse sendImageMessage(WhatsAppMessageDTO dto) {
-        return webClient.post().uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken).contentType(MediaType.APPLICATION_JSON)
+        return webClient.post()
+                .uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(Map.of("messaging_product", "whatsapp", "to", dto.getPhoneNumber(), "type", "image", "image",
-                        Map.of("link", dto.getImage().getFirst().getLink(), "caption",
+                        Map.of("link", dto.getImage()
+                                .getFirst()
+                                .getLink(), "caption",
                                 dto.getImage().getFirst().getCaption())))
-                .retrieve().bodyToMono(WhatsAppMessageResponse.class).block();
+                .retrieve()
+                .bodyToMono(WhatsAppMessageResponse.class)
+                .block();
+    }
+
+    /**
+     * Recebe o mediaId do WhatsApp → baixa o áudio → envia ao Hugging Face →
+     * retorna o texto transcrito
+     */
+    public Mono<Map<String, String>> transcribeFromWhatsApp(String mediaId) {
+        return fetchMediaMetadata(mediaId).flatMap(meta -> {
+            return downloadMedia(meta.getUrl());
+        }).flatMap(audioBytes -> {
+            return transcribeWithWhisper(audioBytes);
+        }).onErrorResume(e -> {
+            e.printStackTrace();
+            return Mono.just(Collections.singletonMap("text", "❌ Erro na transcrição: " + e.getMessage()));
+        });
+    }
+
+    public Mono<Map<String, String>> transcribeWithWhisper(byte[] audioBytes) {
+        return webClient.post()
+                .uri("https://api-inference.huggingface.co/models/openai/whisper-large-v3")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiTokenHug)
+                .header(HttpHeaders.CONTENT_TYPE, "audio/ogg")
+                .bodyValue(new ByteArrayResource(audioBytes) {
+                    @Override
+                    public String getFilename() {
+                        return "audio.ogg";
+                    }
+                })
+                .retrieve()
+                .bodyToMono(Map.class)
+                .map(resp -> {
+                    System.out.println("🧠 Resposta HF: " + resp);
+                    return resp;
+                });
     }
 
     public Mono<WhatsAppMediaMetadata> fetchMediaMetadata(String mediaId) {
         return webClient.get().uri(graphBaseUrl + "/{mediaId}", mediaId)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken).accept(MediaType.APPLICATION_JSON).retrieve()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
                 .bodyToMono(WhatsAppMediaMetadata.class);
     }
 
     public Mono<byte[]> downloadMedia(String mediaUrl) {
-        return webClient.get().uri(mediaUrl).header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken).retrieve()
+        return webClient.get()
+                .uri(mediaUrl)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                .retrieve()
                 .bodyToMono(byte[].class);
     }
 }

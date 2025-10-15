@@ -11,6 +11,7 @@ import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
+import com.jm.dto.WhatsAppMessageResponse;
 import com.jm.dto.WhatsAppNutritionEntryRequest;
 import com.jm.entity.Food;
 import com.jm.entity.FoodCategory;
@@ -39,10 +40,13 @@ import com.jm.services.ai.AiRequestType;
 import com.jm.services.ai.AiResponse;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -84,6 +88,7 @@ public class WhatsAppNutritionService {
     private static final String OLLAMA_VISION_MODEL = "llava:34b";
     private static final String GEMINI_VISION_MODEL = "gemini-pro-vision";
     private static final String GEMINI_TEXT_MODEL = "gemini-pro";
+    private static final String OLLAMA_AUDIO_MODEL = "nuextract:latest";
     private static final String DEFAULT_IMAGE_PROMPT = """
             You are a nutritionist and must reply using JSON only.
             Analyse the meal in the image and respond ONLY with this JSON structure:
@@ -119,6 +124,11 @@ public class WhatsAppNutritionService {
                    "quantity": number or null,
                    "unit": "textual unit (e.g. gramas, ml, unidade) or null",
                    "observation": "notes about this food or null"
+                   "calories": number or null,
+                   "protein": number or null,
+                   "carbs": number or null,
+                   "fat": number or null
+                   "summary": "short sentence about this food or null"
                  }
               ],
               "observation": "general observation or null"
@@ -346,8 +356,14 @@ public class WhatsAppNutritionService {
             savedMessage.setMediaUrl(metadata.getUrl());
             savedMessage.setMimeType(metadata.getMimeType());
 
-            String transcript = transcribeAudio(audioBytes, metadata.getMimeType());
-            if (!StringUtils.hasText(transcript)) {
+            Map<String, String> transcript = whatsAppService.transcribeWithWhisper(audioBytes).block(); /*
+                                                                                                         * transcribeAudio(
+                                                                                                         * audioBytes,
+                                                                                                         * metadata.
+                                                                                                         * getMimeType()
+                                                                                                         * );
+                                                                                                         */
+            if (!StringUtils.hasText(transcript.get("text"))) {
                 logger.warn("Transcription returned empty for audio message {}", savedMessage.getId());
                 whatsAppService.sendTextMessage(from,
                         "Não consegui transcrever esse áudio. Poderia enviar a instrução em texto?").subscribe();
@@ -355,14 +371,15 @@ public class WhatsAppNutritionService {
                 return;
             }
 
-            savedMessage.setTextContent(transcript);
+            savedMessage.setTextContent(transcript.get("text"));
             messageRepository.save(savedMessage);
-            dispatchToAssistant(savedMessage, transcript);
+            /* dispatchToAssistant(savedMessage, transcript); */
             processCommandFromText(savedMessage, from);
         } catch (Exception ex) {
             logger.error("Failed to process WhatsApp audio message", ex);
             whatsAppService.sendTextMessage(from,
-                    "Desculpe, não consegui processar seu áudio agora. Pode tentar novamente em instantes?").subscribe();
+                    "Desculpe, não consegui processar seu áudio agora. Pode tentar novamente em instantes?")
+                    .subscribe();
         }
     }
 
@@ -370,7 +387,7 @@ public class WhatsAppNutritionService {
         if (audioBytes == null || audioBytes.length == 0) {
             return null;
         }
-        Optional<AiClient> client = resolveClient(AiProvider.GEMINI);
+        Optional<AiClient> client = resolveClient(AiProvider.OLLAMA);
         if (client.isEmpty()) {
             logger.warn("No AI client available to transcribe audio");
             return null;
@@ -386,7 +403,7 @@ public class WhatsAppNutritionService {
 
         AiRequest request = AiRequest.builder()
                 .type(AiRequestType.TEXT)
-                .model(GEMINI_TEXT_MODEL)
+                .model(OLLAMA_AUDIO_MODEL)
                 .prompt(prompt)
                 .timeout(DEFAULT_TIMEOUT)
                 .build();
@@ -405,7 +422,8 @@ public class WhatsAppNutritionService {
                 .or(() -> findUserByPhone(message.getFromPhone()))
                 .orElse(null);
         if (owner == null) {
-            logger.debug("Ignoring nutrition command because owner could not be resolved for message {}", message.getId());
+            logger.debug("Ignoring nutrition command because owner could not be resolved for message {}",
+                    message.getId());
             return;
         }
 
@@ -737,6 +755,10 @@ public class WhatsAppNutritionService {
             analysis.setFood(resolvedFood);
             analysis.setFoodName(resolvedFood.getName());
             analysis.setPrimaryCategory(resolvedFood.getFoodCategory());
+            analysis.setCalories(resolvedFood.getAverageCalories());
+            analysis.setProtein(resolvedFood.getAverageProtein());
+            analysis.setCarbs(resolvedFood.getAverageCarbs());
+            analysis.setFat(resolvedFood.getAverageFat());
         } else {
             analysis.setFood(null);
             analysis.setFoodName(item.foodName());
@@ -1051,11 +1073,14 @@ public class WhatsAppNutritionService {
             normalized = normalized.replaceAll("[^A-Za-z]", "").toUpperCase(Locale.ROOT);
             return switch (normalized) {
                 case "ADD", "ADICIONAR", "ADICIONE", "INCLUIR", "INCLUA", "INSERIR", "INSIRA", "COLOCAR",
-                        "COLOQUE" -> ADD;
+                        "COLOQUE" ->
+                    ADD;
                 case "EDIT", "EDITAR", "EDITE", "ALTERAR", "ALTERE", "ATUALIZAR", "ATUALIZE", "MODIFICAR",
-                        "MODIFIQUE", "AJUSTAR", "AJUSTE" -> EDIT;
+                        "MODIFIQUE", "AJUSTAR", "AJUSTE" ->
+                    EDIT;
                 case "DELETE", "REMOVER", "REMOVE", "REMOVA", "EXCLUIR", "EXCLUA", "RETIRAR", "RETIRE", "TIRAR",
-                        "TIRE" -> DELETE;
+                        "TIRE" ->
+                    DELETE;
                 default -> UNKNOWN;
             };
         }
@@ -1074,8 +1099,6 @@ public class WhatsAppNutritionService {
 
     private record NutritionCommandItemPayload(String food, Double quantity, String unit, String observation) {
     }
-
-
 
     private Optional<Users> findUserByPhone(String phone) {
         if (!StringUtils.hasText(phone)) {
