@@ -14,4 +14,9 @@ public interface WhatsAppMessageRepository
     Optional<WhatsAppMessage> findByWhatsappMessageId(String whatsappMessageId);
 
     List<WhatsAppMessage> findTop20ByOrderByReceivedAtDesc();
+
+    Optional<WhatsAppMessage> findFirstByOwnerIdAndNutritionAnalysisMealCodeIgnoreCaseAndNutritionAnalysisFoodNameIgnoreCase(
+            UUID ownerId, String mealCode, String foodName);
+
+    List<WhatsAppMessage> findByOwnerIdAndNutritionAnalysisMealCodeIgnoreCase(UUID ownerId, String mealCode);
 }

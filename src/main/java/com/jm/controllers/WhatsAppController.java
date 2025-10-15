@@ -48,6 +48,12 @@ public class WhatsAppController {
         return ResponseEntity.ok("Service is running!");
     }
 
+    @PostMapping("/transcribe/{mediaId}")
+    public Mono<ResponseEntity<Map<String, String>>> transcribe(@PathVariable String mediaId) {
+        return whatsAppService.transcribeFromWhatsApp(mediaId)
+                .map(ResponseEntity::ok);
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<Void> receiveMessage(@RequestBody Map<String, Object> payload) {
         logger.info("WhatsApp webhook received");
