@@ -1,195 +1,250 @@
 <template>
-  <div v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'" class="grid gap-6 xl:grid-cols-2">
-    <div class="space-y-6">
-      <!--<PaymentMethodSelection v-model="currentMethod" /> -->
+  <div class="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'" class="grid gap-6 xl:grid-cols-2">
+      <div class="space-y-6">
+        <!-- <PaymentMethodSelection v-model="currentMethod" /> -->
 
-      <CardPaymentForm
-        v-if="currentMethod === 'CARD'"
-        ref="cardFormRef"
-        :cards="cards"
-        :currency="currency"
-        :loading="intentLoading"
-        :tokenizing="tokenizing"
-        @create="handleCreateCardPayment"
-        @tokenize="tokenizeCard"
-      />
+        <CardPaymentForm
+          v-if="currentMethod === 'CARD'"
+          ref="cardFormRef"
+          :cards="cards"
+          :currency="currency"
+          :loading="intentLoading"
+          :tokenizing="tokenizing"
+          @create="handleCreateCardPayment"
+          @tokenize="tokenizeCard"
+        />
 
-      <div v-else-if="currentMethod === 'PIX'" class="space-y-6">
-        <form class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" @submit.prevent="handleCreatePix">
-          <header class="space-y-1">
-            <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.pixForm.title') }}</h2>
-            <p class="text-sm text-slate-500">{{ t('payments.pixForm.description') }}</p>
-          </header>
-          <div class="grid gap-4 md:grid-cols-2">
+        <div v-else-if="currentMethod === 'PIX'" class="space-y-6">
+          <form class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" @submit.prevent="handleCreatePix">
+            <header class="space-y-1">
+              <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.pixForm.title') }}</h2>
+              <p class="text-sm text-slate-500">{{ t('payments.pixForm.description') }}</p>
+            </header>
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.amountLabel', { currency }) }}</span>
+                <input v-model.number="pixForm.amount" type="number" min="1" step="0.01" required class="input" />
+              </label>
+              <label class="flex flex-col gap-1">
+                <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.customerLabel') }}</span>
+                <input
+                  v-model="pixForm.asaasCustomerId"
+                  type="text"
+                  :placeholder="t('payments.pixForm.customerPlaceholder')"
+                  required
+                  class="input"
+                />
+              </label>
+            </div>
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.amountLabel', { currency }) }}</span>
-              <input v-model.number="pixForm.amount" type="number" min="1" step="0.01" required class="input" />
-            </label>
-            <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.customerLabel') }}</span>
+              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.descriptionLabel') }}</span>
               <input
-                v-model="pixForm.asaasCustomerId"
+                v-model="pixForm.description"
                 type="text"
-                :placeholder="t('payments.pixForm.customerPlaceholder')"
-                required
+                maxlength="140"
                 class="input"
+                :placeholder="t('payments.pixForm.descriptionPlaceholder')"
               />
             </label>
-          </div>
-          <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.descriptionLabel') }}</span>
-            <input
-              v-model="pixForm.description"
-              type="text"
-              maxlength="140"
-              class="input"
-              :placeholder="t('payments.pixForm.descriptionPlaceholder')"
-            />
-          </label>
-          <div class="flex justify-end">
-            <button type="submit" class="btn-primary" :disabled="pixLoading">
-              <span v-if="pixLoading" class="loader h-4 w-4"></span>
-              <span>{{ pixLoading ? t('payments.pixForm.generating') : t('payments.pixForm.generate') }}</span>
-            </button>
-          </div>
-        </form>
-
-        <PIXPayment v-if="pixPayment" :payment="pixPayment" @refresh="refreshPix" />
-      </div>
-
-      <RecurringPayment
-        v-else
-        :cards="cards"
-        :currency="currency"
-        :loading="recurringLoading"
-        @create="handleCreateSubscription"
-      />
-    </div>
-
-    <div class="space-y-6">
-      <PaymentsDataTable
-        v-if="isAdmin"
-        :rows="payments"
-        :loading="paymentsLoading"
-        :pagination="pagination"
-        :sort="sort"
-        :selected="selectedPayments"
-        :filters="filters"
-        @update:filters="updateFilters"
-        @update:selected="onUpdateSelected"
-        @change:sort="changeSort"
-        @change:page="changePage"
-        @change:per-page="changePerPage"
-        @refresh="loadPayments"
-        @export:csv="exportCsv"
-        @bulk:refund="confirmBulkRefund"
-        @view="openPaymentDetails"
-        @refund="confirmRefund"
-      />
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
-        <div v-if="paymentsLoading" class="mt-4 space-y-3">
-          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-          <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
-        </div>
-        <ol v-else class="mt-4 timeline">
-          <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
-            <span :class="['timeline-marker', item.statusClass]">
-              <component :is="item.icon" class="h-4 w-4" />
-            </span>
-            <div class="timeline-content">
-              <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
-              <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
-              <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
+            <div class="flex justify-end">
+              <button type="submit" class="btn-primary" :disabled="pixLoading">
+                <span v-if="pixLoading" class="loader h-4 w-4"></span>
+                <span>{{ pixLoading ? t('payments.pixForm.generating') : t('payments.pixForm.generate') }}</span>
+              </button>
             </div>
-          </li>
-          <li v-if="!timelineItems.length" class="timeline-empty">
-            <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
-          </li>
-        </ol>
-      </section>
-    </div>
-  </div>
+          </form>
 
-  <div v-else class="grid gap-6 lg:grid-cols-2">
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <header class="space-y-1">
-        <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.subscription.title') }}</h2>
-        <p class="text-sm text-slate-500">{{ t('payments.subscription.subtitle') }}</p>
-      </header>
-      <div v-if="subscriptionsLoading" class="mt-4 space-y-3">
-        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-        <div class="h-5 w-1/2 animate-pulse rounded bg-slate-200"></div>
+          <PIXPayment v-if="pixPayment" :payment="pixPayment" @refresh="refreshPix" />
+        </div>
+
+        <RecurringPayment
+          v-else
+          :cards="cards"
+          :currency="currency"
+          :loading="recurringLoading"
+          @create="handleCreateSubscription"
+        />
       </div>
-      <div v-else-if="activeSubscription" class="mt-4 space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-semibold text-slate-700">{{ t('payments.subscription.statusLabel') }}</span>
-          <span :class="['px-2 py-1 text-xs font-semibold uppercase rounded-full', subscriptionBadgeClass(activeSubscription.status)]">
+
+      <div class="space-y-6">
+        <PaymentsDataTable
+          v-if="isAdmin"
+          :rows="payments"
+          :loading="paymentsLoading"
+          :pagination="pagination"
+          :sort="sort"
+          :selected="selectedPayments"
+          :filters="filters"
+          @update:filters="updateFilters"
+          @update:selected="onUpdateSelected"
+          @change:sort="changeSort"
+          @change:page="changePage"
+          @change:per-page="changePerPage"
+          @refresh="loadPayments"
+          @export:csv="exportCsv"
+          @bulk:refund="confirmBulkRefund"
+          @view="openPaymentDetails"
+          @refund="confirmRefund"
+        />
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
+          <div v-if="paymentsLoading" class="mt-4 space-y-3">
+            <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+            <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
+            <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
+          </div>
+          <ol v-else class="mt-4 timeline">
+            <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
+              <span :class="['timeline-marker', item.statusClass]">
+                <component :is="item.icon" class="h-4 w-4" />
+              </span>
+              <div class="timeline-content">
+                <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
+                <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
+                <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
+              </div>
+            </li>
+            <li v-if="!timelineItems.length" class="timeline-empty">
+              <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
+            </li>
+          </ol>
+        </section>
+      </div>
+    </div>
+
+    <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">Current Plan</h2>
+            <p class="text-sm text-gray-500">Manage your subscription and payment method</p>
+          </div>
+          <span
+            v-if="activeSubscription"
+            :class="[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase',
+              subscriptionBadgeClass(activeSubscription.status),
+            ]"
+          >
             {{ subscriptionStatusLabel(activeSubscription.status) }}
           </span>
+        </header>
+
+        <div v-if="subscriptionsLoading" class="mt-6 space-y-3">
+          <div class="h-5 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-5 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-5 w-1/2 animate-pulse rounded bg-gray-200"></div>
         </div>
-        <div class="grid gap-3 text-sm text-slate-600">
-          <div>
-            <p class="font-semibold text-slate-800">{{ t('payments.subscription.planLabel') }}</p>
-            <p>{{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}</p>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <div>
-              <p class="font-semibold text-slate-800">{{ t('payments.subscription.amountLabel') }}</p>
-              <p>{{ formatCurrency(activeSubscription.amount) }}</p>
+
+        <div v-else-if="activeSubscription" class="mt-6 space-y-6">
+          <dl class="grid gap-4">
+            <div class="flex flex-col gap-1">
+              <dt class="text-sm text-gray-500">Plano</dt>
+              <dd class="text-base font-semibold text-gray-800">
+                {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
+              </dd>
             </div>
-            <div>
-              <p class="font-semibold text-slate-800">{{ t('payments.subscription.intervalLabel') }}</p>
-              <p>{{ subscriptionIntervalLabel(activeSubscription.interval) }}</p>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="flex flex-col gap-1">
+                <dt class="text-sm text-gray-500">Valor</dt>
+                <dd class="text-base font-semibold text-gray-800">{{ formatCurrency(activeSubscription.amount) }}</dd>
+              </div>
+              <div class="flex flex-col gap-1">
+                <dt class="text-sm text-gray-500">Renova em</dt>
+                <dd class="text-base font-semibold text-gray-800">
+                  {{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}
+                </dd>
+              </div>
             </div>
-          </div>
-          <div>
-            <p class="font-semibold text-slate-800">{{ t('payments.subscription.nextBilling') }}</p>
-            <p>{{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}</p>
+            <div class="flex flex-col gap-1">
+              <dt class="text-sm text-gray-500">Cartão</dt>
+              <dd class="text-base font-semibold text-gray-800">{{ primaryCardLabel }}</dd>
+            </div>
+          </dl>
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+              aria-label="Upgrade Plan"
+            >
+              Upgrade Plan
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-green-100 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-200"
+              aria-label="Change Plan"
+            >
+              Change Plan
+            </button>
+            <button
+              type="button"
+              class="rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
+              :disabled="cancelingSubscription"
+              aria-label="Cancel Subscription"
+              @click="handleCancelSubscription"
+            >
+              <span v-if="cancelingSubscription" class="flex items-center justify-center gap-2">
+                <span class="loader h-4 w-4"></span>
+                <span class="text-sm font-medium">Cancelling…</span>
+              </span>
+              <span v-else>Cancel Subscription</span>
+            </button>
           </div>
         </div>
-        <div class="flex justify-end">
-          <button type="button" class="btn-secondary text-rose-600" :disabled="cancelingSubscription" @click="handleCancelSubscription">
-            <span v-if="cancelingSubscription" class="loader h-4 w-4"></span>
-            <span>{{ cancelingSubscription ? t('payments.subscription.cancelling') : t('payments.subscription.cancel') }}</span>
+
+        <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p class="font-semibold text-gray-700">{{ t('payments.subscription.emptyTitle') }}</p>
+          <p class="mt-1 text-gray-500">{{ t('payments.subscription.emptyDescription') }}</p>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">Payment History</h2>
+            <p class="text-sm text-gray-500">Your past transactions and invoices.</p>
+          </div>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100"
+            aria-label="Show all payments"
+          >
+            All
           </button>
+        </header>
+
+        <div v-if="paymentsLoading" class="mt-6 space-y-4">
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
         </div>
-      </div>
-      <div v-else class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-        <p class="font-semibold text-slate-700">{{ t('payments.subscription.emptyTitle') }}</p>
-        <p class="mt-1 text-slate-500">{{ t('payments.subscription.emptyDescription') }}</p>
-      </div>
-    </section>
 
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
-      <div v-if="paymentsLoading" class="mt-4 space-y-3">
-        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-        <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-        <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
-      </div>
-      <ol v-else class="mt-4 timeline">
-        <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
-          <span :class="['timeline-marker', item.statusClass]">
-            <component :is="item.icon" class="h-4 w-4" />
-          </span>
-          <div class="timeline-content">
-            <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
-            <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
-            <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
-          </div>
-        </li>
-        <li v-if="!timelineItems.length" class="timeline-empty">
-          <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
-        </li>
-      </ol>
-    </section>
-  </div>
+        <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-200">
+          <article v-for="item in paymentHistoryItems" :key="item.id" class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="space-y-2">
+              <p class="text-sm text-gray-500">{{ item.date }}</p>
+              <p class="text-base font-semibold text-gray-800">{{ item.description }}</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <span :class="['inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', item.statusClass]">
+                  {{ item.statusLabel }}
+                </span>
+                <span class="text-sm text-gray-500">{{ item.action }}</span>
+              </div>
+            </div>
+            <p class="text-right text-base font-semibold text-gray-800">{{ item.amount }}</p>
+          </article>
+        </div>
 
-  <transition name="fade">
+        <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p>{{ t('payments.recentActivity.empty') }}</p>
+        </div>
+      </section>
+    </div>
+
+    <transition name="fade">
     <div v-if="selectedPayment" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
       <div class="w-full max-w-2xl space-y-4 rounded-3xl bg-white p-6 shadow-2xl">
         <header class="flex items-start justify-between">
@@ -225,16 +280,17 @@
         </dl>
       </div>
     </div>
-  </transition>
+    </transition>
 
-  <ConfirmDialog
-    v-if="isAdmin"
-    v-model="showRefundDialog"
-    :title="t('payments.refund.dialogTitle')"
-    :message="refundMessage"
-    :confirm-label="t('payments.refund.confirmLabel')"
-    @confirm="executeRefund"
-  />
+    <ConfirmDialog
+      v-if="isAdmin"
+      v-model="showRefundDialog"
+      :title="t('payments.refund.dialogTitle')"
+      :message="refundMessage"
+      :confirm-label="t('payments.refund.confirmLabel')"
+      @confirm="executeRefund"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -270,6 +326,20 @@ const currency = 'BRL';
 const currentMethod = ref('RECURING');
 const cards = ref([]);
 const cardFormRef = ref(null);
+
+const primaryCard = computed(() => {
+  if (!cards.value?.length) return null;
+  return cards.value.find((card) => card.defaultCard) ?? cards.value[0];
+});
+
+const primaryCardLabel = computed(() => {
+  if (!primaryCard.value) {
+    return t('payments.cardForm.noCards');
+  }
+  const brand = (primaryCard.value.brand ?? '').toUpperCase() || 'CARD';
+  const lastFour = primaryCard.value.lastFour ?? '••••';
+  return `${brand} •••• ${lastFour}`;
+});
 
 const intentLoading = ref(false);
 const recurringLoading = ref(false);
@@ -316,6 +386,37 @@ const refundMessage = computed(() => {
   return t('payments.refund.confirmSingle', {
     id: refundContext.value.payment?.paymentId ?? refundContext.value.payment?.id ?? '-'
   });
+});
+
+const paymentStatusMeta = {
+  PAID: { label: 'Paid', className: 'bg-green-100 text-green-700', action: 'Invoice · View' },
+  COMPLETED: { label: 'Paid', className: 'bg-green-100 text-green-700', action: 'Invoice · View' },
+  REFUNDED: { label: 'Refunded', className: 'bg-amber-100 text-amber-700', action: 'Details · View', negative: true },
+  FAILED: { label: 'Failed', className: 'bg-red-100 text-red-700', action: 'Action required · Retry' },
+  DECLINED: { label: 'Failed', className: 'bg-red-100 text-red-700', action: 'Action required · Retry' },
+  PROCESSING: { label: 'Processing', className: 'bg-gray-100 text-gray-600', action: 'Details · View' },
+  DEFAULT: { label: 'Processing', className: 'bg-gray-100 text-gray-600', action: 'Details · View' },
+};
+
+const paymentHistoryItems = computed(() => {
+  return payments.value
+    .slice()
+    .sort((a, b) => new Date(b.createdAt ?? 0) - new Date(a.createdAt ?? 0))
+    .map((payment) => {
+      const status = (payment.status ?? payment.paymentStatus ?? '').toUpperCase();
+      const meta = paymentStatusMeta[status] ?? paymentStatusMeta.DEFAULT;
+      const amount = Number(payment.amount ?? 0);
+      const signedAmount = meta.negative ? -Math.abs(amount) : amount;
+      return {
+        id: payment.id ?? payment.paymentId,
+        date: formatHistoryDate(payment.createdAt ?? payment.updatedAt),
+        description: payment.description ?? activeSubscription.value?.plan?.name ?? t('payments.subscription.planUnknown'),
+        statusLabel: meta.label,
+        statusClass: meta.className,
+        action: meta.action,
+        amount: formatCurrency(signedAmount),
+      };
+    });
 });
 
 const timelineItems = computed(() => {
@@ -826,6 +927,15 @@ function formatDate(value) {
   if (!value) return '';
   try {
     return new Intl.DateTimeFormat(currentLocaleTag(), { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+  } catch (error) {
+    return value;
+  }
+}
+
+function formatHistoryDate(value) {
+  if (!value) return '';
+  try {
+    return new Intl.DateTimeFormat(currentLocaleTag(), { dateStyle: 'medium' }).format(new Date(value));
   } catch (error) {
     return value;
   }
