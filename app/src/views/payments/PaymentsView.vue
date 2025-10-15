@@ -1,7 +1,7 @@
 <template>
   <div v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'" class="grid gap-6 xl:grid-cols-2">
     <div class="space-y-6">
-      <PaymentMethodSelection v-model="currentMethod" />
+      <!--<PaymentMethodSelection v-model="currentMethod" /> -->
 
       <CardPaymentForm
         v-if="currentMethod === 'CARD'"
@@ -267,7 +267,7 @@ const notifications = useNotificationStore();
 const { t, locale } = useI18n();
 
 const currency = 'BRL';
-const currentMethod = ref('CARD');
+const currentMethod = ref('RECURING');
 const cards = ref([]);
 const cardFormRef = ref(null);
 

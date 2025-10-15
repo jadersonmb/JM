@@ -51,7 +51,7 @@
                 v-if="entry.imageUrl"
                 :src="entry.imageUrl"
                 alt="comparison photo"
-                class="h-96 w-full object-cover"
+                class="h-full w-full object-cover"
               />
               <div v-else class="flex h-96 items-center justify-center text-slate-300">
                 <PhotoIcon class="h-12 w-12" />

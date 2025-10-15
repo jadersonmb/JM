@@ -34,14 +34,14 @@
       </div>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-2">
-      <label class="flex flex-col gap-1">
+    <section class="grid gap-4 md:grid-cols-1">
+      <!--<label class="flex flex-col gap-1">
         <span class="text-sm font-medium text-slate-600">{{ t('payments.recurring.chargeTimingLabel') }}</span>
         <select v-model="form.immediateCharge" class="input">
           <option :value="true">{{ t('payments.recurring.chargeTimingImmediate') }}</option>
           <option :value="false">{{ t('payments.recurring.chargeTimingLater') }}</option>
         </select>
-      </label>
+      </label> -->
       <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
         <p class="font-semibold text-slate-700">{{ t('payments.recurring.selectedPlanTitle') }}</p>
         <p v-if="selectedPlan" class="mt-1 text-slate-900">
@@ -54,7 +54,7 @@
 
     <section class="space-y-3">
       <h3 class="text-sm font-semibold text-slate-700">{{ t('payments.recurring.methodTitle') }}</h3>
-      <div class="grid gap-3 md:grid-cols-2">
+      <div class="grid gap-3 md:grid-cols-1">
         <label v-for="method in supportedMethods" :key="method.value"
           class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition" :class="form.paymentMethod === method.value
               ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
@@ -169,11 +169,11 @@ const supportedMethods = computed(() => [
     label: t('payments.recurring.methods.card.label'),
     description: t('payments.recurring.methods.card.description'),
   },
-  {
+  /*{
     value: 'PIX',
     label: t('payments.recurring.methods.pix.label'),
     description: t('payments.recurring.methods.pix.description'),
-  },
+  },*/
 ]);
 
 const plans = ref([]);
