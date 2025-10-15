@@ -16,7 +16,7 @@
           <div class="grid gap-4 md:grid-cols-2">
             <label class="flex flex-col gap-1">
               <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.amountLabel', { currency })
-                }}</span>
+              }}</span>
               <input v-model.number="pixForm.amount" type="number" min="1" step="0.01" required class="input" />
             </label>
             <label class="flex flex-col gap-1">
@@ -52,28 +52,40 @@
         @change:per-page="changePerPage" @refresh="loadPayments" @export:csv="exportCsv"
         @bulk:refund="confirmBulkRefund" @view="openPaymentDetails" @refund="confirmRefund" />
 
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.recentActivity.title') }}</h2>
-        <div v-if="paymentsLoading" class="mt-4 space-y-3">
-          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-          <div class="h-5 w-full animate-pulse rounded bg-slate-200"></div>
-          <div class="h-5 w-2/3 animate-pulse rounded bg-slate-200"></div>
+      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.subscription.paymentHisotry') }}</h2>
+            <p class="text-sm text-gray-500">{{ t('payments.subscription.paymentHisotryDescription') }}</p>
+          </div>
+        </header>
+
+        <div v-if="paymentsLoading" class="mt-6 space-y-4">
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
         </div>
-        <ol v-else class="mt-4 timeline">
-          <li v-for="item in timelineItems" :key="item.id" class="timeline-item">
-            <span :class="['timeline-marker', item.statusClass]">
-              <component :is="item.icon" class="h-4 w-4" />
-            </span>
-            <div class="timeline-content">
-              <p class="text-sm font-semibold text-slate-900">{{ item.title }}</p>
-              <p v-if="item.description" class="text-sm text-slate-600">{{ item.description }}</p>
-              <p class="text-xs text-slate-400">{{ item.dateLabel }}</p>
+
+        <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-200">
+          <article v-for="item in paymentHistoryItems" :key="item.id"
+            class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="space-y-2">
+              <p class="text-sm text-gray-500">{{ item.date }}</p>
+              <p class="text-base font-semibold text-gray-800">{{ item.description }}</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  :class="['inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', item.statusClass]">
+                  {{ item.statusLabel }}
+                </span>
+                <span class="text-sm text-gray-500">{{ item.action }}</span>
+              </div>
             </div>
-          </li>
-          <li v-if="!timelineItems.length" class="timeline-empty">
-            <span class="text-sm text-slate-500">{{ t('payments.recentActivity.empty') }}</span>
-          </li>
-        </ol>
+            <p class="text-right text-base font-semibold text-gray-800">{{ item.amount }}</p>
+          </article>
+        </div>
+        <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p>{{ t('payments.recentActivity.empty') }}</p>
+        </div>
       </section>
     </div>
   </div>
@@ -102,50 +114,54 @@
       <div v-else-if="activeSubscription" class="mt-6 space-y-6">
         <dl class="grid gap-4">
           <div class="flex flex-col gap-1">
-            <dt class="text-sm text-gray-500">{{t('payments.subscription.plan')}}</dt>
+            <dt class="text-sm text-gray-500">{{ t('payments.subscription.plan') }}</dt>
             <dd class="text-base font-semibold text-gray-800">
               {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
             </dd>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-1">
-              <dt class="text-sm text-gray-500">{{t('payments.subscription.amount')}}</dt>
+              <dt class="text-sm text-gray-500">{{ t('payments.subscription.amount') }}</dt>
               <dd class="text-base font-semibold text-gray-800">{{ formatCurrency(activeSubscription.amount) }}</dd>
             </div>
             <div class="flex flex-col gap-1">
-              <dt class="text-sm text-gray-500">{{t('payments.subscription.nextBilling')}}</dt>
+              <dt class="text-sm text-gray-500">{{ t('payments.subscription.nextBilling') }}</dt>
               <dd class="text-base font-semibold text-gray-800">
                 {{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}
               </dd>
             </div>
           </div>
           <div class="flex flex-col gap-1">
-            <dt class="text-sm text-gray-500">{{t('payments.subscription.card')}}</dt>
+            <dt class="text-sm text-gray-500">{{ t('payments.subscription.card') }}</dt>
             <dd class="text-base font-semibold text-gray-800">{{ primaryCardLabel }}</dd>
           </div>
         </dl>
 
         <div class="grid gap-3 sm:grid-cols-3">
-          <button type="button"
+          <!--<button type="button"
             class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
             aria-label="Upgrade Plan">
-             <span v-if="false" class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
+            <span v-if="false"
+              class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
             Upgrade Plan
           </button>
           <button type="button"
             class="rounded-lg bg-green-100 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-200"
             aria-label="Change Plan">
-            <span v-if="false" class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
+            <span v-if="false"
+              class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
             Change Plan
-          </button>
+          </button> -->
+          <div></div>
+          <div></div>
           <button type="button"
             class="rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
             :disabled="cancelingSubscription" aria-label="Cancel Subscription" @click="handleCancelSubscription">
-              <span v-if="cancelingSubscription" class="flex items-center justify-center gap-2">
-                <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-                {{t('payments.subscription.cancelling')}}
-              </span>
-            <span v-else>{{t('payments.subscription.cancel')}}</span>
+            <span v-if="cancelingSubscription" class="flex items-center justify-center gap-2">
+              <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
+              {{ t('payments.subscription.cancelling') }}
+            </span>
+            <span v-else>{{ t('payments.subscription.cancel') }}</span>
           </button>
         </div>
       </div>
@@ -156,7 +172,7 @@
       </div>
     </section>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm max-h-[50rem] overflow-y-auto">
+    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.subscription.paymentHisotry') }}</h2>
@@ -201,10 +217,10 @@
           <div>
             <h3 class="text-lg font-semibold text-slate-900">{{ t('payments.details.title') }}</h3>
             <p class="text-sm text-slate-500">{{ t('payments.details.reference') }}: {{ selectedPayment.paymentId ?? '-'
-              }}</p>
+            }}</p>
           </div>
           <button type="button" class="btn-ghost" @click="selectedPayment = null">{{ t('common.actions.close')
-            }}</button>
+          }}</button>
         </header>
         <dl class="grid gap-4 md:grid-cols-2">
           <div>

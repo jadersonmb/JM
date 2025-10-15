@@ -97,6 +97,8 @@ public class WhatsAppNutritionService {
                 \"protein_g\": number in grams,
                 \"carbs_g\": number in grams,
                 \"fat_g\": number in grams
+                \"fiber_g\": number in grams
+                \"Ingested calories\": number in kcal
               },
               \"categories\": [
                 { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
@@ -123,7 +125,9 @@ public class WhatsAppNutritionService {
                    "calories": number or null,
                    "protein": number or null,
                    "carbs": number or null,
-                   "fat": number or null
+                   "fat": number or null,
+                   "fiber_g: number or null,
+                   "Ingested calories: number or null,
                    "summary": "short sentence about this food or null"
                  }
               ],
