@@ -19,7 +19,7 @@ export default {
     references: 'Reference data',
     referenceCountries: 'Countries',
     referenceAiPrompts: 'AI prompts',
-    referenceExerciseReferences: 'Exercise catalog',
+    referenceExerciseReferences: 'Exercise',
     referenceCities: 'Cities',
     referenceEducationLevels: 'Education levels',
     referenceMeals: 'Meal types',

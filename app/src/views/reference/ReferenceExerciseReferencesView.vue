@@ -1,65 +1,40 @@
 <template>
   <div class="space-y-0">
-    <DataTable
-      v-model:selected="selectedRows"
-      :title="t('reference.exerciseReferences.title')"
-      :subtitle="t('reference.exerciseReferences.subtitle')"
-      :columns="columns"
-      :rows="rows"
-      :loading="loading"
-      :pagination="pagination"
-      :sort="sort"
-      :empty-state="t('reference.exerciseReferences.empty')"
-      @change:sort="handleSort"
-      @change:page="handlePage"
-      @change:per-page="handlePerPage"
-      @change:columns="persistColumns"
-      @refresh="fetchExerciseReferences"
-    >
+    <DataTable v-model:selected="selectedRows" :title="t('reference.exerciseReferences.title')"
+      :subtitle="t('reference.exerciseReferences.subtitle')" :columns="columns" :rows="rows" :loading="loading"
+      :pagination="pagination" :sort="sort" :empty-state="t('reference.exerciseReferences.empty')"
+      @change:sort="handleSort" @change:page="handlePage" @change:per-page="handlePerPage"
+      @change:columns="persistColumns" @refresh="fetchExerciseReferences">
       <template #toolbar="{ selected }">
         <button type="button" class="btn-primary" @click="openCreate">
           <PlusIcon class="h-4 w-4" />
           <span>{{ t('common.actions.create') }}</span>
         </button>
-        <button
-          type="button"
-          class="btn-secondary"
-          :disabled="selected.length !== 1"
-          @click="openEdit(selected[0])"
-        >
+        <button type="button" class="btn-secondary" :disabled="selected.length !== 1" @click="openEdit(selected[0])">
           <PencilSquareIcon class="h-4 w-4" />
           <span>{{ t('common.actions.edit') }}</span>
         </button>
-        <button
-          type="button"
-          class="btn-secondary text-red-600 hover:border-red-200 hover:text-red-600"
-          :disabled="selected.length === 0"
-          @click="openDelete(selected)"
-        >
+        <button type="button" class="btn-secondary text-red-600 hover:border-red-200 hover:text-red-600"
+          :disabled="selected.length === 0" @click="openDelete(selected)">
           <TrashIcon class="h-4 w-4" />
           <span>{{ t('common.actions.delete') }}</span>
         </button>
       </template>
 
       <template #filters>
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-          <div class="lg:col-span-2">
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {{ t('reference.exerciseReferences.filters.search') }}
-            </label>
-            <div class="relative mt-1">
-              <MagnifyingGlassIcon
-                class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              />
-              <input
-                v-model="filters.search"
-                type="search"
-                class="w-full rounded-xl border border-slate-200 px-10 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                :placeholder="t('reference.exerciseReferences.filters.searchPlaceholder')"
-              />
-            </div>
+        <div class="lg:col-span-2">
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {{ t('reference.exerciseReferences.filters.search') }}
+          </label>
+          <div class="relative mt-1">
+            <MagnifyingGlassIcon
+              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input v-model="filters.search" type="search"
+              class="w-full rounded-xl border border-slate-200 px-10 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              :placeholder="t('reference.exerciseReferences.filters.searchPlaceholder')" />
           </div>
-          <div>
+        </div>
+        <!--<div>
             <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
               {{ t('reference.exerciseReferences.filters.language') }}
             </label>
@@ -69,29 +44,20 @@
               class="input mt-1"
               :placeholder="t('reference.exerciseReferences.filters.languagePlaceholder')"
             />
-          </div>
-          <div>
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {{ t('reference.exerciseReferences.filters.muscleGroup') }}
-            </label>
-            <input
-              v-model="filters.muscleGroup"
-              type="text"
-              class="input mt-1"
-              :placeholder="t('reference.exerciseReferences.filters.muscleGroupPlaceholder')"
-            />
-          </div>
-          <div>
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {{ t('reference.exerciseReferences.filters.equipment') }}
-            </label>
-            <input
-              v-model="filters.equipment"
-              type="text"
-              class="input mt-1"
-              :placeholder="t('reference.exerciseReferences.filters.equipmentPlaceholder')"
-            />
-          </div>
+          </div> -->
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {{ t('reference.exerciseReferences.filters.muscleGroup') }}
+          </label>
+          <input v-model="filters.muscleGroup" type="text" class="input mt-1"
+            :placeholder="t('reference.exerciseReferences.filters.muscleGroupPlaceholder')" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {{ t('reference.exerciseReferences.filters.equipment') }}
+          </label>
+          <input v-model="filters.equipment" type="text" class="input mt-1"
+            :placeholder="t('reference.exerciseReferences.filters.equipmentPlaceholder')" />
         </div>
       </template>
 
@@ -111,25 +77,12 @@
       </template>
     </DataTable>
 
-    <ReferenceFormModal
-      v-model="modalOpen"
-      :title="modalTitle"
-      :description="t('reference.title')"
-      :fields="formFields"
-      :model="activeItem"
-      :submitting="saving"
-      :submit-label="t('common.actions.save')"
-      :saving-label="t('common.actions.saving')"
-      @submit="handleSubmit"
-    />
+    <ReferenceFormModal v-model="modalOpen" :title="modalTitle" :description="t('reference.title')" :fields="formFields"
+      :model="activeItem" :submitting="saving" :submit-label="t('common.actions.save')"
+      :saving-label="t('common.actions.saving')" @submit="handleSubmit" />
 
-    <ConfirmDialog
-      v-model="confirmOpen"
-      :title="t('reference.title')"
-      :message="confirmMessage"
-      :confirm-label="t('common.actions.delete')"
-      @confirm="handleConfirmDelete"
-    />
+    <ConfirmDialog v-model="confirmOpen" :title="t('reference.title')" :message="confirmMessage"
+      :confirm-label="t('common.actions.delete')" @confirm="handleConfirmDelete" />
   </div>
 </template>
 
