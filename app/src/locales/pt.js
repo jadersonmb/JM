@@ -12,6 +12,7 @@
     goalsEdit: 'Editar meta nutricional',
     photoEvolution: 'Evolução fotográfica',
     whatsappNutrition: 'Nutrição IA',
+    reminders: 'Lembretes',
     payments: 'Pagamentos',
     settings: 'Configurações',
     profile: 'Perfil',
@@ -167,7 +168,103 @@
     anamnesis: 'Anamnese Nutricional',
     diet: 'Planos Alimentares',
     goals: 'Metas nutricionais',
-    reference: 'Dados de referência'
+    reference: 'Dados de referência',
+  },
+  reminders: {
+    title: 'Lembretes',
+    subtitle: 'Mantenha o foco nas metas do dia.',
+    searchPlaceholder: 'Buscar lembretes...',
+    actions: {
+      new: '+ Novo lembrete',
+      edit: 'Editar lembrete',
+      delete: 'Excluir lembrete',
+    },
+    card: {
+      completedBadge: 'Concluído',
+      pausedBadge: 'Pausado',
+      completedToggle: 'Concluir',
+      active: 'Ativo',
+      inactive: 'Pausado',
+      toggleAria: 'Ativar ou desativar o lembrete {title}',
+      recipientLabel: 'Destinatário',
+    },
+    empty: {
+      title: 'Nenhum lembrete cadastrado',
+      subtitle: 'Crie o primeiro lembrete para enviar avisos automáticos pelo WhatsApp.',
+    },
+    form: {
+      newTitle: 'Criar lembrete',
+      editTitle: 'Editar lembrete',
+      subtitle: 'Os lembretes enviam uma mensagem automática no WhatsApp no horário configurado.',
+      close: 'Fechar modal',
+      fields: {
+        title: {
+          label: 'Título',
+          placeholder: 'Hidratação matinal',
+        },
+        description: {
+          label: 'Descrição',
+          placeholder: 'Lembre o paciente de beber água no café da manhã.',
+        },
+        scheduledAt: {
+          label: 'Data e horário',
+        },
+        priority: {
+          label: 'Prioridade',
+        },
+        type: {
+          label: 'Tipo',
+        },
+        target: {
+          label: 'Destinatário',
+          placeholder: 'Selecione um destinatário',
+          searchPlaceholder: 'Busque pacientes por nome ou e-mail',
+          loading: 'Carregando destinatários...',
+        },
+      },
+      actions: {
+        cancel: 'Cancelar',
+        save: 'Salvar lembrete',
+        saving: 'Salvando...',
+      },
+    },
+    priority: {
+      low: 'Baixa prioridade',
+      medium: 'Média prioridade',
+      high: 'Alta prioridade',
+    },
+    types: {
+      health: 'Saúde',
+      study: 'Estudos',
+      work: 'Trabalho',
+      meal: 'Refeição',
+      custom: 'Personalizado',
+    },
+    notifications: {
+      validationTitle: 'Informações faltando',
+      missingFields: 'Informe pelo menos um título e a data/horário.',
+      missingTarget: 'Escolha quem receberá o lembrete.',
+      created: {
+        title: 'Lembrete criado',
+        message: 'O lembrete será enviado automaticamente.',
+      },
+      updated: {
+        title: 'Lembrete atualizado',
+        message: 'Alterações salvas com sucesso.',
+      },
+      deleted: {
+        title: 'Lembrete removido',
+        message: 'O lembrete foi excluído.',
+      },
+      status: {
+        title: 'Lembrete atualizado',
+        activated: 'Lembrete ativado.',
+        paused: 'Lembrete pausado.',
+        completed: 'Marcado como concluído.',
+        reopened: 'Marcado como pendente.',
+      },
+    },
+    confirmDelete: 'Deseja excluir "{title}"?',
   },
   nutritionDashboard: {
     title: 'Análise nutricional',

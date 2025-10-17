@@ -51,6 +51,8 @@ public enum ProblemType {
     WHATSAPP_MESSAGE_NOT_FOUND("/whatsapp-message-not-found", "WhatsApp message not found",
             "whatsapp.message.not-found"),
     WHATSAPP_FORBIDDEN("/whatsapp-forbidden", "WhatsApp nutrition forbidden", "whatsapp.nutrition.forbidden"),
+    REMINDER_NOT_FOUND("/reminder-not-found", "Reminder not found", "reminder.not-found"),
+    REMINDER_FORBIDDEN("/reminder-forbidden", "Reminder forbidden", "reminder.forbidden"),
     EXTERNAL_SERVICE_ERROR("External Service Error", "external-service", "error.external.service"),
     EMAIL_TEMPLATE_NOT_FOUND("/email-template-not-found", "Email template not found", "email.template.not-found"),
     EMAIL_TEMPLATE_PROCESSING_ERROR("/email-template-processing-error", "Email template processing error",

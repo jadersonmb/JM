@@ -12,6 +12,7 @@ export default {
     goalsEdit: 'Edit Nutrition Goal',
     photoEvolution: 'Photo evolution',
     whatsappNutrition: 'AI Nutrition',
+    reminders: 'Reminders',
     payments: 'Payments',
     settings: 'Settings',
     profile: 'Profile',
@@ -168,6 +169,102 @@ export default {
     diet: 'Diet Plans',
     goals: 'Nutrition Goals',
     reference: 'Reference data',
+  },
+  reminders: {
+    title: 'Reminders',
+    subtitle: 'Stay on track with your daily goals.',
+    searchPlaceholder: 'Search reminders...',
+    actions: {
+      new: '+ New Reminder',
+      edit: 'Edit reminder',
+      delete: 'Delete reminder',
+    },
+    card: {
+      completedBadge: 'Completed',
+      pausedBadge: 'Paused',
+      completedToggle: 'Done',
+      active: 'Active',
+      inactive: 'Paused',
+      toggleAria: 'Toggle reminder {title}',
+      recipientLabel: 'Recipient',
+    },
+    empty: {
+      title: 'No reminders yet',
+      subtitle: 'Create your first reminder to send automated WhatsApp nudges.',
+    },
+    form: {
+      newTitle: 'Create reminder',
+      editTitle: 'Edit reminder',
+      subtitle: 'Reminders send a WhatsApp message automatically at the scheduled time.',
+      close: 'Close modal',
+      fields: {
+        title: {
+          label: 'Title',
+          placeholder: 'Morning hydration',
+        },
+        description: {
+          label: 'Description',
+          placeholder: 'Send a glass of water reminder at breakfast.',
+        },
+        scheduledAt: {
+          label: 'Date and time',
+        },
+        priority: {
+          label: 'Priority',
+        },
+        type: {
+          label: 'Type',
+        },
+        target: {
+          label: 'Recipient',
+          placeholder: 'Select a recipient',
+          searchPlaceholder: 'Search patients by name or email',
+          loading: 'Loading recipients...',
+        },
+      },
+      actions: {
+        cancel: 'Cancel',
+        save: 'Save reminder',
+        saving: 'Saving...',
+      },
+    },
+    priority: {
+      low: 'Low priority',
+      medium: 'Medium priority',
+      high: 'High priority',
+    },
+    types: {
+      health: 'Health',
+      study: 'Study',
+      work: 'Work',
+      meal: 'Meal',
+      custom: 'Custom',
+    },
+    notifications: {
+      validationTitle: 'Missing information',
+      missingFields: 'Enter at least a title and a scheduled date/time.',
+      missingTarget: 'Choose who should receive this reminder.',
+      created: {
+        title: 'Reminder created',
+        message: 'The reminder will be sent automatically.',
+      },
+      updated: {
+        title: 'Reminder updated',
+        message: 'Changes saved successfully.',
+      },
+      deleted: {
+        title: 'Reminder removed',
+        message: 'The reminder was deleted.',
+      },
+      status: {
+        title: 'Reminder updated',
+        activated: 'Reminder activated.',
+        paused: 'Reminder paused.',
+        completed: 'Marked as completed.',
+        reopened: 'Marked as pending.',
+      },
+    },
+    confirmDelete: 'Do you want to delete "{title}"?',
   },
   nutritionDashboard: {
     title: 'Nutrition analytics',
