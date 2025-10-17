@@ -1,11 +1,13 @@
 <template>
-  <div class="space-y-8">
+    <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
+    <header
+      class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">{{ t('settings.sections.preferences.title') }}</h1>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('settings.sections.preferences.subtitle') }}</p>
+      </div>
+    </header>
     <section class="card space-y-6">
-      <header>
-        <h2 class="text-xl font-semibold text-slate-900">{{ t('settings.sections.preferences.title') }}</h2>
-        <p class="mt-1 text-sm text-slate-500">{{ t('settings.sections.preferences.subtitle') }}</p>
-      </header>
-
       <form class="space-y-6" @submit.prevent="saveSettings">
         <div class="grid gap-4 md:grid-cols-2">
           <div>
