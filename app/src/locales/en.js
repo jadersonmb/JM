@@ -472,6 +472,7 @@ export default {
   photoEvolution: {
     title: 'Photographic Evolution',
     subtitle: 'Track physical progress over time with photos, notes, and comparisons.',
+    uploadHelper: 'Select one or more photos. Additional files will generate new entries automatically.',
     actions: {
       refresh: 'Reload',
       clearFilters: 'Clear filters',
@@ -497,10 +498,10 @@ export default {
       uploadIdle: 'No files selected yet.',
       uploading: '{count} file(s) uploading…',
       uploadReady: '{count} file(s) ready to save.',
-      clearForm: 'Clear form',
-      saveEvolution: 'Save evolution',
-      addNew: '+ Add new',
-      uploadCardTitle: 'Upload & save evolution',
+      clearForm: 'Clear Form',
+      saveEvolution: 'Save Evolution',
+      addNew: 'Add New',
+      uploadCardTitle: 'Upload & Save evolution',
       uploadCardSubtitle: 'Attach progress photos and keep measurements aligned.',
       bodyPartChip: 'Body Part: {part}',
       angleChip: 'Angle: {angle}',
@@ -513,7 +514,7 @@ export default {
     },
     form: {
       title: 'Register new progress photos',
-      editTitle: 'Update progress entry',
+      editTitle: 'Update progress',
       helper: 'Register one or multiple photos at once, combining anthropometric indicators, nutrition data, and images for faster tracking.',
       editHelper: 'Adjust the metrics or replace the photo for this evolution entry.',
       fields: {
@@ -545,8 +546,8 @@ export default {
         },
       },
       actions: {
-        save: 'Save entry',
-        update: 'Update entry',
+        save: 'Save',
+        update: 'Update',
         cancel: 'Cancel editing',
         addPhoto: 'Add another photo',
         saveBatch: 'Save photos',
@@ -575,7 +576,7 @@ export default {
       selectAfter: 'Select the after photo',
       beforeLabel: 'Label (before)',
       afterLabel: 'Label (after)',
-      update: 'Update comparison',
+      update: 'Update Comparison',
       reset: 'Reset',
       recentComparisons: 'Recent comparisons',
       noRecent: 'No recent comparisons yet.',
@@ -1666,8 +1667,8 @@ export default {
     },
     modal: {
       title: {
-        create: 'Create nutrition entry',
-        edit: 'Edit nutrition entry',
+        create: 'Create nutrition',
+        edit: 'Edit nutrition',
       },
       subtitle: {
         create: 'Record a manual WhatsApp nutrition insight.',

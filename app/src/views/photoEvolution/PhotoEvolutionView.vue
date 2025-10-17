@@ -1,740 +1,613 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="mx-auto max-w-7xl space-y-6 px-4 py-6 lg:px-8">
-      <header class="space-y-6">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div class="space-y-1">
-            <h1 class="text-2xl font-semibold text-gray-800">{{ t('photoEvolution.title') }}</h1>
-            <p class="text-sm text-gray-500">{{ t('photoEvolution.subtitle') }}</p>
-          </div>
-          <div class="flex flex-col items-stretch gap-4 text-sm text-gray-500 md:flex-row md:items-center">
-            <div class="flex items-center gap-3">
-              <PhotoIcon class="h-10 w-10 text-primary-500" />
-              <div>
-                <p class="font-semibold text-gray-700">{{ totalEntriesLabel }}</p>
-                <p v-if="filterBodyPart" class="text-xs text-gray-400">
-                  {{ bodyPartLabel(filterBodyPart) }}
-                </p>
-              </div>
-            </div>
-            <div
-              v-if="isAdmin"
-              class="flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm"
-            >
-              <button
-                type="button"
-                class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                :class="adminViewMode === 'user' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-                @click="setAdminViewMode('user')"
-              >
-                {{ t('photoEvolution.filters.userTab') }}
-              </button>
-              <button
-                type="button"
-                class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-                :class="adminViewMode === 'all' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-                @click="setAdminViewMode('all')"
-              >
-                {{ t('photoEvolution.filters.allUsersTab') }}
-              </button>
-            </div>
-          </div>
+
+  <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
+    <header class="space-y-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="space-y-1">
+          <h1 class="text-2xl font-semibold text-gray-800">{{ t('photoEvolution.title') }}</h1>
+          <p class="text-sm text-gray-500">{{ t('photoEvolution.subtitle') }}</p>
         </div>
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center">
-            <div v-if="showAllUsers" class="w-full md:w-64">
-              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.searchOwner') }}</label>
-              <div class="relative mt-1">
-                <input
-                  v-model="ownerSearch"
-                  type="text"
-                  :placeholder="t('photoEvolution.filters.searchOwner')"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                />
-                <ArrowPathIcon
-                  v-if="ownersLoading"
-                  class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-primary-500"
-                />
-              </div>
-            </div>
-            <div v-if="showAllUsers" class="w-full md:w-72">
-              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.user') }}</label>
-              <select
-                v-model="selectedUserId"
-                class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                <option :value="null">{{ t('photoEvolution.filters.noUserSelected') }}</option>
-                <option
-                  v-for="owner in owners"
-                  :key="owner.id"
-                  :value="owner.id"
-                >
-                  {{ owner.displayName }}
-                  <span v-if="owner.email" class="text-gray-400">— {{ owner.email }}</span>
-                </option>
-              </select>
-              <p v-if="!owners.length && !ownersLoading" class="mt-1 text-xs text-gray-400">
-                {{ t('photoEvolution.filters.noOwners') }}
+        <div class="flex flex-col items-stretch gap-4 text-sm text-gray-500 md:flex-row md:items-center">
+          <div class="flex items-center gap-3">
+            <PhotoIcon class="h-10 w-10 text-primary-500" />
+            <div>
+              <p class="font-semibold text-gray-700">{{ totalEntriesLabel }}</p>
+              <p v-if="filterBodyPart" class="text-xs text-gray-400">
+                {{ bodyPartLabel(filterBodyPart) }}
               </p>
             </div>
-            <div
-              v-else
-              class="w-full max-w-xs rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm"
-            >
-              <p class="font-semibold text-gray-700">{{ auth.user?.name }}</p>
-              <p class="text-xs text-gray-400">{{ auth.user?.email }}</p>
-            </div>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <div>
-              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.bodyPart') }}</label>
-              <select
-                v-model="filterBodyPart"
-                class="mt-1 w-44 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                <option :value="null">{{ t('photoEvolution.filters.allBodyParts') }}</option>
-                <option
-                  v-for="option in bodyPartOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-            </div>
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-              @click="loadEntries"
-            >
-              <ArrowPathIcon class="h-4 w-4" />
-              {{ t('photoEvolution.actions.refresh') }}
+          <div v-if="isAdmin" class="flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm">
+            <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+              :class="adminViewMode === 'user' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+              @click="setAdminViewMode('user')">
+              {{ t('photoEvolution.filters.userTab') }}
             </button>
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg border border-transparent bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
-              @click="clearFilters"
-            >
-              <XMarkIcon class="h-4 w-4" />
-              {{ t('photoEvolution.actions.clearFilters') }}
+            <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+              :class="adminViewMode === 'all' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+              @click="setAdminViewMode('all')">
+              {{ t('photoEvolution.filters.allUsersTab') }}
             </button>
           </div>
         </div>
-      </header>
-
-      <div class="flex items-center gap-2 border-b border-gray-200 pb-2">
-        <button
-          type="button"
-          class="rounded-full px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'gallery' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-          @click="activeTab = 'gallery'"
-        >
-          {{ t('photoEvolution.tabs.gallery') }}
-        </button>
-        <button
-          type="button"
-          class="rounded-full px-4 py-2 text-sm font-semibold transition"
-          :class="activeTab === 'compare' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-          @click="activeTab = 'compare'"
-        >
-          {{ t('photoEvolution.tabs.compare') }}
-        </button>
       </div>
-
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-[0.4fr_0.6fr]">
-        <aside v-if="activeTab === 'gallery'" class="space-y-4">
-          <div
-            v-if="editingEntry"
-            class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.form.editTitle') }}</h2>
-                <p class="text-sm text-gray-500">{{ t('photoEvolution.form.editHelper') }}</p>
-              </div>
-              <button
-                type="button"
-                class="rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-500 transition hover:border-blue-200 hover:text-blue-600"
-                @click="resetEditing"
-              >
-                {{ t('photoEvolution.form.actions.cancel') }}
-              </button>
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center">
+          <div v-if="showAllUsers" class="w-full md:w-64">
+            <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.searchOwner') }}</label>
+            <div class="relative mt-1">
+              <input v-model="ownerSearch" type="text" :placeholder="t('photoEvolution.filters.searchOwner')"
+                class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+              <ArrowPathIcon v-if="ownersLoading"
+                class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-primary-500" />
             </div>
-            <form class="space-y-4" @submit.prevent="saveEditedEntry">
-              <div class="grid grid-cols-1 gap-4">
+          </div>
+          <div v-if="showAllUsers" class="w-full md:w-72">
+            <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.user') }}</label>
+            <select v-model="selectedUserId"
+              class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+              <option :value="null">{{ t('photoEvolution.filters.noUserSelected') }}</option>
+              <option v-for="owner in owners" :key="owner.id" :value="owner.id">
+                {{ owner.displayName }}
+                <span v-if="owner.email" class="text-gray-400">— {{ owner.email }}</span>
+              </option>
+            </select>
+            <p v-if="!owners.length && !ownersLoading" class="mt-1 text-xs text-gray-400">
+              {{ t('photoEvolution.filters.noOwners') }}
+            </p>
+          </div>
+          <div v-else
+            class="w-full max-w-xs rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
+            <p class="font-semibold text-gray-700">{{ auth.user?.name }}</p>
+            <p class="text-xs text-gray-400">{{ auth.user?.email }}</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div>
+            <!--<label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.bodyPart') }}</label>-->
+            <select v-model="filterBodyPart"
+              class="mt-1 w-44 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+              <option :value="null">{{ t('photoEvolution.filters.allBodyParts') }}</option>
+              <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+          <button type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
+            @click="loadEntries">
+            <ArrowPathIcon class="h-4 w-4" />
+            {{ t('photoEvolution.actions.refresh') }}
+          </button>
+          <button type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-transparent bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
+            @click="clearFilters">
+            <XMarkIcon class="h-4 w-4" />
+            {{ t('photoEvolution.actions.clearFilters') }}
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex items-center gap-2 border-b border-gray-200 pb-2">
+      <button type="button" class="rounded-full px-4 py-2 text-sm font-semibold transition"
+        :class="activeTab === 'gallery' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+        @click="activeTab = 'gallery'">
+        {{ t('photoEvolution.tabs.gallery') }}
+      </button>
+      <button type="button" class="rounded-full px-4 py-2 text-sm font-semibold transition"
+        :class="activeTab === 'compare' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+        @click="activeTab = 'compare'">
+        {{ t('photoEvolution.tabs.compare') }}
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-[0.4fr_0.6fr]">
+      <aside v-if="activeTab === 'gallery'" class="space-y-4">
+        <div v-if="editingEntry" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.form.editTitle') }}</h2>
+              <p class="text-sm text-gray-500">{{ t('photoEvolution.form.editHelper') }}</p>
+            </div>
+            <button type="button"
+              class="rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-500 transition hover:border-blue-200 hover:text-blue-600"
+              @click="resetEditing">
+              {{ t('photoEvolution.form.actions.cancel') }}
+            </button>
+          </div>
+          <form class="space-y-4" @submit.prevent="saveEditedEntry">
+            <div class="grid grid-cols-1 gap-4">
+              <div class="grid grid-cols-1 gap-3">
+                <div>
+                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.capturedAt.label')
+                  }}</label>
+                  <input v-model="editingEntry.capturedAt" type="date"
+                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                </div>
+                <div>
+                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.bodyPart.label')
+                  }}</label>
+                  <select v-model="editingEntry.bodyPart"
+                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                    <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.notes.label')
+                  }}</label>
+                  <textarea v-model="editingEntry.notes" rows="3"
+                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"></textarea>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div v-for="metric in highlightedMetrics" :key="`edit-${metric.key}`">
+                  <label class="text-sm font-medium text-gray-600">
+                    {{ metric.label }}
+                    <span v-if="metric.unit" class="text-xs font-normal text-gray-400">({{ metric.unit }})</span>
+                  </label>
+                  <input v-model="editingEntry[metric.key]" type="number" step="0.01"
+                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+                </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.image.label') }}</label>
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-28 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
+                  <img v-if="editingEntry.imagePreview" :src="editingEntry.imagePreview" alt="preview"
+                    class="h-full w-full object-cover" />
+                  <PhotoIcon v-else class="h-8 w-8 text-gray-300" />
+                </div>
+                <label
+                  class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100">
+                  <PhotoIcon class="h-4 w-4" />
+                  {{ editingEntry.imagePreview ? t('photoEvolution.form.fields.image.change') :
+                    t('photoEvolution.form.fields.image.select') }}
+                  <input type="file" accept="image/*" class="hidden" @change="handleEditFileChange" />
+                </label>
+              </div>
+            </div>
+
+            <button type="submit" :disabled="saving"
+              class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60">
+              <ArrowPathIcon v-if="saving" class="h-5 w-5 animate-spin" />
+              <PlusIcon v-else class="h-5 w-5" />
+              {{ t('photoEvolution.form.actions.update') }}
+            </button>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.form.title') }}</h2>
+            <p class="text-sm text-gray-500">{{ t('photoEvolution.form.helper') }}</p>
+          </div>
+          <form class="space-y-5" @submit.prevent="saveDraftEntries">
+            <div v-for="(entryForm, index) in draftEntries" :key="entryForm.uid"
+              class="rounded-lg border border-gray-200 bg-gray-50/80 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-gray-700">
+                    {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
+                  </p>
+                  <p class="text-xs text-gray-400">
+                    {{ t('photoEvolution.gallery.entryHelper') }}
+                  </p>
+                </div>
+                <button v-if="draftEntries.length > 1" type="button"
+                  class="rounded-full border border-gray-200 p-2 text-gray-400 transition hover:border-red-200 hover:text-red-500"
+                  @click="removeDraftEntry(index)">
+                  <TrashIcon class="h-4 w-4" />
+                </button>
+              </div>
+
+              <div class="mt-4 space-y-4">
                 <div class="grid grid-cols-1 gap-3">
                   <div>
-                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.capturedAt.label') }}</label>
-                    <input
-                      v-model="editingEntry.capturedAt"
-                      type="date"
-                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
+                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.capturedAt.label')
+                    }}</label>
+                    <input v-model="entryForm.capturedAt" type="date"
+                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
-                    <select
-                      v-model="editingEntry.bodyPart"
-                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option
-                        v-for="option in bodyPartOptions"
-                        :key="option.value"
-                        :value="option.value"
-                      >
+                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.bodyPart.label')
+                    }}</label>
+                    <select v-model="entryForm.bodyPart"
+                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                      <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
                         {{ option.label }}
                       </option>
                     </select>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.notes.label') }}</label>
-                    <textarea
-                      v-model="editingEntry.notes"
-                      rows="3"
-                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    ></textarea>
+                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.notes.label')
+                    }}</label>
+                    <textarea v-model="entryForm.notes" rows="2"
+                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"></textarea>
                   </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-3">
-                  <div
-                    v-for="metric in highlightedMetrics"
-                    :key="`edit-${metric.key}`"
-                  >
+                  <div v-for="metric in highlightedMetrics" :key="`${entryForm.uid}-${metric.key}`">
                     <label class="text-sm font-medium text-gray-600">
                       {{ metric.label }}
                       <span v-if="metric.unit" class="text-xs font-normal text-gray-400">({{ metric.unit }})</span>
                     </label>
-                    <input
-                      v-model="editingEntry[metric.key]"
-                      type="number"
-                      step="0.01"
-                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    />
+                    <input v-model="entryForm[metric.key]" type="number" step="0.01"
+                      class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
                   </div>
                 </div>
               </div>
+            </div>
 
+            <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-sm font-semibold text-blue-700">{{ t('photoEvolution.gallery.uploadCardTitle') }}</h3>
+                  <p class="text-xs text-blue-600">{{ t('photoEvolution.gallery.uploadCardSubtitle') }}</p>
+                </div>
+                <span class="text-xs font-medium text-blue-500">{{ uploadStatus }}</span>
+              </div>
               <div class="space-y-3">
-                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.image.label') }}</label>
-                <div class="flex items-center gap-3">
-                  <div class="flex h-28 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-gray-50">
-                    <img
-                      v-if="editingEntry.imagePreview"
-                      :src="editingEntry.imagePreview"
-                      alt="preview"
-                      class="h-full w-full object-cover"
-                    />
-                    <PhotoIcon v-else class="h-8 w-8 text-gray-300" />
+                <div v-for="(entryForm, index) in draftEntries" :key="`upload-${entryForm.uid}`"
+                  class="flex flex-col gap-3 rounded-lg bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="flex items-center gap-3">
+                    <div
+                      class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-blue-200 bg-white">
+                      <img v-if="entryForm.imagePreview" :src="entryForm.imagePreview" alt="preview"
+                        class="h-full w-full object-cover" />
+                      <PhotoIcon v-else class="h-8 w-8 text-blue-200" />
+                    </div>
+                    <div class="text-xs text-blue-600">
+                      <p class="font-semibold text-blue-700">
+                        {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
+                      </p>
+                      <p>{{ t('photoEvolution.gallery.uploadHelper') }}</p>
+                    </div>
                   </div>
-                  <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100">
+                  <label
+                    class="inline-flex cursor-pointer items-center gap-2 self-start rounded-lg border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200 sm:self-auto">
                     <PhotoIcon class="h-4 w-4" />
-                    {{ editingEntry.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.form.fields.image.select') }}
-                    <input type="file" accept="image/*" class="hidden" @change="handleEditFileChange" />
+                    {{ entryForm.imagePreview ? t('photoEvolution.form.fields.image.change') :
+                      t('photoEvolution.gallery.uploadLabel') }}
+                    <input type="file" accept="image/*" multiple class="hidden"
+                      @change="(event) => handleDraftFileChange(event, index)" />
                   </label>
                 </div>
               </div>
-
-              <button
-                type="submit"
-                :disabled="saving"
-                class="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <ArrowPathIcon v-if="saving" class="h-5 w-5 animate-spin" />
-                <PlusIcon v-else class="h-5 w-5" />
-                {{ t('photoEvolution.form.actions.update') }}
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-1 flex-col gap-3 sm:flex-row">
+                <button type="submit" :disabled="saving"
+                  class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60">
+                  <PlusIcon class="h-4 w-4 inline-block mr-1" />
+                  {{ t('photoEvolution.gallery.saveEvolution') }}
+                </button>
+              </div>
+              <button type="button"
+                class="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+                @click="resetDraftEntries">
+                <ArrowPathIcon class="h-4 w-4 inline-block mr-1" />
+                {{ t('photoEvolution.gallery.clearForm') }}
               </button>
-            </form>
-          </div>
-
-          <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.form.title') }}</h2>
-              <p class="text-sm text-gray-500">{{ t('photoEvolution.form.helper') }}</p>
             </div>
-            <form class="space-y-5" @submit.prevent="saveDraftEntries">
-              <div
-                v-for="(entryForm, index) in draftEntries"
-                :key="entryForm.uid"
-                class="rounded-lg border border-gray-200 bg-gray-50/80 p-4"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-semibold text-gray-700">
-                      {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{ t('photoEvolution.gallery.entryHelper') }}
-                    </p>
-                  </div>
-                  <button
-                    v-if="draftEntries.length > 1"
-                    type="button"
-                    class="rounded-full border border-gray-200 p-2 text-gray-400 transition hover:border-red-200 hover:text-red-500"
-                    @click="removeDraftEntry(index)"
-                  >
-                    <TrashIcon class="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div class="mt-4 space-y-4">
-                  <div class="grid grid-cols-1 gap-3">
-                    <div>
-                      <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.capturedAt.label') }}</label>
-                      <input
-                        v-model="entryForm.capturedAt"
-                        type="date"
-                        class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      />
-                    </div>
-                    <div>
-                      <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
-                      <select
-                        v-model="entryForm.bodyPart"
-                        class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      >
-                        <option
-                          v-for="option in bodyPartOptions"
-                          :key="option.value"
-                          :value="option.value"
-                        >
-                          {{ option.label }}
-                        </option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.notes.label') }}</label>
-                      <textarea
-                        v-model="entryForm.notes"
-                        rows="2"
-                        class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      ></textarea>
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-3">
-                    <div
-                      v-for="metric in highlightedMetrics"
-                      :key="`${entryForm.uid}-${metric.key}`"
-                    >
-                      <label class="text-sm font-medium text-gray-600">
-                        {{ metric.label }}
-                        <span v-if="metric.unit" class="text-xs font-normal text-gray-400">({{ metric.unit }})</span>
-                      </label>
-                      <input
-                        v-model="entryForm[metric.key]"
-                        type="number"
-                        step="0.01"
-                        class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      />
-                    </div>
-                  </div>
-                </div>
+            <div class="grid grid-cols-1 gap-3 card">
+              <button type="button"
+                class="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+                @click="addDraftEntry">
+                <PlusIcon class="h-4 w-4 inline-block mr-1" />
+                {{ t('photoEvolution.gallery.addNew') }}
+              </button>
+              <div>
+                <p class="text-xs text-gray-400 mt-2 sm:mt-0"> {{ t('photoEvolution.uploadHelper') }} </p>
               </div>
-
-              <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm space-y-4">
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-sm font-semibold text-blue-700">{{ t('photoEvolution.gallery.uploadCardTitle') }}</h3>
-                    <p class="text-xs text-blue-600">{{ t('photoEvolution.gallery.uploadCardSubtitle') }}</p>
-                  </div>
-                  <span class="text-xs font-medium text-blue-500">{{ uploadStatus }}</span>
-                </div>
-                <div class="space-y-3">
-                  <div
-                    v-for="(entryForm, index) in draftEntries"
-                    :key="`upload-${entryForm.uid}`"
-                    class="flex flex-col gap-3 rounded-lg bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="flex items-center gap-3">
-                      <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-blue-200 bg-white">
-                        <img
-                          v-if="entryForm.imagePreview"
-                          :src="entryForm.imagePreview"
-                          alt="preview"
-                          class="h-full w-full object-cover"
-                        />
-                        <PhotoIcon v-else class="h-8 w-8 text-blue-200" />
-                      </div>
-                      <div class="text-xs text-blue-600">
-                        <p class="font-semibold text-blue-700">
-                          {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
-                        </p>
-                        <p>{{ t('photoEvolution.gallery.uploadHelper') }}</p>
-                      </div>
-                    </div>
-                    <label class="inline-flex cursor-pointer items-center gap-2 self-start rounded-lg border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200 sm:self-auto">
-                      <PhotoIcon class="h-4 w-4" />
-                      {{ entryForm.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.gallery.uploadLabel') }}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        class="hidden"
-                        @change="(event) => handleDraftFileChange(event, index)"
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="flex flex-1 flex-col gap-3 sm:flex-row">
-                    <button
-                      type="submit"
-                      :disabled="saving"
-                      class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {{ t('photoEvolution.gallery.saveEvolution') }}
-                    </button>
-                    <button
-                      type="button"
-                      class="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
-                      @click="addDraftEntry"
-                    >
-                      {{ t('photoEvolution.gallery.addNew') }}
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    class="text-sm font-semibold text-blue-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
-                    @click="resetDraftEntries"
-                  >
-                    {{ t('photoEvolution.gallery.clearForm') }}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </aside>
-
-        <aside v-else class="space-y-4">
-          <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
-            <div>
-              <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.compare.formTitle') }}</h2>
-              <p class="text-sm text-gray-500">{{ t('photoEvolution.compare.formSubtitle') }}</p>
             </div>
-            <form class="space-y-4" @submit.prevent="applyComparisonForm">
-              <div class="space-y-3">
-                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.bodyPart.label') }}</label>
-                <select
-                  v-model="comparisonForm.bodyPart"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option :value="null">{{ t('photoEvolution.compare.selectBodyPart') }}</option>
-                  <option
-                    v-for="option in comparisonBodyParts"
-                    :key="option.value"
-                    :value="option.value"
-                  >
+          </form>
+        </div>
+      </aside>
+
+      <aside v-else class="space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">{{ t('photoEvolution.compare.formTitle') }}</h2>
+            <p class="text-sm text-gray-500">{{ t('photoEvolution.compare.formSubtitle') }}</p>
+          </div>
+          <form class="space-y-4" @submit.prevent="applyComparisonForm">
+            <div class="space-y-3">
+              <label class="text-sm font-medium text-gray-600">{{
+                t('photoEvolution.form.fields.bodyPart.label')}}</label>
+              <select v-model="comparisonForm.bodyPart"
+                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <option :value="null">{{ t('photoEvolution.compare.selectBodyPart') }}</option>
+                <option v-for="option in comparisonBodyParts" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div class="space-y-3">
+              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.angle') }}</label>
+              <select v-model="comparisonForm.angle"
+                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <option :value="null">{{ t('photoEvolution.compare.selectAngle') }}</option>
+                <option v-for="option in comparisonAngles" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div class="space-y-3">
+              <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.mode') }}</label>
+              <select v-model="comparisonForm.mode"
+                class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                <option value="side-by-side">{{ t('photoEvolution.compare.modes.sideBySide') }}</option>
+                <option value="slider">{{ t('photoEvolution.compare.modes.slider') }}</option>
+                <option value="overlay">{{ t('photoEvolution.compare.modes.overlay') }}</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+              <div>
+                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.before') }}</label>
+                <select v-model="comparisonForm.beforeId"
+                  class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                  <option :value="null">{{ t('photoEvolution.compare.selectBefore') }}</option>
+                  <option v-for="option in comparisonBeforeOptions" :key="option.value" :value="option.value">
                     {{ option.label }}
                   </option>
                 </select>
               </div>
-              <div class="space-y-3">
-                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.angle') }}</label>
-                <select
-                  v-model="comparisonForm.angle"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option :value="null">{{ t('photoEvolution.compare.selectAngle') }}</option>
-                  <option
-                    v-for="option in comparisonAngles"
-                    :key="option.value"
-                    :value="option.value"
-                  >
+              <div>
+                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.after') }}</label>
+                <select v-model="comparisonForm.afterId"
+                  class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+                  <option :value="null">{{ t('photoEvolution.compare.selectAfter') }}</option>
+                  <option v-for="option in comparisonAfterOptions" :key="option.value" :value="option.value">
                     {{ option.label }}
                   </option>
                 </select>
               </div>
-              <div class="space-y-3">
-                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.mode') }}</label>
-                <select
-                  v-model="comparisonForm.mode"
-                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                >
-                  <option value="side-by-side">{{ t('photoEvolution.compare.modes.sideBySide') }}</option>
-                  <option value="slider">{{ t('photoEvolution.compare.modes.slider') }}</option>
-                  <option value="overlay">{{ t('photoEvolution.compare.modes.overlay') }}</option>
-                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.beforeLabel') }}</label>
+                <input v-model="comparisonForm.beforeLabel" type="text"
+                  class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
               </div>
-              <div class="grid grid-cols-1 gap-3">
-                <div>
-                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.before') }}</label>
-                  <select
-                    v-model="comparisonForm.beforeId"
-                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option :value="null">{{ t('photoEvolution.compare.selectBefore') }}</option>
-                    <option
-                      v-for="option in comparisonBeforeOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
-                <div>
-                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.after') }}</label>
-                  <select
-                    v-model="comparisonForm.afterId"
-                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option :value="null">{{ t('photoEvolution.compare.selectAfter') }}</option>
-                    <option
-                      v-for="option in comparisonAfterOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
+              <div>
+                <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.afterLabel') }}</label>
+                <input v-model="comparisonForm.afterLabel" type="text"
+                  class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
               </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.beforeLabel') }}</label>
-                  <input
-                    v-model="comparisonForm.beforeLabel"
-                    type="text"
-                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-                <div>
-                  <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.compare.afterLabel') }}</label>
-                  <input
-                    v-model="comparisonForm.afterLabel"
-                    type="text"
-                    class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-              </div>
-              <div class="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="submit"
-                  class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
-                >
-                  {{ t('photoEvolution.compare.update') }}
-                </button>
-                <button
-                  type="button"
-                  class="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-                  @click="resetComparisonForm"
-                >
-                  {{ t('photoEvolution.compare.reset') }}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
-            <h3 class="text-sm font-semibold text-gray-700">{{ t('photoEvolution.compare.recentComparisons') }}</h3>
-            <div class="flex flex-col gap-3">
-              <button
-                v-for="recent in recentComparisons"
-                :key="recent.key"
-                type="button"
-                class="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-                @click="applyRecentComparison(recent)"
-              >
-                <span>{{ recent.label }}</span>
-                <span class="text-xs text-gray-400">{{ recent.modeLabel }}</span>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <button type="submit"
+                class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600">
+                {{ t('photoEvolution.compare.update') }}
               </button>
-              <p v-if="!recentComparisons.length" class="text-xs text-gray-400">
-                {{ t('photoEvolution.compare.noRecent') }}
-              </p>
+              <button type="button"
+                class="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
+                @click="resetComparisonForm">
+                {{ t('photoEvolution.compare.reset') }}
+              </button>
             </div>
-          </div>
-        </aside>
+          </form>
+        </div>
 
-        <section v-if="activeTab === 'gallery'" class="space-y-4">
-          <div v-if="loadingEntries" class="flex items-center justify-center rounded-xl bg-white p-12 shadow-sm">
-            <ArrowPathIcon class="h-8 w-8 animate-spin text-primary-500" />
+        <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-3">
+          <h3 class="text-sm font-semibold text-gray-700">{{ t('photoEvolution.compare.recentComparisons') }}</h3>
+          <div class="flex flex-col gap-3">
+            <button v-for="recent in recentComparisons" :key="recent.key" type="button"
+              class="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
+              @click="applyRecentComparison(recent)">
+              <span>{{ recent.label }}</span>
+              <span class="text-xs text-gray-400">{{ recent.modeLabel }}</span>
+            </button>
+            <p v-if="!recentComparisons.length" class="text-xs text-gray-400">
+              {{ t('photoEvolution.compare.noRecent') }}
+            </p>
           </div>
-          <div v-else>
-            <div v-if="!entries.length" class="rounded-xl bg-white p-12 text-center shadow-sm">
-              <p class="text-lg font-semibold text-gray-700">{{ t('photoEvolution.empty.title') }}</p>
-              <p class="mt-2 text-sm text-gray-500">{{ t('photoEvolution.empty.subtitle') }}</p>
-            </div>
-            <div v-else class="space-y-4">
-              <div
-                v-for="group in timelineGroups"
-                :key="group.key"
-                class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3"
-              >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h3 class="text-base font-semibold text-gray-800">{{ group.label }}</h3>
-                    <p class="text-sm text-gray-500">
-                      {{ group.countLabel }}
-                    </p>
-                  </div>
-                  <div class="flex flex-wrap gap-2 text-xs text-gray-500">
-                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', { part: group.bodyPartLabel }) }}</span>
-                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', { angle: group.angleLabel }) }}</span>
-                  </div>
+        </div>
+      </aside>
+
+      <section v-if="activeTab === 'gallery'" class="space-y-4">
+        <div v-if="loadingEntries" class="flex items-center justify-center rounded-xl bg-white p-12 shadow-sm">
+          <ArrowPathIcon class="h-8 w-8 animate-spin text-primary-500" />
+        </div>
+        <div v-else>
+          <div v-if="!entries.length" class="rounded-xl bg-white p-12 text-center shadow-sm">
+            <p class="text-lg font-semibold text-gray-700">{{ t('photoEvolution.empty.title') }}</p>
+            <p class="mt-2 text-sm text-gray-500">{{ t('photoEvolution.empty.subtitle') }}</p>
+          </div>
+          <div v-else class="space-y-4">
+            <div v-for="group in timelineGroups" :key="group.key"
+              class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-800">{{ group.label }}</h3>
+                  <p class="text-sm text-gray-500">
+                    {{ group.countLabel }}
+                  </p>
                 </div>
-                <div class="flex gap-4 overflow-x-auto pb-1">
+                <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+                  <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', {
+                    part:
+                      group.bodyPartLabel
+                  }) }}</span>
+                  <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', {
+                    angle:
+                      group.angleLabel
+                  }) }}</span>
+                </div>
+              </div>
+              <div class="flex gap-4 overflow-x-auto pb-1">
+                <div v-for="entry in group.items" :key="entry.id"
+                  class="group mt-1 ml-2 relative h-40 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-transparent bg-gray-100 transition-all duration-300"
+                  :class="comparisonIds.includes(entry.id) ? 'ring-2 ring-blue-500 ring-offset-2' : 'hover:border-blue-200 hover:shadow'">
+                  <img v-if="entry.imageUrl" :src="entry.imageUrl"
+                    :alt="formatDate(entry.capturedAt || entry.createdAt)"
+                    class="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                  <div v-else class="flex h-full w-full items-center justify-center text-gray-400">
+                    <PhotoIcon class="h-6 w-6" />
+                  </div>
                   <div
-                    v-for="entry in group.items"
-                    :key="entry.id"
-                    class="group relative h-40 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-transparent bg-gray-100 transition-all duration-300"
-                    :class="comparisonIds.includes(entry.id) ? 'ring-2 ring-blue-500 ring-offset-2' : 'hover:border-blue-200 hover:shadow'"
-                  >
-                    <img
-                      v-if="entry.imageUrl"
-                      :src="entry.imageUrl"
-                      :alt="formatDate(entry.capturedAt || entry.createdAt)"
-                      class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                    />
-                    <div v-else class="flex h-full w-full items-center justify-center text-gray-400">
-                      <PhotoIcon class="h-6 w-6" />
-                    </div>
-                    <div class="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 via-black/10 to-transparent p-2 text-xs text-white opacity-0 transition group-hover:opacity-100">
-                      <span class="font-semibold">{{ formatDate(entry.capturedAt || entry.createdAt) }}</span>
-                      <span v-if="entry.weight" class="text-[10px] text-white/80">{{ t('photoEvolution.gallery.weightChip', { weight: formatNumber(entry.weight) }) }}</span>
-                    </div>
-                    <div class="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition group-hover:opacity-100">
-                      <button
-                        type="button"
-                        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 shadow"
-                        @click="viewEntry(entry)"
-                      >
-                        <EyeIcon class="h-5 w-5" />
-                        <span class="sr-only">{{ t('photoEvolution.gallery.view') }}</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow"
-                        @click="toggleComparison(entry)"
-                      >
-                        <ArrowsRightLeftIcon class="h-5 w-5" />
-                        <span class="sr-only">{{ t('photoEvolution.gallery.compare') }}</span>
-                      </button>
-                    </div>
+                    class="pointer-events-none absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/60 via-black/10 to-transparent p-2 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                    <span class="font-semibold">{{ formatDate(entry.capturedAt || entry.createdAt) }}</span>
+                    <span v-if="entry.weight" class="text-[10px] text-white/80">{{
+                      t('photoEvolution.gallery.weightChip', { weight: formatNumber(entry.weight) }) }}</span>
                   </div>
-                </div>
-              </div>
-              <div
-                v-if="previewEntry"
-                class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 class="text-base font-semibold text-gray-800">{{ t('photoEvolution.gallery.previewTitle') }}</h3>
-                    <p class="text-sm text-gray-500">{{ formatDate(previewEntry.capturedAt || previewEntry.createdAt) }}</p>
-                  </div>
-                  <div class="flex flex-wrap gap-2 text-xs text-gray-500">
-                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', { part: bodyPartLabel(previewEntry.bodyPart) }) }}</span>
-                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', { angle: angleLabel(previewEntry.angle) }) }}</span>
-                    <span v-if="previewEntry.weight" class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.weightChip', { weight: formatNumber(previewEntry.weight) }) }}</span>
-                  </div>
-                </div>
-                <div class="mt-4 overflow-hidden rounded-xl bg-gray-900/5">
-                  <img
-                    v-if="previewEntry.imageUrl"
-                    :src="previewEntry.imageUrl"
-                    :alt="formatDate(previewEntry.capturedAt || previewEntry.createdAt)"
-                    class="h-auto w-full max-h-[520px] rounded-xl object-cover"
-                  />
-                  <div v-else class="flex h-80 items-center justify-center text-gray-400">
-                    <PhotoIcon class="h-12 w-12" />
+                  <div
+                    class="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition group-hover:opacity-100">
+                    <button type="button"
+                      class="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-700 shadow"
+                      @click="viewEntry(entry)">
+                      <EyeIcon class="h-5 w-5" />
+                      <span class="sr-only">{{ t('photoEvolution.gallery.view') }}</span>
+                    </button>
+                    <button type="button"
+                      class="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white shadow"
+                      @click="toggleComparison(entry)">
+                      <ArrowsRightLeftIcon class="h-5 w-5" />
+                      <span class="sr-only">{{ t('photoEvolution.gallery.compare') }}</span>
+                    </button>
+                    <button type="button"
+                      class="pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-gray-700 shadow"
+                      @click="removePhoto(entry)">
+                      <TrashIcon class="h-5 w-5" />
+                      <span class="sr-only">{{ t('photoEvolution.gallery.view') }}</span>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section v-else class="space-y-4">
-          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div class="flex flex-wrap gap-2 text-sm text-gray-600">
-              <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', { part: comparisonSummary.bodyPart }) }}</span>
-              <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', { angle: comparisonSummary.angle }) }}</span>
-              <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.beforeChip', { date: comparisonSummary.beforeDate }) }}</span>
-              <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.afterChip', { date: comparisonSummary.afterDate }) }}</span>
-              <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.modeChip', { mode: comparisonSummary.modeLabel }) }}</span>
-            </div>
-            <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div v-for="(entry, index) in comparisonEntries" :key="entry?.id || index" class="relative h-full rounded-lg bg-gray-100">
-                <div class="absolute inset-0 flex flex-col justify-between p-3 text-xs">
-                  <div class="flex justify-between text-gray-700">
-                    <span class="rounded bg-white/80 px-2 py-1">{{ index === 0 ? comparisonForm.beforeLabel : comparisonForm.afterLabel }}</span>
-                    <span class="rounded bg-white/80 px-2 py-1" v-if="entry?.weight">
-                      {{ formatNumber(entry.weight) }} {{ t('photoEvolution.form.fields.weight.unit') }}
-                    </span>
-                  </div>
-                  <div class="self-end rounded bg-white/80 px-2 py-1 text-gray-600">
-                    {{ formatDate(entry?.capturedAt || entry?.createdAt) }}
-                  </div>
+            <div v-if="previewEntry" class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-800">{{ t('photoEvolution.gallery.previewTitle') }}</h3>
+                  <p class="text-sm text-gray-500">{{ formatDate(previewEntry.capturedAt || previewEntry.createdAt) }}
+                  </p>
                 </div>
-                <img
-                  v-if="entry?.imageUrl"
-                  :src="entry.imageUrl"
-                  class="h-full w-full rounded-lg object-cover"
-                  :style="{ transform: `scale(${comparisonZoomScale})` }"
-                  alt=""
-                />
-                <div v-else class="flex h-96 items-center justify-center text-gray-300">
+                <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+                  <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', {
+                    part:
+                      bodyPartLabel(previewEntry.bodyPart)
+                  }) }}</span>
+                  <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', {
+                    angle:
+                      angleLabel(previewEntry.angle)
+                  }) }}</span>
+                  <span v-if="previewEntry.weight" class="rounded-full bg-gray-100 px-3 py-1">{{
+                    t('photoEvolution.gallery.weightChip', { weight: formatNumber(previewEntry.weight) }) }}</span>
+                </div>
+              </div>
+              <div class="mt-4 overflow-hidden rounded-xl bg-gray-900/5">
+                <img v-if="previewEntry.imageUrl" :src="previewEntry.imageUrl"
+                  :alt="formatDate(previewEntry.capturedAt || previewEntry.createdAt)"
+                  class="h-auto w-full max-h-full rounded-xl object-cover" />
+                <div v-else class="flex h-80 items-center justify-center text-gray-400">
                   <PhotoIcon class="h-12 w-12" />
                 </div>
               </div>
             </div>
-
-            <div class="mt-4 space-y-3">
-              <input
-                type="range"
-                min="1"
-                max="100"
-                v-model="comparisonForm.zoom"
-                class="w-full accent-blue-500"
-              />
-              <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
-                <div class="flex gap-3">
-                  <button type="button" class="hover:text-gray-700" @click="swapComparison">
-                    ⇄ {{ t('photoEvolution.compare.swap') }}
-                  </button>
-                  <button type="button" class="hover:text-gray-700" @click="duplicateComparison">
-                    {{ t('photoEvolution.compare.duplicate') }}
-                  </button>
+          </div>
+        </div>
+      </section>
+      
+      <section v-else class="space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div class="flex flex-wrap gap-2 text-sm text-gray-600">
+            <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', {
+              part:
+                comparisonSummary.bodyPart
+            }) }}</span>
+            <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', {
+              angle:
+                comparisonSummary.angle
+            }) }}</span>
+            <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.beforeChip', {
+              date:
+                comparisonSummary.beforeDate
+            }) }}</span>
+            <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.afterChip', {
+              date:
+                comparisonSummary.afterDate
+            }) }}</span>
+            <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.compare.modeChip', {
+              mode:
+                comparisonSummary.modeLabel
+            }) }}</span>
+          </div>
+          <div class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div v-for="(entry, index) in comparisonEntries" :key="entry?.id || index"
+              class="relative h-full rounded-lg bg-gray-100">
+              <div class="absolute inset-0 flex flex-col justify-between p-3 text-xs">
+                <div class="flex justify-between text-gray-700">
+                  <span class="rounded bg-white/80 px-2 py-1">{{ index === 0 ? comparisonForm.beforeLabel :
+                    comparisonForm.afterLabel }}</span>
+                  <span class="rounded bg-white/80 px-2 py-1" v-if="entry?.weight">
+                    {{ formatNumber(entry.weight) }} {{ t('photoEvolution.form.fields.weight.unit') }}
+                  </span>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span>• {{ comparisonForm.afterLabel }}</span>
-                  <span>• {{ comparisonForm.beforeLabel }}</span>
-                  <button
-                    type="button"
-                    class="rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
-                    @click="exportComparison"
-                  >
-                    {{ t('photoEvolution.compare.export') }}
-                  </button>
+                <div class="self-end rounded bg-white/80 px-2 py-1 text-gray-600">
+                  {{ formatDate(entry?.capturedAt || entry?.createdAt) }}
                 </div>
+              </div>
+              <img v-if="entry?.imageUrl" :src="entry.imageUrl" class="h-full w-full rounded-lg object-cover"
+                :style="{ transform: `scale(${comparisonZoomScale})` }" alt="" />
+              <div v-else class="flex h-96 items-center justify-center text-gray-300">
+                <PhotoIcon class="h-12 w-12" />
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <h3 class="text-sm font-semibold text-gray-700">{{ t('photoEvolution.compare.suggestedPairs') }}</h3>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button
-                v-for="suggestion in suggestedPairs"
-                :key="suggestion.key"
-                type="button"
-                class="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-                @click="applySuggestion(suggestion)"
-              >
-                {{ suggestion.label }}
-              </button>
-              <p v-if="!suggestedPairs.length" class="text-xs text-gray-400">
-                {{ t('photoEvolution.compare.noSuggestions') }}
-              </p>
+          <div class="mt-4 space-y-3">
+            <input type="range" min="1" max="100" v-model="comparisonForm.zoom" class="w-full accent-blue-500" />
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
+              <div class="flex gap-3">
+                <button type="button" class="hover:text-gray-700" @click="swapComparison">
+                  ⇄ {{ t('photoEvolution.compare.swap') }}
+                </button>
+                <button type="button" class="hover:text-gray-700" @click="duplicateComparison">
+                  {{ t('photoEvolution.compare.duplicate') }}
+                </button>
+              </div>
+              <div class="flex items-center gap-3">
+                <span>• {{ comparisonForm.afterLabel }}</span>
+                <span>• {{ comparisonForm.beforeLabel }}</span>
+                <button type="button"
+                  class="rounded-md bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+                  @click="exportComparison">
+                  {{ t('photoEvolution.compare.export') }}
+                </button>
+              </div>
             </div>
           </div>
-        </section>
-      </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <h3 class="text-sm font-semibold text-gray-700">{{ t('photoEvolution.compare.suggestedPairs') }}</h3>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button v-for="suggestion in suggestedPairs" :key="suggestion.key" type="button"
+              class="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
+              @click="applySuggestion(suggestion)">
+              {{ suggestion.label }}
+            </button>
+            <p v-if="!suggestedPairs.length" class="text-xs text-gray-400">
+              {{ t('photoEvolution.compare.noSuggestions') }}
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
+  <ConfirmDialog v-model="confirmOpen" :title="t('diet.list.confirmDelete.title')"
+      :message="t('diet.list.confirmDelete.message')" :confirm-label="t('diet.delete')" @confirm="confirmDelete" />
 </template>
 
 <script setup>
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import { computed, reactive, ref, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -1287,6 +1160,8 @@ async function loadPrefill() {
 
 function clearFilters() {
   filterBodyPart.value = null;
+  previewEntry.value = null;
+  resetEditing();
   loadEntries();
 }
 
@@ -1419,9 +1294,24 @@ function startEdit(entry) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+const confirmOpen = ref(false);
+const rowDelete = ref(null);
+
+const removePhoto = async (entry) => {
+  confirmOpen.value = true;
+  rowDelete.value = entry;
+};
+
+const confirmDelete = async () => {
+  if (rowDelete.value) {
+    await deleteEntry(rowDelete.value);
+    rowDelete.value = null;
+  }
+  confirmOpen.value = false;
+};
+
 async function deleteEntry(entry) {
-  const confirmed = window.confirm(t('photoEvolution.notifications.confirmDelete'));
-  if (!confirmed) {
+  if (!confirmOpen.value) {
     return;
   }
   if (editingEntry.value?.id === entry.id) {
@@ -1686,7 +1576,7 @@ function updateRouteComparisonQuery(ids) {
   if (currentSerialized === nextSerialized) {
     return;
   }
-  router.replace({ query: nextQuery }).catch(() => {});
+  router.replace({ query: nextQuery }).catch(() => { });
 }
 
 function openComparison() {
