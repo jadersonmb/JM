@@ -1,41 +1,69 @@
 <template>
-  <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div>
-        <h2 class="text-2xl font-semibold text-slate-900">
-          {{ t('whatsappNutrition.title') }}
-        </h2>
-        <p class="text-sm text-slate-500">{{ t('whatsappNutrition.subtitle') }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <div
-          class="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm"
-        >
+  <div class="min-h-screen bg-gray-50 p-6">
+    <div class="mx-auto max-w-7xl space-y-6">
+      <header
+        class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+      >
+        <div>
+          <h1 class="text-2xl font-semibold text-gray-900">Nutrition Assistant</h1>
+          <p class="text-sm text-gray-500">
+            Monitor WhatsApp submissions and AI-powered nutrition insights.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="relative">
+            <button
+              type="button"
+              class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-blue-300 hover:text-blue-600"
+              @click="togglePeriodDropdown"
+            >
+              <span>{{ selectedPeriod.label }}</span>
+              <ChevronDownIcon class="h-4 w-4 text-gray-400" />
+            </button>
+            <div
+              v-if="periodDropdownOpen"
+              class="absolute right-0 z-20 mt-2 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+            >
+              <button
+                v-for="option in periodOptions"
+                :key="option.value"
+                type="button"
+                class="w-full px-4 py-2 text-left text-sm text-gray-600 transition-all duration-300 hover:bg-gray-50"
+                :class="option.value === selectedPeriodValue ? 'bg-blue-50 font-medium text-blue-600' : ''"
+                @click="selectPeriod(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
           <button
             type="button"
-            class="text-sm font-medium text-slate-500 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-300"
-            :aria-label="t('whatsappNutrition.dateNavigator.previousDayAria')"
-            @click="goToPreviousDay"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-blue-300 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="refreshData"
             :disabled="loading"
           >
-            {{ t('whatsappNutrition.dateNavigator.previous') }}
+            <ArrowPathIcon class="h-4 w-4" :class="loading ? 'animate-spin' : ''" />
+            <span v-if="loading">{{ t('whatsappNutrition.actions.refreshing') }}</span>
+            <span v-else>{{ t('whatsappNutrition.actions.refresh') }}</span>
           </button>
           <button
             type="button"
-            class="flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-sm font-semibold text-primary-700 transition hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            :aria-label="t('whatsappNutrition.dateNavigator.pickDateAria')"
-            @click="openDatePicker"
+            class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 shadow-sm transition-all duration-300 hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="confirmDelete"
+            :disabled="!selectedMessageId || deleting"
           >
-            <span>{{ isTodaySelected ? t('whatsappNutrition.dateNavigator.today') : selectedDateLabel }}</span>
+            <TrashIcon class="h-4 w-4" />
+            <span v-if="deleting">{{ t('whatsappNutrition.actions.deleting') }}</span>
+            <span v-else>{{ t('whatsappNutrition.actions.delete') }}</span>
           </button>
           <button
             type="button"
-            class="text-sm font-medium text-slate-500 transition hover:text-slate-900 disabled:cursor-not-allowed disabled:text-slate-300"
-            :aria-label="t('whatsappNutrition.dateNavigator.nextDayAria')"
-            @click="goToNextDay"
-            :disabled="loading || isNextDisabled"
+            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-300 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            @click="openCreateModal"
+            :disabled="createDisabled"
           >
-            {{ t('whatsappNutrition.dateNavigator.next') }}
+            <PlusIcon class="h-4 w-4" />
+            <span>+ {{ t('whatsappNutrition.actions.create') }}</span>
           </button>
           <input
             ref="dateInputRef"
@@ -45,148 +73,171 @@
             @change="handleDateChange"
           />
         </div>
-        <button class="btn-secondary" @click="refreshData" :disabled="loading">
-          <ArrowPathIcon class="h-4 w-4" />
-          <span v-if="loading">{{ t('whatsappNutrition.actions.refreshing') }}</span>
-          <span v-else>{{ t('whatsappNutrition.actions.refresh') }}</span>
-        </button>
-        <button
-          class="btn-secondary text-rose-600"
-          @click="confirmDelete"
-          :disabled="!selectedMessageId || deleting"
-        >
-          <TrashIcon class="h-4 w-4" />
-          <span v-if="deleting">{{ t('whatsappNutrition.actions.deleting') }}</span>
-          <span v-else>{{ t('whatsappNutrition.actions.delete') }}</span>
-        </button>
-        <button class="btn-primary" @click="openCreateModal" :disabled="createDisabled">
-          <PlusIcon class="h-4 w-4" />
-          {{ t('whatsappNutrition.actions.create') }}
-        </button>
-      </div>
-    </div>
+      </header>
 
-    <div
-      v-if="isAdmin"
-      class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <label class="gap-2 sm:flex-row sm:items-center">
-        <span class="text-sm font-medium text-slate-700">
-          {{ t('whatsappNutrition.filters.client') }}
-        </span>
-        <div class="flex w-full max-w-sm items-center gap-2">
-          <select v-model="selectedUserId" class="input w-full" :disabled="usersLoading">
-            <option value="">{{ t('whatsappNutrition.filters.allClients') }}</option>
-            <option v-for="user in userOptions" :key="user.id" :value="user.id">
-              {{ user.name }}
-            </option>
-          </select>
-        </div>
-      </label>
-      <p v-if="usersLoading" class="mt-2 text-xs text-slate-500">
-        {{ t('whatsappNutrition.states.loadingUsers') }}
-      </p>
-    </div>
-
-    <div class="grid gap-6 lg:grid-cols-2">
-      <section class="rounded-2xl bg-white p-6 shadow-sm">
-        <header class="mb-4 flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900">
-              {{ t('whatsappNutrition.feed.title') }}
-            </h3>
-            <p class="text-xs text-slate-500">
-              {{ t('whatsappNutrition.feed.description') }}
-            </p>
-          </div>
-          <span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">
-            {{ t('whatsappNutrition.feed.count', { count: feed.length }) }}
+      <div
+        v-if="isAdmin"
+        class="rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm"
+      >
+        <label class="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <span class="text-sm font-medium text-gray-700">
+            {{ t('whatsappNutrition.filters.client') }}
           </span>
+          <div class="flex w-full max-w-sm items-center gap-2">
+            <select v-model="selectedUserId" class="input w-full" :disabled="usersLoading">
+              <option value="">{{ t('whatsappNutrition.filters.allClients') }}</option>
+              <option v-for="user in userOptions" :key="user.id" :value="user.id">
+                {{ user.name }}
+              </option>
+            </select>
+          </div>
+        </label>
+        <p v-if="usersLoading" class="mt-2 text-xs text-gray-500">
+          {{ t('whatsappNutrition.states.loadingUsers') }}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)]">
+      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300">
+        <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">Feed</h2>
+            <p class="text-sm text-gray-500">Latest WhatsApp submissions and meal insights.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="option in feedFilterOptions"
+              :key="option.value"
+              type="button"
+              class="rounded-full border px-3 py-1 text-sm font-medium transition-all duration-300"
+              :class="isFeedFilterActive(option.value)
+                ? 'border-blue-300 bg-blue-100 text-blue-600'
+                : 'border-gray-300 bg-white text-gray-500 hover:border-blue-200 hover:text-blue-600'"
+              @click="toggleFeedFilter(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
         </header>
 
-        <div v-if="loading" class="flex h-64 items-center justify-center text-sm text-slate-500">
+        <div v-if="loading" class="flex h-64 items-center justify-center text-sm text-gray-500">
           {{ t('whatsappNutrition.feed.loading') }}
         </div>
         <div
           v-else-if="shouldPromptSelection"
-          class="flex h-64 items-center justify-center text-center text-sm text-slate-500"
+          class="flex h-64 items-center justify-center text-center text-sm text-gray-500"
         >
           {{ t('whatsappNutrition.feed.selectClient') }}
         </div>
-        <div v-else-if="!feed.length" class="flex h-64 items-center justify-center text-sm text-slate-500">
+        <div
+          v-else-if="!filteredFeed.length"
+          class="flex h-64 items-center justify-center text-sm text-gray-500"
+        >
           {{ t('whatsappNutrition.feed.empty') }}
         </div>
         <div v-else class="max-h-[52rem] space-y-6 overflow-y-auto pr-2">
-          <div v-for="group in groupedFeed" :key="group.key" class="space-y-2">
-            <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ group.label }}</h4>
+          <div v-for="group in groupedFeed" :key="group.key" class="space-y-3">
+            <div class="flex items-center gap-3 text-gray-600">
+              <span class="text-xl">{{ mealIcon(group.label) }}</span>
+              <h3 class="text-base font-semibold">{{ group.label }}</h3>
+            </div>
             <ul class="space-y-4">
               <li
                 v-for="item in group.items"
                 :key="item.id"
                 :class="[
-                  'flex gap-4 rounded-xl border p-4 transition',
-                  selectedMessageId === item.id
-                    ? 'border-emerald-500 bg-emerald-50 shadow'
-                    : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/40'
+                  'flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md',
+                  selectedMessageId === item.id ? 'border-blue-500 ring-2 ring-blue-100' : ''
                 ]"
                 @click="selectMessage(item)"
                 @dblclick.stop="openEditModal(item)"
               >
-                <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                  <img
-                    v-if="item.imageUrl"
-                    :src="item.imageUrl"
-                    :alt="item.nutrition?.foodName ?? t('whatsappNutrition.feed.alt')"
-                    class="h-full w-full object-cover"
-                  />
-                  <div v-else class="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-400">
-                    {{ t('whatsappNutrition.feed.textPlaceholder') }}
+                <div class="flex flex-1 items-center gap-4">
+                  <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      v-if="item.imageUrl"
+                      :src="item.imageUrl"
+                      :alt="item.nutrition?.foodName ?? t('whatsappNutrition.feed.alt')"
+                      class="h-full w-full object-cover"
+                    />
+                    <div
+                      v-else
+                      class="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-400"
+                    >
+                      {{ t('whatsappNutrition.feed.textPlaceholder') }}
+                    </div>
                   </div>
-                </div>
-                <div class="flex-1 space-y-2">
-                  <div class="flex items-start justify-between gap-2">
-                    <div>
-                      <p class="text-sm font-semibold text-slate-900">
+                  <div class="flex-1 space-y-2">
+                    <div class="flex flex-col gap-1">
+                      <h3 class="text-base font-semibold text-gray-800">
                         {{ item.nutrition?.foodName ?? t('whatsappNutrition.feed.unknownMeal') }}
+                      </h3>
+                      <p class="text-xs text-gray-500">
+                        {{ submissionSourceLabel(item) }}
                       </p>
-                      <p class="text-xs text-slate-500">
-                        {{ t('whatsappNutrition.feed.source', { phone: item.fromPhone, date: formatDate(item.receivedAt) }) }}
-                      </p>
-                      <p v-if="isAdmin && ownerName(item.ownerUserId)" class="text-xs text-slate-400">
+                      <p
+                        v-if="isAdmin && ownerName(item.ownerUserId)"
+                        class="text-xs text-gray-400"
+                      >
                         {{ t('whatsappNutrition.feed.owner', { name: ownerName(item.ownerUserId) }) }}
                       </p>
                     </div>
-                    <div class="flex flex-col items-end gap-1">
-                      <span v-if="item.nutrition?.calories" class="text-sm font-semibold text-primary-600">
-                        {{ formatNumber(item.nutrition.calories) }} kcal
+                    <p v-if="item.textContent" class="text-sm text-gray-600">
+                      {{ item.textContent }}
+                    </p>
+                    <div v-if="item.nutrition" class="flex flex-wrap gap-2 text-xs">
+                      <span class="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700">
+                        Protein {{ formatMacro(item.nutrition.protein) }}g
                       </span>
-                      <span
-                        v-if="item.editedEntry"
-                        class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700"
-                      >
-                        {{ t('whatsappNutrition.feed.edited') }}
+                      <span class="rounded bg-blue-100 px-2 py-0.5 font-medium text-blue-700">
+                        Carbs {{ formatMacro(item.nutrition.carbs) }}g
                       </span>
-                      <span
-                        v-else-if="item.manualEntry"
-                        class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700"
-                      >
-                        {{ t('whatsappNutrition.feed.manual') }}
+                      <span class="rounded bg-yellow-100 px-2 py-0.5 font-medium text-yellow-700">
+                        Fat {{ formatMacro(item.nutrition.fat) }}g
                       </span>
                     </div>
+                    <p v-if="item.nutrition?.summary" class="text-xs text-gray-500">
+                      {{ item.nutrition.summary }}
+                    </p>
                   </div>
-                  <p v-if="item.textContent" class="text-sm text-slate-600">{{ item.textContent }}</p>
-                  <div v-if="item.nutrition" class="grid gap-2 sm:grid-cols-3">
-                    <div class="nutrition-chip">
-                      {{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.nutrition.protein) }) }}
-                    </div>
-                    <div class="nutrition-chip">
-                      {{ t('whatsappNutrition.feed.macros.carbs', { amount: formatMacro(item.nutrition.carbs) }) }}
-                    </div>
-                    <div class="nutrition-chip">
-                      {{ t('whatsappNutrition.feed.macros.fat', { amount: formatMacro(item.nutrition.fat) }) }}
-                    </div>
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                  <span
+                    v-if="item.nutrition?.calories"
+                    class="text-sm font-medium text-gray-700"
+                  >
+                    {{ formatNumber(item.nutrition.calories) }} kcal
+                  </span>
+                  <div class="flex items-center gap-2 text-xs font-semibold">
+                    <span
+                      v-if="item.editedEntry"
+                      class="rounded-full bg-amber-100 px-2 py-0.5 uppercase text-amber-600"
+                    >
+                      {{ t('whatsappNutrition.feed.edited') }}
+                    </span>
+                    <span
+                      v-else-if="item.manualEntry"
+                      class="rounded-full bg-emerald-100 px-2 py-0.5 uppercase text-emerald-600"
+                    >
+                      {{ t('whatsappNutrition.feed.manual') }}
+                    </span>
                   </div>
-                  <p v-if="item.nutrition?.summary" class="text-xs text-slate-500">{{ item.nutrition.summary }}</p>
+                  <div class="flex gap-2">
+                    <button
+                      type="button"
+                      class="text-gray-400 transition-all duration-300 hover:text-blue-500"
+                      @click.stop="openEditModal(item)"
+                    >
+                      <PencilSquareIcon class="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="text-gray-400 transition-all duration-300 hover:text-blue-500"
+                      @click.stop="selectMessage(item)"
+                    >
+                      <MagnifyingGlassIcon class="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               </li>
             </ul>
@@ -194,87 +245,140 @@
         </div>
       </section>
 
-      <section class="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm">
-        <header>
-          <h3 class="text-lg font-semibold text-slate-900">{{ t('whatsappNutrition.dashboard.title') }}</h3>
-          <p class="text-xs text-slate-500">{{ t('whatsappNutrition.dashboard.description') }}</p>
-        </header>
-
-        <div v-if="loading" class="flex h-64 items-center justify-center text-sm text-slate-500">
-          {{ t('whatsappNutrition.dashboard.loading') }}
-        </div>
-        <div v-else class="flex flex-col gap-4">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <StatCard
-              :label="t('whatsappNutrition.dashboard.metrics.calories')"
-              :value="`${formatNumber(dashboard.totalCalories)} kcal`"
-            />
-            <StatCard
-              :label="t('whatsappNutrition.dashboard.metrics.meals')"
-              :value="formatNumber(dashboard.mealsAnalyzed)"
-            />
+      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-2">
+            <p class="text-sm font-medium text-gray-500">Total Calories</p>
+            <h3 class="text-3xl font-semibold text-gray-800">
+              {{ formatNumber(dashboard.totalCalories) }} kcal
+            </h3>
+            <span
+              class="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-600"
+            >
+              Meals Analyzed: {{ formatNumber(dashboard.mealsAnalyzed) }}
+            </span>
           </div>
 
-          <section class="rounded-xl border border-slate-200 p-4">
-            <h4 class="text-sm font-semibold text-slate-900">
-              {{ t('whatsappNutrition.dashboard.macros.title') }}
-            </h4>
-            <p class="text-xs text-slate-500">
-              {{ t('whatsappNutrition.dashboard.macros.subtitle') }}
-            </p>
-            <MacroBar :items="macroItems" />
-          </section>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="option in quickFilterOptions"
+              :key="option.value"
+              type="button"
+              class="rounded-full border px-3 py-1 text-sm font-medium transition-all duration-300"
+              :class="option.value === 'export'
+                ? 'border-gray-300 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-600'
+                : option.value === selectedPeriodValue
+                  ? 'border-blue-300 bg-blue-100 text-blue-600'
+                  : 'border-gray-300 bg-white text-gray-500 hover:border-blue-200 hover:text-blue-600'"
+              @click="handleQuickFilter(option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
 
-          <section class="rounded-xl border border-slate-200 p-4">
-            <h4 class="text-sm font-semibold text-slate-900">
-              {{ t('whatsappNutrition.dashboard.categories.title') }}
-            </h4>
-            <p class="text-xs text-slate-500">
-              {{ t('whatsappNutrition.dashboard.categories.subtitle') }}
-            </p>
-            <ul class="mt-3 space-y-2 text-sm text-slate-600">
-              <li v-for="item in categoryBreakdown" :key="item.name" class="flex justify-between">
-                <span>{{ item.name }}</span>
-                <span>{{ formatNumber(item.calories) }} kcal</span>
-              </li>
-              <li v-if="!categoryBreakdown.length" class="text-xs text-slate-500">
-                {{ t('whatsappNutrition.dashboard.categories.empty') }}
-              </li>
-            </ul>
-          </section>
-
-          <section class="rounded-xl border border-slate-200 p-4">
-            <h4 class="text-sm font-semibold text-slate-900">
-              {{ t('whatsappNutrition.dashboard.history.title') }}
-            </h4>
-            <p class="text-xs text-slate-500">
-              {{ t('whatsappNutrition.dashboard.history.subtitle') }}
-            </p>
-            <div class="mt-3 max-h-72 space-y-3 overflow-y-auto pr-2 text-xs text-slate-500">
-              <ul class="space-y-3">
-                <li v-for="item in history" :key="item.messageId" class="rounded-lg bg-slate-50 p-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <p class="text-sm font-semibold text-slate-800">
-                        {{ item.foodName ?? t('whatsappNutrition.feed.unknownMeal') }}
-                      </p>
-                      <p class="mt-1 text-xs text-slate-500">{{ formatDay(item.analyzedAt) }}</p>
-                    </div>
-                    <div class="text-right text-xs text-slate-500">
-                      <p>{{ formatNumber(item.calories) }} kcal</p>
-                      <p>{{ t('whatsappNutrition.feed.macros.protein', { amount: formatMacro(item.protein, false) }) }}</p>
-                    </div>
+          <div v-if="loading" class="flex h-64 items-center justify-center text-sm text-gray-500">
+            {{ t('whatsappNutrition.dashboard.loading') }}
+          </div>
+          <div v-else class="space-y-5">
+            <section class="rounded-xl border border-gray-100 bg-gray-50 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-base font-semibold text-gray-800">Macronutrients Distribution</h4>
+                  <p class="text-xs text-gray-500">Overview of macro intake across analyzed meals.</p>
+                </div>
+                <span class="text-xs font-medium text-gray-400">
+                  {{ macroItems.length }} metrics
+                </span>
+              </div>
+              <div class="mt-4 space-y-5">
+                <div v-for="macro in macroItems" :key="macro.key" class="space-y-2">
+                  <div class="flex items-center justify-between text-sm font-medium text-gray-700">
+                    <span>{{ macro.label }}</span>
+                    <span class="text-sm font-semibold text-gray-800">{{ macro.amountLabel }}</span>
                   </div>
-                  <p v-if="item.summary" class="mt-2 text-xs text-slate-500">{{ item.summary }}</p>
-                </li>
-                <li v-if="!history.length" class="text-xs text-slate-500">
+                  <div class="h-2.5 w-full rounded-full bg-white/70">
+                    <div
+                      class="h-full rounded-full transition-all duration-300"
+                      :class="macro.color"
+                      :style="{ width: macro.percentageWidth }"
+                    />
+                  </div>
+                  <div class="flex justify-end text-xs font-medium text-gray-500">
+                    {{ macro.percentageLabel }}
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 flex flex-wrap gap-3 text-xs text-gray-500">
+                <span
+                  v-for="macro in macroItems"
+                  :key="`legend-${macro.key}`"
+                  class="inline-flex items-center gap-2"
+                >
+                  <span class="h-2 w-2 rounded-full" :class="macro.color"></span>
+                  {{ macro.label }}
+                </span>
+              </div>
+            </section>
+
+            <section class="rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-semibold text-gray-800">Food Categories</h4>
+                <span class="text-xs text-gray-400">Calories by category</span>
+              </div>
+              <div v-if="categoryBreakdown.length" class="mt-4 space-y-4">
+                <div
+                  v-for="(item, index) in categoryBreakdown"
+                  :key="item.name"
+                  class="space-y-2"
+                >
+                  <div class="flex items-center justify-between text-sm font-medium text-gray-700">
+                    <span>{{ item.name }}</span>
+                    <span>{{ formatNumber(item.calories) }} kcal</span>
+                  </div>
+                  <div class="h-2.5 w-full rounded-full bg-gray-100">
+                    <div
+                      class="h-full rounded-full transition-all duration-300"
+                      :class="categoryColor(index)"
+                      :style="{ width: categoryWidth(item.calories) }"
+                    />
+                  </div>
+                </div>
+              </div>
+              <p v-else class="mt-4 text-sm text-gray-500">
+                {{ t('whatsappNutrition.dashboard.categories.empty') }}
+              </p>
+            </section>
+
+            <section class="rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between">
+                <h4 class="text-base font-semibold text-gray-800">Recent History</h4>
+                <span class="text-xs text-gray-400">Latest analyzed meals</span>
+              </div>
+              <div class="mt-4 space-y-2">
+                <div
+                  v-for="item in history"
+                  :key="item.messageId"
+                  class="flex items-center justify-between border-b border-gray-100 pb-2 text-sm text-gray-700 last:border-b-0 last:pb-0"
+                >
+                  <span class="font-medium text-gray-800">
+                    {{ item.foodName ?? t('whatsappNutrition.feed.unknownMeal') }}
+                  </span>
+                  <div class="flex items-center gap-3 text-right text-xs text-gray-500">
+                    <span>{{ formatNumber(item.calories) }} kcal</span>
+                    <span class="text-gray-400">{{ formatHistoryDate(item.analyzedAt) }}</span>
+                  </div>
+                </div>
+                <p v-if="!history.length" class="pt-2 text-sm text-gray-500">
                   {{ t('whatsappNutrition.dashboard.history.empty') }}
-                </li>
-              </ul>
-            </div>
-          </section>
+                </p>
+                <p class="pt-2 text-center text-xs text-gray-400">No more data to display</p>
+              </div>
+            </section>
+          </div>
         </div>
       </section>
+    </div>
+
     </div>
 
     <NutritionEntryModal
@@ -307,12 +411,17 @@ import {
 import { getMeasurementUnits, getFoodCategories, getMeals, getFoods } from '@/services/reference';
 import { uploadFile } from '@/services/cloudFlare';
 import { getUsers } from '@/services/users';
-import StatCard from '@/views/whatsapp/components/StatCard.vue';
-import MacroBar from '@/views/whatsapp/components/MacroBar.vue';
 import NutritionEntryModal from '@/views/whatsapp/components/NutritionEntryModal.vue';
 import { useNotificationStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
-import { TrashIcon, PlusIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
+import {
+  TrashIcon,
+  PlusIcon,
+  ArrowPathIcon,
+  ChevronDownIcon,
+  PencilSquareIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/vue/24/outline';
 
 const { t, locale } = useI18n();
 const notifications = useNotificationStore();
@@ -352,6 +461,25 @@ const entrySubmitting = ref(false);
 
 const selectedMessageId = ref(null);
 
+const periodOptions = [
+  { label: 'Last 7 days', value: 'last7' },
+  { label: 'Last 30 days', value: 'last30' },
+  { label: 'Custom', value: 'custom' },
+];
+const selectedPeriodValue = ref(periodOptions[0].value);
+const selectedPeriod = computed(
+  () => periodOptions.find((option) => option.value === selectedPeriodValue.value) ?? periodOptions[0],
+);
+const periodDropdownOpen = ref(false);
+const quickFilterOptions = [...periodOptions, { label: 'Export PDF', value: 'export' }];
+
+const feedFilterOptions = [
+  { label: 'AI-detected', value: 'ai' },
+  { label: 'Manual', value: 'manual' },
+  { label: 'Today', value: 'today' },
+];
+const activeFeedFilters = ref(new Set());
+
 const normalizeDate = (value) => {
   if (!(value instanceof Date)) {
     const date = new Date(value);
@@ -378,6 +506,50 @@ const formatDateParam = (date) => {
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const selectedUserId = ref(isAdmin.value ? '' : auth.user?.id ?? '');
+
+const togglePeriodDropdown = () => {
+  periodDropdownOpen.value = !periodDropdownOpen.value;
+};
+
+const handleQuickFilter = (value) => {
+  if (value === 'export') {
+    exportDashboard();
+    return;
+  }
+  selectPeriod(value);
+};
+
+const toggleFeedFilter = (value) => {
+  const next = new Set(activeFeedFilters.value);
+  if (next.has(value)) {
+    next.delete(value);
+  } else {
+    next.add(value);
+  }
+  activeFeedFilters.value = next;
+};
+
+const isFeedFilterActive = (value) => activeFeedFilters.value.has(value);
+
+const selectPeriod = (value) => {
+  const option = periodOptions.find((item) => item.value === value) ?? periodOptions[0];
+  selectedPeriodValue.value = option.value;
+  periodDropdownOpen.value = false;
+  if (option.value === 'custom') {
+    openDatePicker();
+    return;
+  }
+  selectedDate.value = null;
+  void loadData();
+};
+
+const exportDashboard = () => {
+  notifications.push({
+    type: 'info',
+    title: t('whatsappNutrition.notifications.title'),
+    message: t('whatsappNutrition.notifications.message'),
+  });
+};
 const targetUserId = computed(() => (isAdmin.value ? selectedUserId.value || null : auth.user?.id ?? null));
 
 const defaultEnergyUnitId = computed(() => {
@@ -450,54 +622,61 @@ const macroPercentages = computed(() => {
 const clampPercentage = (value) => Math.min(Math.max(value ?? 0, 0), 100);
 
 const macroItems = computed(() => {
+  const totals = macroTotals.value;
+  const percentages = macroPercentages.value;
   const items = [
     {
       key: 'protein',
       label: t('whatsappNutrition.dashboard.macros.protein'),
-      value: macroTotals.value.protein ?? 0,
-      percentage: macroPercentages.value.protein,
-      color: 'bg-emerald-500',
+      amount: totals.protein ?? 0,
+      percentage: clampPercentage(percentages.protein),
+      color: 'bg-purple-500',
     },
     {
       key: 'carbs',
       label: t('whatsappNutrition.dashboard.macros.carbs'),
-      value: macroTotals.value.carbs ?? 0,
-      percentage: macroPercentages.value.carbs,
-      color: 'bg-cyan-500',
+      amount: totals.carbs ?? 0,
+      percentage: clampPercentage(percentages.carbs),
+      color: 'bg-blue-500',
     },
     {
       key: 'fat',
       label: t('whatsappNutrition.dashboard.macros.fat'),
-      value: macroTotals.value.fat ?? 0,
-      percentage: macroPercentages.value.fat,
-      color: 'bg-amber-500',
+      amount: totals.fat ?? 0,
+      percentage: clampPercentage(percentages.fat),
+      color: 'bg-yellow-500',
     },
-  ].map((macro) => ({
-    key: macro.key,
-    label: macro.label,
-    percentage: clampPercentage(macro.percentage),
-    color: macro.color,
-    renderAmount: () => `${macroFormatter.value.format(macro.value ?? 0)} g (${Math.round(clampPercentage(macro.percentage))}%)`,
-  }));
+  ];
 
   const hydrationMl = dashboard.value.totalLiquidVolumeMl ?? 0;
   if (hydrationMl > 0) {
-    let unit = (dashboard.value.liquidUnitSymbol ?? 'ml').toLowerCase();
-    let value = hydrationMl;
-    if (unit === 'ml' && hydrationMl >= 1000) {
-      unit = 'l';
-      value = hydrationMl / 1000;
-    }
+    const baseUnit = (dashboard.value.liquidUnitSymbol ?? 'ml').toLowerCase();
+    const isMl = baseUnit === 'ml';
+    const value = isMl && hydrationMl >= 1000 ? hydrationMl / 1000 : hydrationMl;
+    const unit = (isMl && hydrationMl >= 1000 ? 'l' : baseUnit).toUpperCase();
+    const hydrationPercentage = clampPercentage((hydrationMl / 3000) * 100);
     items.push({
       key: 'hydration',
       label: t('whatsappNutrition.dashboard.macros.hydration'),
-      percentage: clampPercentage(value),
-      color: 'bg-sky-500',
-      renderAmount: () => `${hydrationFormatter.value.format(value)} ${unit.toUpperCase()}`,
+      amount: value,
+      percentage: hydrationPercentage,
+      color: 'bg-cyan-500',
+      unit,
     });
   }
 
-  return items;
+  return items.map((item) => ({
+    key: item.key,
+    label: item.label,
+    color: item.color,
+    amountLabel:
+      item.key === 'hydration'
+        ? `${hydrationFormatter.value.format(item.amount ?? 0)} ${item.unit ?? ''}`.trim()
+        : `${macroFormatter.value.format(item.amount ?? 0)} g`,
+    percentageLabel: `${Math.round(item.percentage)}%`,
+    percentageWidth: `${item.percentage}%`,
+    percentage: item.percentage,
+  }));
 });
 
 const categoryBreakdown = computed(() => {
@@ -507,6 +686,23 @@ const categoryBreakdown = computed(() => {
     .sort((a, b) => (b.calories ?? 0) - (a.calories ?? 0));
 });
 
+const categoryMaxCalories = computed(() =>
+  categoryBreakdown.value.reduce((max, item) => Math.max(max, item.calories ?? 0, max), 0),
+);
+
+const categoryColors = ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-purple-400', 'bg-rose-400', 'bg-teal-400'];
+
+const categoryColor = (index) => categoryColors[index % categoryColors.length];
+
+const categoryWidth = (calories) => {
+  const max = categoryMaxCalories.value;
+  if (!max) {
+    return '0%';
+  }
+  const percentage = Math.min(Math.max(((calories ?? 0) / max) * 100, 0), 100);
+  return `${percentage}%`;
+};
+
 const history = computed(() => dashboard.value.history ?? []);
 
 const mealMetaById = computed(() => {
@@ -515,10 +711,34 @@ const mealMetaById = computed(() => {
   return map;
 });
 
+const filteredFeed = computed(() => {
+  const showAi = activeFeedFilters.value.has('ai');
+  const showManual = activeFeedFilters.value.has('manual');
+  const filterToday = activeFeedFilters.value.has('today');
+  let items = [...feed.value];
+
+  if ((showAi || showManual) && !(showAi && showManual)) {
+    items = items.filter((item) => (item.manualEntry ? showManual : showAi));
+  }
+
+  if (filterToday) {
+    const today = normalizeDate(new Date());
+    items = items.filter((item) => {
+      if (!today) {
+        return true;
+      }
+      const received = item.receivedAt ? normalizeDate(new Date(item.receivedAt)) : null;
+      return received && received.getTime() === today.getTime();
+    });
+  }
+
+  return items;
+});
+
 const groupedFeed = computed(() => {
   const fallbackLabel = t('whatsappNutrition.feed.groups.unknown');
   const groups = new Map();
-  feed.value.forEach((item) => {
+  filteredFeed.value.forEach((item) => {
     const mealId = item.meal?.id ?? item.nutrition?.mealId ?? null;
     const meal = mealId ? mealMetaById.value.get(mealId) : null;
     const key = mealId ?? 'unassigned';
@@ -650,27 +870,47 @@ const handleDateChange = (event) => {
   setSelectedDate(candidate);
 };
 
-const formatDate = (value) => {
+const formatHistoryDate = (value) => {
   if (!value) return t('whatsappNutrition.common.unknownDate');
   try {
     return new Intl.DateTimeFormat(currentLocaleTag(), {
       dateStyle: 'medium',
-      timeStyle: 'short',
     }).format(new Date(value));
   } catch (error) {
     return value;
   }
 };
 
-const formatDay = (value) => {
-  if (!value) return t('whatsappNutrition.common.unknownDate');
+const formatTime = (value) => {
+  if (!value) return '';
   try {
     return new Intl.DateTimeFormat(currentLocaleTag(), {
-      dateStyle: 'long',
+      hour: 'numeric',
+      minute: 'numeric',
     }).format(new Date(value));
   } catch (error) {
-    return value;
+    return '';
   }
+};
+
+const submissionSourceLabel = (item) => {
+  const segments = [];
+  segments.push(item.manualEntry ? 'Manual' : 'AI-detected');
+  const time = formatTime(item.receivedAt);
+  if (time) {
+    segments.push(time);
+  }
+  segments.push('WhatsApp');
+  return segments.filter(Boolean).join(' • ');
+};
+
+const mealIcon = (label) => {
+  const normalized = String(label ?? '').toLowerCase();
+  if (normalized.includes('breakfast')) return '☕';
+  if (normalized.includes('snack')) return '🍎';
+  if (normalized.includes('lunch')) return '🍗';
+  if (normalized.includes('dinner')) return '🍝';
+  return '🍽️';
 };
 
 const formatToLocalInput = (value) => {
@@ -1086,22 +1326,3 @@ watch(selectedDateParam, () => {
   void loadData();
 });
 </script>
-
-<style scoped>
-.nutrition-chip {
-  @apply rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600;
-}
-
-.loader {
-  border: 2px solid rgba(15, 118, 110, 0.2);
-  border-top-color: rgba(15, 118, 110, 1);
-  border-radius: 9999px;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
