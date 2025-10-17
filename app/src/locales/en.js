@@ -13,6 +13,7 @@ export default {
     goalsEdit: 'Edit Nutrition Goal',
     photoEvolution: 'Photo evolution',
     whatsappNutrition: 'AI Nutrition',
+    reminders: 'Reminders',
     payments: 'Payments',
     settings: 'Settings',
     profile: 'Profile',
@@ -171,6 +172,157 @@ export default {
     goals: 'Nutrition Goals',
     exercises: 'Exercises',
     reference: 'Reference data',
+  },
+  reminders: {
+    title: 'Reminders',
+    subtitle: 'Stay on track with your daily goals.',
+    searchPlaceholder: 'Search reminders...',
+    actions: {
+      new: 'New Reminder',
+      edit: 'Edit reminder',
+      delete: 'Delete reminder',
+      test: 'Send test message',
+    },
+    card: {
+      completedBadge: 'Completed',
+      pausedBadge: 'Paused',
+      completedToggle: 'Done',
+      active: 'Active',
+      inactive: 'Paused',
+      toggleAria: 'Toggle reminder {title}',
+      recipientLabel: 'Recipient',
+      repeatSummary: {
+        once: 'One-time reminder',
+        daily: 'Daily at {time}',
+        weekly: 'Weekly on {days} at {time}',
+        interval: 'Every {minutes} minute(s)',
+        countdown: '{remaining} send(s) left every {minutes} minute(s)',
+      },
+    },
+    empty: {
+      title: 'No reminders yet',
+      subtitle: 'Create your first reminder to send automated WhatsApp nudges.',
+    },
+    form: {
+      newTitle: 'Create reminder',
+      editTitle: 'Edit reminder',
+      subtitle: 'Reminders send a WhatsApp message automatically at the scheduled time.',
+      close: 'Close modal',
+      fields: {
+        title: {
+          label: 'Title',
+          placeholder: 'Morning hydration',
+        },
+        description: {
+          label: 'Description',
+          placeholder: 'Send a glass of water reminder at breakfast.',
+        },
+        scheduledAt: {
+          label: 'Date and time',
+          startLabel: 'Next run (optional)',
+          startPlaceholder: 'Leave blank to schedule from now.',
+        },
+        priority: {
+          label: 'Priority',
+        },
+        type: {
+          label: 'Type',
+        },
+        repeatMode: {
+          label: 'Repetition',
+        },
+        timeOfDay: {
+          label: 'Time of day',
+        },
+        weekdays: {
+          label: 'Weekdays',
+        },
+        interval: {
+          label: 'Interval (minutes)',
+          hint: 'Minimum interval of one minute between reminders.',
+        },
+        count: {
+          label: 'Occurrences',
+        },
+        target: {
+          label: 'Recipient',
+          placeholder: 'Select a recipient',
+          searchPlaceholder: 'Search patients by name or email',
+          loading: 'Loading recipients...',
+        },
+      },
+      actions: {
+        cancel: 'Cancel',
+        save: 'Save reminder',
+        saving: 'Saving...',
+      },
+    },
+    priority: {
+      low: 'Low priority',
+      medium: 'Medium priority',
+      high: 'High priority',
+    },
+    types: {
+      health: 'Health',
+      study: 'Study',
+      work: 'Work',
+      meal: 'Meal',
+      custom: 'Custom',
+    },
+    repeat: {
+      modes: {
+        dateTime: 'Specific date and time',
+        daily: 'Daily schedule',
+        weekly: 'Weekly schedule',
+        interval: 'Repeating interval',
+        countdown: 'Countdown',
+      },
+      weekdays: {
+        monday: 'Mon',
+        tuesday: 'Tue',
+        wednesday: 'Wed',
+        thursday: 'Thu',
+        friday: 'Fri',
+        saturday: 'Sat',
+        sunday: 'Sun',
+      },
+    },
+    notifications: {
+      validationTitle: 'Missing information',
+      missingTarget: 'Choose who should receive this reminder.',
+      errors: {
+        title: 'Add a title for the reminder.',
+        dateTime: 'Inform the next run date and time.',
+        time: 'Select a time of day for this reminder.',
+        weekdays: 'Choose at least one weekday.',
+        interval: 'Set the interval in minutes (minimum 1).',
+        count: 'Inform how many times the reminder should be sent.',
+      },
+      test: {
+        title: 'Test message sent',
+        message: 'The reminder content was sent as a WhatsApp test.',
+      },
+      created: {
+        title: 'Reminder created',
+        message: 'The reminder will be sent automatically.',
+      },
+      updated: {
+        title: 'Reminder updated',
+        message: 'Changes saved successfully.',
+      },
+      deleted: {
+        title: 'Reminder removed',
+        message: 'The reminder was deleted.',
+      },
+      status: {
+        title: 'Reminder updated',
+        activated: 'Reminder activated.',
+        paused: 'Reminder paused.',
+        completed: 'Marked as completed.',
+        reopened: 'Marked as pending.',
+      },
+    },
+    confirmDelete: 'Do you want to delete "{title}"?',
   },
   nutritionDashboard: {
     title: 'Nutrition analytics',

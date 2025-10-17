@@ -111,6 +111,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.whatsappNutrition' },
         },
         {
+          path: 'reminders',
+          name: 'reminders',
+          component: () => import('@/views/reminders/RemindersView.vue'),
+          meta: { titleKey: 'routes.reminders' },
+        },
+        {
           path: 'payments',
           name: 'payments',
           component: () => import('@/views/payments/PaymentsView.vue'),

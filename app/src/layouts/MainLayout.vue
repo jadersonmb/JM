@@ -198,6 +198,7 @@ import {
   CakeIcon,
   ClipboardDocumentListIcon,
   ChartBarSquareIcon,
+  BellAlertIcon,
   RectangleStackIcon,
   GlobeAltIcon,
   PhotoIcon,
@@ -322,6 +323,13 @@ const navigation = computed(() => {
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
       icon: ChatBubbleLeftRightIcon,
+      adminOnly: false,
+    },
+    {
+      name: 'reminders',
+      label: t('routes.reminders'),
+      to: { name: 'reminders' },
+      icon: BellAlertIcon,
       adminOnly: false,
     },
     {
