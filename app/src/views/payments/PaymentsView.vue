@@ -1,34 +1,56 @@
 <template>
-  <div v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'" class="grid gap-6 xl:grid-cols-2">
+  <div
+    v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'"
+    class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
+  >
     <div class="space-y-6">
       <!-- <PaymentMethodSelection v-model="currentMethod" /> -->
 
-      <CardPaymentForm v-if="currentMethod === 'CARD'" ref="cardFormRef" :cards="cards" :currency="currency"
-        :loading="intentLoading" :tokenizing="tokenizing" @create="handleCreateCardPayment" @tokenize="tokenizeCard" />
+      <CardPaymentForm
+        v-if="currentMethod === 'CARD'"
+        ref="cardFormRef"
+        :cards="cards"
+        :currency="currency"
+        :loading="intentLoading"
+        :tokenizing="tokenizing"
+        @create="handleCreateCardPayment"
+        @tokenize="tokenizeCard"
+      />
 
       <div v-else-if="currentMethod === 'PIX'" class="space-y-6">
-        <form class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-          @submit.prevent="handleCreatePix">
+        <form
+          class="flex flex-col gap-4 bg-white rounded-xl border border-gray-200 shadow-sm p-6"
+          @submit.prevent="handleCreatePix"
+        >
           <header class="space-y-1">
-            <h2 class="text-lg font-semibold text-slate-900">{{ t('payments.pixForm.title') }}</h2>
-            <p class="text-sm text-slate-500">{{ t('payments.pixForm.description') }}</p>
+            <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.pixForm.title') }}</h2>
+            <p class="text-sm text-gray-500">{{ t('payments.pixForm.description') }}</p>
           </header>
           <div class="grid gap-4 md:grid-cols-2">
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.amountLabel', { currency })
-              }}</span>
+              <span class="text-sm font-medium text-gray-600">{{ t('payments.pixForm.amountLabel', { currency }) }}</span>
               <input v-model.number="pixForm.amount" type="number" min="1" step="0.01" required class="input" />
             </label>
             <label class="flex flex-col gap-1">
-              <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.customerLabel') }}</span>
-              <input v-model="pixForm.asaasCustomerId" type="text"
-                :placeholder="t('payments.pixForm.customerPlaceholder')" required class="input" />
+              <span class="text-sm font-medium text-gray-600">{{ t('payments.pixForm.customerLabel') }}</span>
+              <input
+                v-model="pixForm.asaasCustomerId"
+                type="text"
+                :placeholder="t('payments.pixForm.customerPlaceholder')"
+                required
+                class="input"
+              />
             </label>
           </div>
           <label class="flex flex-col gap-1">
-            <span class="text-sm font-medium text-slate-600">{{ t('payments.pixForm.descriptionLabel') }}</span>
-            <input v-model="pixForm.description" type="text" maxlength="140" class="input"
-              :placeholder="t('payments.pixForm.descriptionPlaceholder')" />
+            <span class="text-sm font-medium text-gray-600">{{ t('payments.pixForm.descriptionLabel') }}</span>
+            <input
+              v-model="pixForm.description"
+              type="text"
+              maxlength="140"
+              class="input"
+              :placeholder="t('payments.pixForm.descriptionPlaceholder')"
+            />
           </label>
           <div class="flex justify-end">
             <button type="submit" class="btn-primary" :disabled="pixLoading">
@@ -41,46 +63,63 @@
         <PIXPayment v-if="pixPayment" :payment="pixPayment" @refresh="refreshPix" />
       </div>
 
-      <RecurringPayment v-else :cards="cards" :currency="currency" :loading="recurringLoading"
-        @create="handleCreateSubscription" />
+      <section v-else class="bg-transparent">
+        <RecurringPayment
+          :cards="cards"
+          :currency="currency"
+          :loading="recurringLoading"
+          @create="handleCreateSubscription"
+        />
+      </section>
     </div>
 
     <div class="space-y-6">
-      <PaymentsDataTable v-if="isAdmin" :rows="payments" :loading="paymentsLoading" :pagination="pagination"
-        :sort="sort" :selected="selectedPayments" :filters="filters" @update:filters="updateFilters"
-        @update:selected="onUpdateSelected" @change:sort="changeSort" @change:page="changePage"
-        @change:per-page="changePerPage" @refresh="loadPayments" @export:csv="exportCsv"
-        @bulk:refund="confirmBulkRefund" @view="openPaymentDetails" @refund="confirmRefund" />
+      <PaymentsDataTable
+        v-if="isAdmin"
+        :rows="payments"
+        :loading="paymentsLoading"
+        :pagination="pagination"
+        :sort="sort"
+        :selected="selectedPayments"
+        :filters="filters"
+        @update:filters="updateFilters"
+        @update:selected="onUpdateSelected"
+        @change:sort="changeSort"
+        @change:page="changePage"
+        @change:per-page="changePerPage"
+        @refresh="loadPayments"
+        @export:csv="exportCsv"
+        @bulk:refund="confirmBulkRefund"
+        @view="openPaymentDetails"
+        @refund="confirmRefund"
+      />
 
-      <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.subscription.paymentHisotry') }}</h2>
-            <p class="text-sm text-gray-500">{{ t('payments.subscription.paymentHisotryDescription') }}</p>
-          </div>
+      <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <header class="flex flex-col gap-1">
+          <h2 class="text-xl font-semibold text-gray-800">Payment History</h2>
+          <p class="text-sm text-gray-500">All payments made through this subscription.</p>
         </header>
 
         <div v-if="paymentsLoading" class="mt-6 space-y-4">
-          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
-          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
-          <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
         </div>
 
-        <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-200">
-          <article v-for="item in paymentHistoryItems" :key="item.id"
-            class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="space-y-2">
-              <p class="text-sm text-gray-500">{{ item.date }}</p>
-              <p class="text-base font-semibold text-gray-800">{{ item.description }}</p>
-              <div class="flex flex-wrap items-center gap-3">
-                <span
-                  :class="['inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', item.statusClass]">
-                  {{ item.statusLabel }}
-                </span>
-                <span class="text-sm text-gray-500">{{ item.action }}</span>
+        <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-100">
+          <article
+            v-for="item in paymentHistoryItems"
+            :key="item.id"
+            class="flex justify-between items-start py-3 transition-colors"
+          >
+            <div>
+              <p class="text-sm font-medium text-gray-800">{{ item.date }} · {{ item.description }}</p>
+              <div class="flex items-center gap-2 text-xs mt-1 flex-wrap">
+                <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
+                <button type="button" class="text-blue-600 hover:underline">{{ item.action }}</button>
               </div>
             </div>
-            <p class="text-right text-base font-semibold text-gray-800">{{ item.amount }}</p>
+            <p class="font-medium text-gray-800">{{ item.amount }}</p>
           </article>
         </div>
         <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
