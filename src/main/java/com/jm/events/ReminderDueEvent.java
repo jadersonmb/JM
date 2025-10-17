@@ -9,9 +9,11 @@ import java.util.UUID;
 public class ReminderDueEvent extends ApplicationEvent {
 
     private final UUID reminderId;
+    private final boolean test;
 
-    public ReminderDueEvent(Object source, UUID reminderId) {
+    public ReminderDueEvent(Object source, UUID reminderId, boolean test) {
         super(source);
         this.reminderId = reminderId;
+        this.test = test;
     }
 }

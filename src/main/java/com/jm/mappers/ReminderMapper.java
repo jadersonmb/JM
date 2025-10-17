@@ -12,6 +12,14 @@ import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
+import java.time.DayOfWeek;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE,
         builder = @Builder(disableBuilder = true))
 public interface ReminderMapper {
@@ -21,15 +29,18 @@ public interface ReminderMapper {
     @Mapping(target = "targetUserPhone", source = "targetUser.phoneNumber")
     @Mapping(target = "createdByUserId", source = "createdBy.id")
     @Mapping(target = "createdByUserName", source = "createdBy", qualifiedByName = "mapUserName")
+    @Mapping(target = "repeatWeekdays", source = "repeatWeekdays", qualifiedByName = "splitWeekdays")
     ReminderDTO toDTO(Reminder entity);
 
     @Mapping(target = "targetUser", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "repeatWeekdays", source = "repeatWeekdays", qualifiedByName = "joinWeekdays")
     Reminder toEntity(ReminderDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "targetUser", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "repeatWeekdays", source = "repeatWeekdays", qualifiedByName = "joinWeekdays")
     void updateEntityFromDto(ReminderDTO dto, @MappingTarget Reminder entity);
 
     @Named("mapUserName")
@@ -51,5 +62,47 @@ public interface ReminderMapper {
             builder.append(user.getEmail());
         }
         return builder.isEmpty() ? null : builder.toString();
+    }
+
+    @Named("splitWeekdays")
+    default List<String> splitWeekdays(String weekdays) {
+        if (weekdays == null || weekdays.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(weekdays.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toUpperCase(Locale.ROOT))
+                .map(this::tryParseDay)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparingInt(DayOfWeek::getValue))
+                .map(day -> day.name().toUpperCase(Locale.ROOT))
+                .collect(Collectors.toList());
+    }
+
+    @Named("joinWeekdays")
+    default String joinWeekdays(List<String> weekdays) {
+        if (weekdays == null || weekdays.isEmpty()) {
+            return null;
+        }
+        return weekdays.stream()
+                .filter(Objects::nonNull)
+                .map(value -> value.trim().toUpperCase(Locale.ROOT))
+                .filter(value -> !value.isEmpty())
+                .map(this::tryParseDay)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted(Comparator.comparingInt(DayOfWeek::getValue))
+                .map(day -> day.name().toUpperCase(Locale.ROOT))
+                .collect(Collectors.joining(","));
+    }
+
+    default DayOfWeek tryParseDay(String value) {
+        try {
+            return DayOfWeek.valueOf(value);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

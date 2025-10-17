@@ -178,6 +178,7 @@ export default {
       new: '+ New Reminder',
       edit: 'Edit reminder',
       delete: 'Delete reminder',
+      test: 'Send test message',
     },
     card: {
       completedBadge: 'Completed',
@@ -187,6 +188,13 @@ export default {
       inactive: 'Paused',
       toggleAria: 'Toggle reminder {title}',
       recipientLabel: 'Recipient',
+      repeatSummary: {
+        once: 'One-time reminder',
+        daily: 'Daily at {time}',
+        weekly: 'Weekly on {days} at {time}',
+        interval: 'Every {minutes} minute(s)',
+        countdown: '{remaining} send(s) left every {minutes} minute(s)',
+      },
     },
     empty: {
       title: 'No reminders yet',
@@ -208,12 +216,30 @@ export default {
         },
         scheduledAt: {
           label: 'Date and time',
+          startLabel: 'Next run (optional)',
+          startPlaceholder: 'Leave blank to schedule from now.',
         },
         priority: {
           label: 'Priority',
         },
         type: {
           label: 'Type',
+        },
+        repeatMode: {
+          label: 'Repetition',
+        },
+        timeOfDay: {
+          label: 'Time of day',
+        },
+        weekdays: {
+          label: 'Weekdays',
+        },
+        interval: {
+          label: 'Interval (minutes)',
+          hint: 'Minimum interval of one minute between reminders.',
+        },
+        count: {
+          label: 'Occurrences',
         },
         target: {
           label: 'Recipient',
@@ -240,10 +266,39 @@ export default {
       meal: 'Meal',
       custom: 'Custom',
     },
+    repeat: {
+      modes: {
+        dateTime: 'Specific date and time',
+        daily: 'Daily schedule',
+        weekly: 'Weekly schedule',
+        interval: 'Repeating interval',
+        countdown: 'Countdown',
+      },
+      weekdays: {
+        monday: 'Mon',
+        tuesday: 'Tue',
+        wednesday: 'Wed',
+        thursday: 'Thu',
+        friday: 'Fri',
+        saturday: 'Sat',
+        sunday: 'Sun',
+      },
+    },
     notifications: {
       validationTitle: 'Missing information',
-      missingFields: 'Enter at least a title and a scheduled date/time.',
       missingTarget: 'Choose who should receive this reminder.',
+      errors: {
+        title: 'Add a title for the reminder.',
+        dateTime: 'Inform the next run date and time.',
+        time: 'Select a time of day for this reminder.',
+        weekdays: 'Choose at least one weekday.',
+        interval: 'Set the interval in minutes (minimum 1).',
+        count: 'Inform how many times the reminder should be sent.',
+      },
+      test: {
+        title: 'Test message sent',
+        message: 'The reminder content was sent as a WhatsApp test.',
+      },
       created: {
         title: 'Reminder created',
         message: 'The reminder will be sent automatically.',

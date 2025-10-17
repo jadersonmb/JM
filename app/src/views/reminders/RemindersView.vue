@@ -77,6 +77,10 @@
                     <ClockIcon class="h-4 w-4" />
                     <span>{{ formatScheduledAt(reminder.scheduledAt) }}</span>
                   </span>
+                  <span class="inline-flex items-center gap-1">
+                    <ArrowPathIcon class="h-4 w-4" />
+                    <span>{{ describeRepeat(reminder) }}</span>
+                  </span>
                   <span
                     v-if="isAdmin && (reminder.targetUserName || reminder.targetUserPhone)"
                     class="inline-flex items-center gap-1"
@@ -121,6 +125,14 @@
                 </button>
               </div>
               <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100"
+                  @click="() => handleTriggerTest(reminder)"
+                >
+                  <BoltIcon class="h-5 w-5" />
+                  <span class="sr-only">{{ t('reminders.actions.test') }}</span>
+                </button>
                 <button
                   type="button"
                   class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
@@ -209,11 +221,85 @@
             </div>
             <div>
               <label class="block text-sm font-semibold text-gray-700">
-                {{ t('reminders.form.fields.scheduledAt.label') }}
+                {{ t('reminders.form.fields.repeatMode.label') }}
+              </label>
+              <select
+                v-model="form.repeatMode"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                <option
+                  v-for="option in repeatModeOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700">
+                {{ scheduledAtLabel }}
               </label>
               <input
                 v-model="form.scheduledAt"
                 type="datetime-local"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <p v-if="form.repeatMode !== 'DATE_TIME'" class="mt-1 text-xs text-gray-400">
+                {{ scheduledAtPlaceholder }}
+              </p>
+            </div>
+            <div v-if="needsTimeInput" class="md:col-span-1">
+              <label class="block text-sm font-semibold text-gray-700">
+                {{ t('reminders.form.fields.timeOfDay.label') }}
+              </label>
+              <input
+                v-model="form.repeatTimeOfDay"
+                type="time"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+            </div>
+            <div v-if="needsWeekdaySelection" class="md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700">
+                {{ t('reminders.form.fields.weekdays.label') }}
+              </label>
+              <div class="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <button
+                  v-for="option in weekdayOptions"
+                  :key="option.value"
+                  type="button"
+                  class="rounded-lg border px-3 py-2 text-xs font-semibold transition"
+                  :class="isWeekdaySelected(option.value)
+                    ? 'border-blue-500 bg-blue-50 text-blue-600'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-500'"
+                  @click="toggleWeekday(option.value)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+            <div v-if="needsIntervalInput">
+              <label class="block text-sm font-semibold text-gray-700">
+                {{ t('reminders.form.fields.interval.label') }}
+              </label>
+              <input
+                v-model.number="form.repeatIntervalMinutes"
+                type="number"
+                min="1"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <p class="mt-1 text-xs text-gray-400">
+                {{ t('reminders.form.fields.interval.hint') }}
+              </p>
+            </div>
+            <div v-if="needsCountInput">
+              <label class="block text-sm font-semibold text-gray-700">
+                {{ t('reminders.form.fields.count.label') }}
+              </label>
+              <input
+                v-model.number="form.repeatCountTotal"
+                type="number"
+                min="1"
                 class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
               />
             </div>
@@ -305,6 +391,8 @@
 <script setup>
 import {
   AcademicCapIcon,
+  ArrowPathIcon,
+  BoltIcon,
   BriefcaseIcon,
   CakeIcon,
   ClockIcon,
@@ -343,12 +431,25 @@ const form = reactive({
   type: 'CUSTOM',
   targetUserId: null,
   active: true,
+  repeatMode: 'DATE_TIME',
+  repeatWeekdays: [],
+  repeatIntervalMinutes: null,
+  repeatCountTotal: null,
+  repeatTimeOfDay: '',
 });
 
 const targetOptions = ref([]);
 const targetSearch = ref('');
 const targetLoading = ref(false);
 let targetDebounce = null;
+
+const skipModeWatch = ref(false);
+
+const weekdayValues = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+const weekdayOrder = weekdayValues.reduce((accumulator, value, index) => {
+  accumulator[value] = index;
+  return accumulator;
+}, {});
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
@@ -380,9 +481,114 @@ const typeOptions = computed(() => [
   { value: 'CUSTOM', label: t('reminders.types.custom') },
 ]);
 
+const repeatModeOptions = computed(() => [
+  { value: 'DATE_TIME', label: t('reminders.repeat.modes.dateTime') },
+  { value: 'DAILY_TIME', label: t('reminders.repeat.modes.daily') },
+  { value: 'WEEKLY', label: t('reminders.repeat.modes.weekly') },
+  { value: 'INTERVAL', label: t('reminders.repeat.modes.interval') },
+  { value: 'COUNTDOWN', label: t('reminders.repeat.modes.countdown') },
+]);
+
+const weekdayOptions = computed(() =>
+  weekdayValues.map((value) => ({
+    value,
+    label: t(`reminders.repeat.weekdays.${value.toLowerCase()}`),
+  })),
+);
+
 const priorityLabel = (priority) => {
   const key = (priority || 'MEDIUM').toString().toLowerCase();
   return t(`reminders.priority.${key}`);
+};
+
+const needsDateTimeInput = computed(() => form.repeatMode === 'DATE_TIME');
+const needsTimeInput = computed(() => ['DAILY_TIME', 'WEEKLY'].includes(form.repeatMode));
+const needsWeekdaySelection = computed(() => form.repeatMode === 'WEEKLY');
+const needsIntervalInput = computed(() => ['INTERVAL', 'COUNTDOWN'].includes(form.repeatMode));
+const needsCountInput = computed(() => form.repeatMode === 'COUNTDOWN');
+
+const scheduledAtLabel = computed(() =>
+  form.repeatMode === 'DATE_TIME'
+    ? t('reminders.form.fields.scheduledAt.label')
+    : t('reminders.form.fields.scheduledAt.startLabel'),
+);
+
+const scheduledAtPlaceholder = computed(() =>
+  form.repeatMode === 'DATE_TIME'
+    ? t('reminders.form.fields.scheduledAt.placeholder')
+    : t('reminders.form.fields.scheduledAt.startPlaceholder'),
+);
+
+const sortWeekdays = (list) =>
+  list
+    .filter((value) => typeof value === 'string' && value.trim().length)
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => weekdayOrder[value] !== undefined)
+    .sort((a, b) => weekdayOrder[a] - weekdayOrder[b]);
+
+const toggleWeekday = (day) => {
+  const normalized = day.toUpperCase();
+  const set = new Set(form.repeatWeekdays);
+  if (set.has(normalized)) {
+    set.delete(normalized);
+  } else {
+    set.add(normalized);
+  }
+  form.repeatWeekdays = sortWeekdays(Array.from(set));
+};
+
+const isWeekdaySelected = (day) => form.repeatWeekdays.includes(day);
+
+const formatTime = (value) => {
+  if (!value) {
+    return '';
+  }
+  const [hours, minutes] = value.split(':');
+  const date = new Date();
+  date.setHours(Number.parseInt(hours, 10) || 0, Number.parseInt(minutes, 10) || 0, 0, 0);
+  return new Intl.DateTimeFormat(locale.value, {
+    hour: 'numeric',
+    minute: 'numeric',
+  }).format(date);
+};
+
+const mapWeekdayLabel = (value) => t(`reminders.repeat.weekdays.${value.toLowerCase()}`);
+
+const describeRepeat = (reminder) => {
+  const mode = (reminder.repeatMode || 'DATE_TIME').toUpperCase();
+  switch (mode) {
+    case 'DAILY_TIME':
+      return t('reminders.card.repeatSummary.daily', {
+        time: formatTime(reminder.repeatTimeOfDay),
+      });
+    case 'WEEKLY': {
+      const days = (reminder.repeatWeekdays || [])
+        .map((value) => mapWeekdayLabel(value))
+        .join(', ');
+      return t('reminders.card.repeatSummary.weekly', {
+        days,
+        time: formatTime(reminder.repeatTimeOfDay),
+      });
+    }
+    case 'INTERVAL':
+      if (reminder.repeatIntervalMinutes) {
+        return t('reminders.card.repeatSummary.interval', {
+          minutes: reminder.repeatIntervalMinutes,
+        });
+      }
+      break;
+    case 'COUNTDOWN':
+      if (reminder.repeatIntervalMinutes && reminder.repeatCountTotal) {
+        return t('reminders.card.repeatSummary.countdown', {
+          minutes: reminder.repeatIntervalMinutes,
+          remaining: reminder.repeatCountRemaining ?? reminder.repeatCountTotal,
+        });
+      }
+      break;
+    default:
+      break;
+  }
+  return t('reminders.card.repeatSummary.once');
 };
 
 const resetForm = () => {
@@ -393,12 +599,32 @@ const resetForm = () => {
   form.type = 'CUSTOM';
   form.targetUserId = null;
   form.active = true;
+  form.repeatMode = 'DATE_TIME';
+  form.repeatWeekdays = [];
+  form.repeatIntervalMinutes = null;
+  form.repeatCountTotal = null;
+  form.repeatTimeOfDay = '';
   targetSearch.value = '';
 };
 
 const closeModal = () => {
   isModalOpen.value = false;
   isSubmitting.value = false;
+};
+
+const applyModeDefaults = (mode) => {
+  if (mode !== 'WEEKLY') {
+    form.repeatWeekdays = [];
+  }
+  if (!['DAILY_TIME', 'WEEKLY'].includes(mode)) {
+    form.repeatTimeOfDay = '';
+  }
+  if (!['INTERVAL', 'COUNTDOWN'].includes(mode)) {
+    form.repeatIntervalMinutes = null;
+  }
+  if (mode !== 'COUNTDOWN') {
+    form.repeatCountTotal = null;
+  }
 };
 
 const ensureTargets = async (query) => {
@@ -436,6 +662,17 @@ const toInputDateTime = (value) => {
   return local.toISOString().slice(0, 16);
 };
 
+const toInputTime = (value) => {
+  if (!value) {
+    return '';
+  }
+  const parts = value.split(':');
+  if (parts.length >= 2) {
+    return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+  }
+  return value;
+};
+
 const openCreateModal = () => {
   resetForm();
   editingId.value = null;
@@ -455,6 +692,14 @@ const openEditModal = (reminder) => {
   form.type = reminder.type ?? 'CUSTOM';
   form.targetUserId = reminder.targetUserId ?? null;
   form.active = reminder.active ?? true;
+  skipModeWatch.value = true;
+  form.repeatMode = reminder.repeatMode ?? 'DATE_TIME';
+  form.repeatWeekdays = sortWeekdays(Array.isArray(reminder.repeatWeekdays) ? reminder.repeatWeekdays : []);
+  form.repeatIntervalMinutes = reminder.repeatIntervalMinutes ?? null;
+  form.repeatCountTotal = reminder.repeatCountTotal ?? null;
+  form.repeatTimeOfDay = toInputTime(reminder.repeatTimeOfDay);
+  skipModeWatch.value = false;
+  applyModeDefaults(form.repeatMode);
   if (isAdmin.value) {
     if (reminder.targetUserId && !targetOptions.value.some((item) => item.id === reminder.targetUserId)) {
       targetOptions.value = [
@@ -511,13 +756,41 @@ const fetchReminders = async () => {
   }
 };
 
-const saveReminder = async () => {
-  if (!form.title.trim() || !form.scheduledAt) {
+const validateForm = () => {
+  let errorKey = null;
+  if (!form.title.trim()) {
+    errorKey = 'title';
+  } else if (needsDateTimeInput.value && !form.scheduledAt) {
+    errorKey = 'dateTime';
+  } else if (needsTimeInput.value && !form.repeatTimeOfDay) {
+    errorKey = 'time';
+  } else if (needsWeekdaySelection.value && form.repeatWeekdays.length === 0) {
+    errorKey = 'weekdays';
+  } else if (
+    needsIntervalInput.value
+    && (!form.repeatIntervalMinutes || Number(form.repeatIntervalMinutes) <= 0)
+  ) {
+    errorKey = 'interval';
+  } else if (
+    needsCountInput.value
+    && (!form.repeatCountTotal || Number(form.repeatCountTotal) <= 0)
+  ) {
+    errorKey = 'count';
+  }
+
+  if (errorKey) {
     notifications.push({
       type: 'warning',
       title: t('reminders.notifications.validationTitle'),
-      message: t('reminders.notifications.missingFields'),
+      message: t(`reminders.notifications.errors.${errorKey}`),
     });
+    return false;
+  }
+  return true;
+};
+
+const saveReminder = async () => {
+  if (!validateForm()) {
     return;
   }
   if (isAdmin.value && !form.targetUserId) {
@@ -532,10 +805,17 @@ const saveReminder = async () => {
   const payload = {
     title: form.title.trim(),
     description: form.description?.trim() || null,
-    scheduledAt: form.scheduledAt,
+    scheduledAt: form.scheduledAt || null,
     priority: form.priority,
     type: form.type,
     active: form.active,
+    repeatMode: form.repeatMode,
+    repeatWeekdays: needsWeekdaySelection.value ? [...form.repeatWeekdays] : [],
+    repeatIntervalMinutes: needsIntervalInput.value
+      ? Number(form.repeatIntervalMinutes)
+      : null,
+    repeatCountTotal: needsCountInput.value ? Number(form.repeatCountTotal) : null,
+    repeatTimeOfDay: needsTimeInput.value ? form.repeatTimeOfDay || null : null,
   };
   if (isAdmin.value) {
     payload.targetUserId = form.targetUserId;
@@ -618,6 +898,29 @@ const handleDelete = async (reminder) => {
     // handled by interceptor
   }
 };
+
+const handleTriggerTest = async (reminder) => {
+  try {
+    await ReminderService.triggerTest(reminder.id);
+    notifications.push({
+      type: 'success',
+      title: t('reminders.notifications.test.title'),
+      message: t('reminders.notifications.test.message'),
+    });
+  } catch (error) {
+    // handled globally
+  }
+};
+
+watch(
+  () => form.repeatMode,
+  (mode) => {
+    if (skipModeWatch.value) {
+      return;
+    }
+    applyModeDefaults(mode);
+  },
+);
 
 watch(searchTerm, (value) => {
   if (searchDebounce.value) {

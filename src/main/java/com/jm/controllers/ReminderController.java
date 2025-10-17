@@ -64,6 +64,13 @@ public class ReminderController {
         return ResponseEntity.ok(service.update(id, dto));
     }
 
+    @PostMapping("/{id}/test")
+    public ResponseEntity<Void> triggerTest(@PathVariable UUID id) {
+        logger.debug("REST request to trigger reminder test {}", id);
+        service.triggerTest(id);
+        return ResponseEntity.accepted().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete reminder {}", id);

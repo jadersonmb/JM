@@ -178,6 +178,7 @@
       new: '+ Novo lembrete',
       edit: 'Editar lembrete',
       delete: 'Excluir lembrete',
+      test: 'Enviar teste',
     },
     card: {
       completedBadge: 'Concluído',
@@ -187,6 +188,13 @@
       inactive: 'Pausado',
       toggleAria: 'Ativar ou desativar o lembrete {title}',
       recipientLabel: 'Destinatário',
+      repeatSummary: {
+        once: 'Lembrete único',
+        daily: 'Diariamente às {time}',
+        weekly: 'Semanalmente {days} às {time}',
+        interval: 'A cada {minutes} minuto(s)',
+        countdown: '{remaining} envio(s) restantes a cada {minutes} minuto(s)',
+      },
     },
     empty: {
       title: 'Nenhum lembrete cadastrado',
@@ -208,12 +216,30 @@
         },
         scheduledAt: {
           label: 'Data e horário',
+          startLabel: 'Próxima execução (opcional)',
+          startPlaceholder: 'Deixe em branco para começar agora.',
         },
         priority: {
           label: 'Prioridade',
         },
         type: {
           label: 'Tipo',
+        },
+        repeatMode: {
+          label: 'Repetição',
+        },
+        timeOfDay: {
+          label: 'Horário do dia',
+        },
+        weekdays: {
+          label: 'Dias da semana',
+        },
+        interval: {
+          label: 'Intervalo (minutos)',
+          hint: 'Intervalo mínimo de um minuto entre lembretes.',
+        },
+        count: {
+          label: 'Quantidade de envios',
         },
         target: {
           label: 'Destinatário',
@@ -240,10 +266,39 @@
       meal: 'Refeição',
       custom: 'Personalizado',
     },
+    repeat: {
+      modes: {
+        dateTime: 'Data e horário específicos',
+        daily: 'Agenda diária',
+        weekly: 'Agenda semanal',
+        interval: 'Intervalo recorrente',
+        countdown: 'Contagem regressiva',
+      },
+      weekdays: {
+        monday: 'Seg',
+        tuesday: 'Ter',
+        wednesday: 'Qua',
+        thursday: 'Qui',
+        friday: 'Sex',
+        saturday: 'Sáb',
+        sunday: 'Dom',
+      },
+    },
     notifications: {
       validationTitle: 'Informações faltando',
-      missingFields: 'Informe pelo menos um título e a data/horário.',
       missingTarget: 'Escolha quem receberá o lembrete.',
+      errors: {
+        title: 'Informe um título para o lembrete.',
+        dateTime: 'Informe a data e horário da próxima execução.',
+        time: 'Selecione um horário do dia.',
+        weekdays: 'Escolha pelo menos um dia da semana.',
+        interval: 'Defina o intervalo em minutos (mínimo 1).',
+        count: 'Informe quantas vezes o lembrete deve ser enviado.',
+      },
+      test: {
+        title: 'Teste enviado',
+        message: 'O lembrete foi enviado como mensagem de teste no WhatsApp.',
+      },
       created: {
         title: 'Lembrete criado',
         message: 'O lembrete será enviado automaticamente.',

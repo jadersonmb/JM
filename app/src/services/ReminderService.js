@@ -22,6 +22,9 @@ export default {
   toggleCompleted(id, completed) {
     return api.patch(`/api/v1/reminders/${id}/completed`, null, { params: { completed } });
   },
+  triggerTest(id) {
+    return api.post(`/api/v1/reminders/${id}/test`);
+  },
   listTargets(params) {
     return api.get('/api/v1/reminders/targets', { params });
   },

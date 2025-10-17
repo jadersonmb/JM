@@ -6,6 +6,7 @@ import com.jm.dto.ReminderTargetDTO;
 import com.jm.entity.Reminder;
 import com.jm.entity.Users;
 import com.jm.enums.ReminderPriority;
+import com.jm.enums.ReminderRepeatMode;
 import com.jm.enums.ReminderType;
 import com.jm.events.ReminderDueEvent;
 import com.jm.execption.JMException;
@@ -13,6 +14,7 @@ import com.jm.execption.ProblemType;
 import com.jm.mappers.ReminderMapper;
 import com.jm.repository.ReminderRepository;
 import com.jm.repository.UserRepository;
+import com.jm.services.support.ReminderScheduleSupport;
 import com.jm.speciation.ReminderSpecification;
 import com.jm.utils.SecurityUtils;
 import org.slf4j.Logger;
@@ -27,13 +29,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -102,8 +108,25 @@ public class ReminderService {
         enforceAccess(entity);
         entity.setActive(active);
         if (active) {
+            entity.setRepeatMode(Optional.ofNullable(entity.getRepeatMode()).orElse(ReminderRepeatMode.DATE_TIME));
             entity.setCompleted(Boolean.FALSE);
             entity.setCompletedAt(null);
+            if (ReminderRepeatMode.COUNTDOWN.equals(entity.getRepeatMode())
+                    && (entity.getRepeatCountRemaining() == null || entity.getRepeatCountRemaining() <= 0)) {
+                Integer total = entity.getRepeatCountTotal();
+                if (total != null && total > 0) {
+                    entity.setRepeatCountRemaining(total);
+                }
+            }
+            if (!ReminderRepeatMode.DATE_TIME.equals(entity.getRepeatMode())) {
+                LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(entity.getRepeatMode(),
+                        entity.getScheduledAt(), entity.getRepeatTimeOfDay(),
+                        ReminderScheduleSupport.parseWeekdays(entity.getRepeatWeekdays()),
+                        entity.getRepeatIntervalMinutes(), LocalDateTime.now());
+                if (next != null) {
+                    entity.setScheduledAt(next);
+                }
+            }
             entity.setDispatchedAt(null);
         }
         Reminder saved = repository.save(entity);
@@ -149,20 +172,27 @@ public class ReminderService {
 
     @Transactional
     public void dispatchDueReminders() {
-        List<Reminder> due = repository.findDueReminders(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        List<Reminder> due = repository.findDueReminders(now);
         if (due.isEmpty()) {
             return;
         }
-        LocalDateTime dispatchMoment = LocalDateTime.now();
         for (Reminder reminder : due) {
-            reminder.setDispatchedAt(dispatchMoment);
+            reminder.setDispatchedAt(now);
             repository.save(reminder);
-            eventPublisher.publishEvent(new ReminderDueEvent(this, reminder.getId()));
+            eventPublisher.publishEvent(new ReminderDueEvent(this, reminder.getId(), false));
         }
     }
 
+    @Transactional
+    public void triggerTest(UUID id) {
+        Reminder reminder = repository.findById(id).orElseThrow(this::reminderNotFound);
+        enforceAccess(reminder);
+        eventPublisher.publishEvent(new ReminderDueEvent(this, reminder.getId(), true));
+    }
+
     private ReminderDTO save(ReminderDTO dto, boolean updating) {
-        if (dto == null || !StringUtils.hasText(dto.getTitle()) || dto.getScheduledAt() == null) {
+        if (dto == null || !StringUtils.hasText(dto.getTitle())) {
             throw invalidBody();
         }
 
@@ -190,12 +220,114 @@ public class ReminderService {
             entity.setCompleted(dto.getCompleted());
         }
 
+        applyRepeatSettings(dto, entity, !updating);
         applyTargetUser(dto, entity);
         applyCreator(entity);
 
         Reminder saved = repository.save(entity);
         logger.debug("{} - {}", getMessage("reminder.saved"), saved.getId());
         return mapper.toDTO(saved);
+    }
+
+    private void applyRepeatSettings(ReminderDTO dto, Reminder entity, boolean creating) {
+        ReminderRepeatMode requestedMode = Optional.ofNullable(dto != null ? dto.getRepeatMode() : null)
+                .orElse(Optional.ofNullable(entity.getRepeatMode()).orElse(ReminderRepeatMode.DATE_TIME));
+        entity.setRepeatMode(requestedMode);
+
+        Set<DayOfWeek> weekdays = ReminderScheduleSupport.parseWeekdays(entity.getRepeatWeekdays());
+        LocalTime timeOfDay = entity.getRepeatTimeOfDay();
+        Integer intervalMinutes = entity.getRepeatIntervalMinutes();
+        Integer totalCount = entity.getRepeatCountTotal();
+
+        switch (requestedMode) {
+            case DATE_TIME -> {
+                if (entity.getScheduledAt() == null) {
+                    throw invalidBody();
+                }
+                entity.setRepeatWeekdays(null);
+                entity.setRepeatIntervalMinutes(null);
+                entity.setRepeatCountTotal(null);
+                entity.setRepeatCountRemaining(null);
+                entity.setRepeatTimeOfDay(null);
+            }
+            case DAILY_TIME -> {
+                if (timeOfDay == null) {
+                    throw invalidBody();
+                }
+                entity.setRepeatWeekdays(null);
+                entity.setRepeatIntervalMinutes(null);
+                entity.setRepeatCountTotal(null);
+                entity.setRepeatCountRemaining(null);
+                LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(requestedMode,
+                        entity.getScheduledAt(), timeOfDay, weekdays, intervalMinutes, LocalDateTime.now());
+                if (next == null) {
+                    throw invalidBody();
+                }
+                entity.setScheduledAt(next);
+            }
+            case WEEKLY -> {
+                if (weekdays == null || weekdays.isEmpty() || timeOfDay == null) {
+                    throw invalidBody();
+                }
+                entity.setRepeatIntervalMinutes(null);
+                entity.setRepeatCountTotal(null);
+                entity.setRepeatCountRemaining(null);
+                LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(requestedMode,
+                        entity.getScheduledAt(), timeOfDay, weekdays, intervalMinutes, LocalDateTime.now());
+                if (next == null) {
+                    throw invalidBody();
+                }
+                entity.setScheduledAt(next);
+                String normalized = weekdays.stream()
+                        .sorted(Comparator.comparingInt(DayOfWeek::getValue))
+                        .map(day -> day.name().toUpperCase(Locale.ROOT))
+                        .collect(Collectors.joining(","));
+                entity.setRepeatWeekdays(normalized);
+            }
+            case INTERVAL -> {
+                if (intervalMinutes == null || intervalMinutes <= 0) {
+                    throw invalidBody();
+                }
+                entity.setRepeatWeekdays(null);
+                entity.setRepeatTimeOfDay(null);
+                entity.setRepeatCountTotal(null);
+                entity.setRepeatCountRemaining(null);
+                LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(requestedMode,
+                        entity.getScheduledAt(), timeOfDay, weekdays, intervalMinutes, LocalDateTime.now());
+                if (next == null) {
+                    throw invalidBody();
+                }
+                entity.setScheduledAt(next);
+            }
+            case COUNTDOWN -> {
+                if (intervalMinutes == null || intervalMinutes <= 0) {
+                    throw invalidBody();
+                }
+                if (totalCount == null || totalCount <= 0) {
+                    throw invalidBody();
+                }
+                entity.setRepeatWeekdays(null);
+                entity.setRepeatTimeOfDay(null);
+                entity.setRepeatCountTotal(totalCount);
+                if (dto != null && dto.getRepeatCountRemaining() != null) {
+                    int remaining = Math.min(dto.getRepeatCountRemaining(), totalCount);
+                    remaining = Math.max(0, remaining);
+                    entity.setRepeatCountRemaining(remaining);
+                } else if (creating || entity.getRepeatCountRemaining() == null
+                        || entity.getRepeatCountRemaining() > totalCount) {
+                    entity.setRepeatCountRemaining(totalCount);
+                }
+                if (entity.getRepeatCountRemaining() == null || entity.getRepeatCountRemaining() <= 0) {
+                    entity.setRepeatCountRemaining(totalCount);
+                }
+                LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(requestedMode,
+                        entity.getScheduledAt(), timeOfDay, weekdays, intervalMinutes, LocalDateTime.now());
+                if (next == null) {
+                    throw invalidBody();
+                }
+                entity.setScheduledAt(next);
+            }
+        }
     }
 
     private void applyTargetUser(ReminderDTO dto, Reminder entity) {
