@@ -1729,5 +1729,10 @@ export default {
       portuguese: 'Portuguese',
     },
   },
+  users: {
+    empty: 'No patients found.',
+    title: 'Patients',
+    subtitle: 'Manage patient records and information.',
+  },
 };
 

@@ -1,16 +1,15 @@
 ﻿<template>
-  <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
+    <header
+      class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
       <div>
-        <h1 class="text-2xl font-semibold text-slate-900 text-blue-600 font-bold">{{ t('anamnesis.title') }}</h1>
-        <p class="mt-1 max-w-3xl text-sm text-slate-500">
-          {{ t('anamnesis.subtitle') }}
-        </p>
+        <h1 class="text-2xl font-semibold text-slate-900">{{ t('anamnesis.title') }}</h1>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('anamnesis.subtitle') }}</p>
       </div>
       <div v-if="viewMode === 'form'" class="text-sm font-medium text-slate-500">
         {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
       </div>
-    </div>
+    </header>
     <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[30%_70%]' : ''">
       <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

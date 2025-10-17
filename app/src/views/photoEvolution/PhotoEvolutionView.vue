@@ -1,93 +1,86 @@
 <template>
-
   <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
-    <header class="space-y-6">
-      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div class="space-y-1">
-          <h1 class="text-2xl font-semibold text-gray-800">{{ t('photoEvolution.title') }}</h1>
-          <p class="text-sm text-gray-500">{{ t('photoEvolution.subtitle') }}</p>
-        </div>
-        <div class="flex flex-col items-stretch gap-4 text-sm text-gray-500 md:flex-row md:items-center">
-          <div class="flex items-center gap-3">
-            <PhotoIcon class="h-10 w-10 text-primary-500" />
-            <div>
-              <p class="font-semibold text-gray-700">{{ totalEntriesLabel }}</p>
-              <p v-if="filterBodyPart" class="text-xs text-gray-400">
-                {{ bodyPartLabel(filterBodyPart) }}
-              </p>
-            </div>
-          </div>
-          <div v-if="isAdmin" class="flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm">
-            <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-              :class="adminViewMode === 'user' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-              @click="setAdminViewMode('user')">
-              {{ t('photoEvolution.filters.userTab') }}
-            </button>
-            <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
-              :class="adminViewMode === 'all' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
-              @click="setAdminViewMode('all')">
-              {{ t('photoEvolution.filters.allUsersTab') }}
-            </button>
-          </div>
+    <header
+      class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">{{ t('photoEvolution.title') }}</h1>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('photoEvolution.subtitle') }}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <PhotoIcon class="h-10 w-10 text-primary-500" />
+        <div>
+          <p class="font-semibold text-gray-700">{{ totalEntriesLabel }}</p>
+          <p v-if="filterBodyPart" class="text-xs text-gray-400">
+            {{ bodyPartLabel(filterBodyPart) }}
+          </p>
         </div>
       </div>
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div class="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center">
-          <div v-if="showAllUsers" class="w-full md:w-64">
-            <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.searchOwner') }}</label>
-            <div class="relative mt-1">
-              <input v-model="ownerSearch" type="text" :placeholder="t('photoEvolution.filters.searchOwner')"
-                class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
-              <ArrowPathIcon v-if="ownersLoading"
-                class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-primary-500" />
-            </div>
-          </div>
-          <div v-if="showAllUsers" class="w-full md:w-72">
-            <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.user') }}</label>
-            <select v-model="selectedUserId"
-              class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
-              <option :value="null">{{ t('photoEvolution.filters.noUserSelected') }}</option>
-              <option v-for="owner in owners" :key="owner.id" :value="owner.id">
-                {{ owner.displayName }}
-                <span v-if="owner.email" class="text-gray-400">— {{ owner.email }}</span>
-              </option>
-            </select>
-            <p v-if="!owners.length && !ownersLoading" class="mt-1 text-xs text-gray-400">
-              {{ t('photoEvolution.filters.noOwners') }}
-            </p>
-          </div>
-          <div v-else
-            class="w-full max-w-xs rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
-            <p class="font-semibold text-gray-700">{{ auth.user?.name }}</p>
-            <p class="text-xs text-gray-400">{{ auth.user?.email }}</p>
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <div>
-            <!--<label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.bodyPart') }}</label>-->
-            <select v-model="filterBodyPart"
-              class="mt-1 w-44 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
-              <option :value="null">{{ t('photoEvolution.filters.allBodyParts') }}</option>
-              <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-          <button type="button"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-            @click="loadEntries">
-            <ArrowPathIcon class="h-4 w-4" />
-            {{ t('photoEvolution.actions.refresh') }}
-          </button>
-          <button type="button"
-            class="inline-flex items-center gap-2 rounded-lg border border-transparent bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
-            @click="clearFilters">
-            <XMarkIcon class="h-4 w-4" />
-            {{ t('photoEvolution.actions.clearFilters') }}
-          </button>
-        </div>
+      <div v-if="isAdmin" class="flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm">
+        <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+          :class="adminViewMode === 'user' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+          @click="setAdminViewMode('user')">
+          {{ t('photoEvolution.filters.userTab') }}
+        </button>
+        <button type="button" class="rounded-full px-4 py-1.5 text-sm font-medium transition"
+          :class="adminViewMode === 'all' ? 'bg-blue-500 text-white shadow' : 'text-gray-500 hover:text-gray-700'"
+          @click="setAdminViewMode('all')">
+          {{ t('photoEvolution.filters.allUsersTab') }}
+        </button>
       </div>
     </header>
+
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between card">
+      <div class="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center">
+        <div v-if="showAllUsers" class="w-full md:w-64">
+          <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.searchOwner') }}</label>
+          <div class="relative mt-1">
+            <input v-model="ownerSearch" type="text" :placeholder="t('photoEvolution.filters.searchOwner')"
+              class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" />
+            <ArrowPathIcon v-if="ownersLoading"
+              class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-primary-500" />
+          </div>
+        </div>
+        <div v-if="showAllUsers" class="w-full md:w-72">
+          <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.user') }}</label>
+          <select v-model="selectedUserId"
+            class="mt-1 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+            <option :value="null">{{ t('photoEvolution.filters.noUserSelected') }}</option>
+            <option v-for="owner in owners" :key="owner.id" :value="owner.id">
+              {{ owner.displayName }}
+              <span v-if="owner.email" class="text-gray-400">— {{ owner.email }}</span>
+            </option>
+          </select>
+          <p v-if="!owners.length && !ownersLoading" class="mt-1 text-xs text-gray-400">
+            {{ t('photoEvolution.filters.noOwners') }}
+          </p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <div>
+          <!--<label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.filters.bodyPart') }}</label>-->
+          <select v-model="filterBodyPart"
+            class="mt-1 w-44 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
+            <option :value="null">{{ t('photoEvolution.filters.allBodyParts') }}</option>
+            <option v-for="option in bodyPartOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        <button type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
+          @click="loadEntries">
+          <ArrowPathIcon class="h-4 w-4" />
+          {{ t('photoEvolution.actions.refresh') }}
+        </button>
+        <button type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-transparent bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-200"
+          @click="clearFilters">
+          <XMarkIcon class="h-4 w-4" />
+          {{ t('photoEvolution.actions.clearFilters') }}
+        </button>
+      </div>
+    </div>
+
 
     <div class="flex items-center gap-2 border-b border-gray-200 pb-2">
       <button type="button" class="rounded-full px-4 py-2 text-sm font-semibold transition"
@@ -320,7 +313,7 @@
           <form class="space-y-4" @submit.prevent="applyComparisonForm">
             <div class="space-y-3">
               <label class="text-sm font-medium text-gray-600">{{
-                t('photoEvolution.form.fields.bodyPart.label')}}</label>
+                t('photoEvolution.form.fields.bodyPart.label') }}</label>
               <select v-model="comparisonForm.bodyPart"
                 class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100">
                 <option :value="null">{{ t('photoEvolution.compare.selectBodyPart') }}</option>
@@ -514,7 +507,7 @@
           </div>
         </div>
       </section>
-      
+
       <section v-else class="space-y-4">
         <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
           <div class="flex flex-wrap gap-2 text-sm text-gray-600">
@@ -603,7 +596,7 @@
     </div>
   </div>
   <ConfirmDialog v-model="confirmOpen" :title="t('diet.list.confirmDelete.title')"
-      :message="t('diet.list.confirmDelete.message')" :confirm-label="t('diet.delete')" @confirm="confirmDelete" />
+    :message="t('diet.list.confirmDelete.message')" :confirm-label="t('diet.delete')" @confirm="confirmDelete" />
 </template>
 
 <script setup>

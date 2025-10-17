@@ -1,6 +1,17 @@
 <template>
-  <div class="space-y-0">
-    <DataTable title="User management" subtitle="Search, review, and manage users connected to your Java backend."
+  <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
+    <header
+      class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold text-slate-900">{{ t('users.title') }}</h1>
+        <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('users.subtitle') }}</p>
+      </div>
+      <div v-if="viewMode === 'form'" class="text-sm font-medium text-slate-500">
+        {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
+      </div>
+    </header>
+    
+    <DataTable
       :columns="tableColumns" :rows="users.items" :loading="loading" :selected="selectedIds"
       :sort="{ field: filters.sortField, direction: filters.sortDirection }" :pagination="users.meta"
       empty-state="No users found with the current filters." @update:selected="(value) => (selectedIds.value = value)"

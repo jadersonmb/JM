@@ -1,6 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="mx-auto max-w-7xl space-y-6">
+    <div class="space-y-6 rounded-3xl bg-gray-50 p-6 shadow-sm md:p-8">
       <header
         class="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
       >
@@ -63,7 +62,7 @@
             :disabled="createDisabled"
           >
             <PlusIcon class="h-4 w-4" />
-            <span>+ {{ t('whatsappNutrition.actions.create') }}</span>
+            <span>{{ t('whatsappNutrition.actions.create') }}</span>
           </button>
           <input
             ref="dateInputRef"
@@ -135,7 +134,7 @@
         >
           {{ t('whatsappNutrition.feed.empty') }}
         </div>
-        <div v-else class="max-h-[52rem] space-y-6 overflow-y-auto pr-2">
+        <div v-else class="max-h-[90rem] space-y-6 overflow-y-auto pr-2">
           <div v-for="group in groupedFeed" :key="group.key" class="space-y-3">
             <div class="flex items-center gap-3 text-gray-600">
               <span class="text-xl">{{ mealIcon(group.label) }}</span>
@@ -349,7 +348,7 @@
               </p>
             </section>
 
-            <section class="rounded-xl border border-gray-200 p-5 shadow-sm">
+            <section class="rounded-xl border border-gray-200 p-5 shadow-sm max-h-[32rem] space-y-6 overflow-y-auto pr-2">
               <div class="flex items-center justify-between">
                 <h4 class="text-base font-semibold text-gray-800">Recent History</h4>
                 <span class="text-xs text-gray-400">Latest analyzed meals</span>
@@ -377,8 +376,6 @@
           </div>
         </div>
       </section>
-    </div>
-
     </div>
 
     <NutritionEntryModal
