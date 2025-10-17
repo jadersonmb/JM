@@ -191,6 +191,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowRightOnRectangleIcon,
   Bars3BottomLeftIcon,
+  BoltIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
@@ -280,6 +281,13 @@ const navigation = computed(() => {
       to: { name: 'users' },
       icon: UserGroupIcon,
       adminOnly: true,
+    },
+    {
+      name: 'exercises',
+      label: t('routes.exercises'),
+      to: { name: 'exercises' },
+      icon: BoltIcon,
+      adminOnly: false,
     },
     {
       name: 'anamnesis',
