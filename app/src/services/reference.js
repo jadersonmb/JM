@@ -26,3 +26,6 @@ export const getPathologies = (params = {}) =>
 
 export const getBiochemicalExams = (params = {}) =>
   api.get('/api/v1/reference/biochemical-exams', { params });
+
+export const getExerciseReferences = (params = {}) =>
+  api.get('/api/v1/reference/exercise-references', { params });

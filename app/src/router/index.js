@@ -45,6 +45,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.users' },
         },
         {
+          path: 'exercises',
+          name: 'exercises',
+          component: () => import('@/views/exercises/ExercisesListView.vue'),
+          meta: { titleKey: 'routes.exercises' },
+        },
+        {
           path: 'anamnesis',
           name: 'anamnesis',
           component: () => import('@/views/anamnesis/AnamnesisWizard.vue'),
@@ -145,6 +151,12 @@ const router = createRouter({
               name: 'reference-ai-prompts',
               component: () => import('@/views/reference/ReferenceAiPromptsView.vue'),
               meta: { titleKey: 'routes.referenceAiPrompts', requiresAdmin: true },
+            },
+            {
+              path: 'exercise-references',
+              name: 'reference-exercise-references',
+              component: () => import('@/views/reference/ReferenceExerciseReferencesView.vue'),
+              meta: { titleKey: 'routes.referenceExerciseReferences', requiresAdmin: true },
             },
             {
               path: 'cities',

@@ -191,6 +191,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowRightOnRectangleIcon,
   Bars3BottomLeftIcon,
+  BoltIcon,
   ChevronDownIcon,
   Cog6ToothIcon,
   ChatBubbleLeftRightIcon,
@@ -283,6 +284,13 @@ const navigation = computed(() => {
       adminOnly: true,
     },
     {
+      name: 'exercises',
+      label: t('routes.exercises'),
+      to: { name: 'exercises' },
+      icon: BoltIcon,
+      adminOnly: false,
+    },
+    {
       name: 'anamnesis',
       label: t('menu.anamnesis'),
       to: { name: 'anamnesis' },
@@ -358,6 +366,7 @@ const navigation = computed(() => {
     const referenceChildren = [
       { name: 'reference-countries', label: t('routes.referenceCountries') },
       { name: 'reference-ai-prompts', label: t('routes.referenceAiPrompts') },
+      { name: 'reference-exercise-references', label: t('routes.referenceExerciseReferences') },
       { name: 'reference-cities', label: t('routes.referenceCities') },
       { name: 'reference-education-levels', label: t('routes.referenceEducationLevels') },
       { name: 'reference-meals', label: t('routes.referenceMeals') },

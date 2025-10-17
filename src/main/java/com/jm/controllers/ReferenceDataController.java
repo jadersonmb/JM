@@ -4,6 +4,7 @@ import com.jm.dto.BiochemicalExamDTO;
 import com.jm.dto.CityDTO;
 import com.jm.dto.CountryDTO;
 import com.jm.dto.EducationLevelDTO;
+import com.jm.dto.ExerciseReferenceDTO;
 import com.jm.dto.FoodCategoryDTO;
 import com.jm.dto.FoodDTO;
 import com.jm.dto.MealDTO;
@@ -14,6 +15,7 @@ import com.jm.services.BiochemicalExamService;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
 import com.jm.services.EducationLevelService;
+import com.jm.services.ExerciseReferenceService;
 import com.jm.services.FoodCategoryService;
 import com.jm.services.FoodService;
 import com.jm.services.MealService;
@@ -48,6 +50,7 @@ public class ReferenceDataController {
     private final MealService mealService;
     private final PathologyService pathologyService;
     private final BiochemicalExamService biochemicalExamService;
+    private final ExerciseReferenceService exerciseReferenceService;
 
     @GetMapping("/countries")
     public ResponseEntity<List<CountryDTO>> listCountries(@RequestParam(required = false) String language) {
@@ -103,5 +106,11 @@ public class ReferenceDataController {
     public ResponseEntity<List<BiochemicalExamDTO>> listBiochemicalExams(
             @RequestParam(required = false) String language) {
         return ResponseEntity.ok(biochemicalExamService.findAll(language));
+    }
+
+    @GetMapping("/exercise-references")
+    public ResponseEntity<List<ExerciseReferenceDTO>> listExerciseReferences(
+            @RequestParam(required = false) String language) {
+        return ResponseEntity.ok(exerciseReferenceService.findAll(language));
     }
 }

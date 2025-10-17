@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-0">
-    <DataTable v-model:selected="selectedRows" :title="t('reference.aiPrompts.title')"
-      :subtitle="t('reference.aiPrompts.subtitle')" :columns="columns" :rows="rows" :loading="loading"
-      :pagination="pagination" :sort="sort" :empty-state="t('reference.aiPrompts.empty')" @change:sort="handleSort"
-      @change:page="handlePage" @change:per-page="handlePerPage" @change:columns="persistColumns"
-      @refresh="fetchPrompts">
+    <DataTable v-model:selected="selectedRows" :title="t('reference.exerciseReferences.title')"
+      :subtitle="t('reference.exerciseReferences.subtitle')" :columns="columns" :rows="rows" :loading="loading"
+      :pagination="pagination" :sort="sort" :empty-state="t('reference.exerciseReferences.empty')"
+      @change:sort="handleSort" @change:page="handlePage" @change:per-page="handlePerPage"
+      @change:columns="persistColumns" @refresh="fetchExerciseReferences">
       <template #toolbar="{ selected }">
         <button type="button" class="btn-primary" @click="openCreate">
           <PlusIcon class="h-4 w-4" />
@@ -22,40 +22,47 @@
       </template>
 
       <template #filters>
-        <div>
+        <div class="lg:col-span-2">
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {{ t('reference.aiPrompts.filters.search') }}
+            {{ t('reference.exerciseReferences.filters.search') }}
           </label>
           <div class="relative mt-1">
             <MagnifyingGlassIcon
               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="filters.search" type="search"
               class="w-full rounded-xl border border-slate-200 px-10 py-2 text-sm focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-200"
-              :placeholder="t('reference.aiPrompts.filters.searchPlaceholder')" />
+              :placeholder="t('reference.exerciseReferences.filters.searchPlaceholder')" />
           </div>
+        </div>
+        <!--<div>
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('reference.exerciseReferences.filters.language') }}
+            </label>
+            <input
+              v-model="filters.language"
+              type="text"
+              class="input mt-1"
+              :placeholder="t('reference.exerciseReferences.filters.languagePlaceholder')"
+            />
+          </div> -->
+        <div>
+          <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            {{ t('reference.exerciseReferences.filters.muscleGroup') }}
+          </label>
+          <input v-model="filters.muscleGroup" type="text" class="input mt-1"
+            :placeholder="t('reference.exerciseReferences.filters.muscleGroupPlaceholder')" />
         </div>
         <div>
           <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            {{ t('reference.aiPrompts.filters.provider') }}
+            {{ t('reference.exerciseReferences.filters.equipment') }}
           </label>
-          <select v-model="filters.provider" class="input mt-1">
-            <option value="">{{ t('reference.aiPrompts.filters.allProviders') }}</option>
-            <option v-for="option in providerOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
+          <input v-model="filters.equipment" type="text" class="input mt-1"
+            :placeholder="t('reference.exerciseReferences.filters.equipmentPlaceholder')" />
         </div>
-        <!-- <div>
-            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {{ t('reference.aiPrompts.filters.owner') }}
-            </label>
-            <input
-              v-model="filters.owner"
-              type="text"
-              class="input mt-1"
-              :placeholder="t('reference.aiPrompts.filters.ownerPlaceholder')"
-            />
-          </div> -->
+      </template>
+
+      <template #cell:createdAt="{ row }">
+        <span class="text-xs text-slate-500">{{ formatDate(row.createdAt) }}</span>
       </template>
 
       <template #actions="{ row }">
@@ -85,10 +92,10 @@ import DataTable from '@/components/DataTable.vue';
 import ReferenceFormModal from '@/components/ReferenceFormModal.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import {
-  listAiPrompts,
-  createAiPrompt,
-  updateAiPrompt,
-  deleteAiPrompt,
+  listExerciseReferences,
+  createExerciseReference,
+  updateExerciseReference,
+  deleteExerciseReference,
 } from '@/services/referenceAdmin';
 import { useNotificationStore } from '@/stores/notifications';
 import { useI18n } from 'vue-i18n';
@@ -107,23 +114,22 @@ const pendingDeletion = ref([]);
 const selectedRows = ref([]);
 
 const pagination = reactive({ page: 1, perPage: 10, total: 0, lastPage: 1, from: 0, to: 0 });
-const sort = reactive({ field: 'updatedAt', direction: 'desc' });
-const filters = reactive({ page: 1, perPage: 10, search: '', provider: '', owner: '' });
+const sort = reactive({ field: 'name', direction: 'asc' });
+const filters = reactive({ page: 1, perPage: 10, search: '', language: '', muscleGroup: '', equipment: '' });
 const columnsState = ref([]);
 
-const providerOptions = computed(() => [
-  { value: 'GEMINI', label: t('reference.aiPrompts.providers.GEMINI') },
-  { value: 'OLLAMA', label: t('reference.aiPrompts.providers.OLLAMA') },
-]);
-
 const createColumns = () => [
-  { key: 'code', label: t('reference.aiPrompts.columns.code'), sortable: true, visible: true },
-  { key: 'name', label: t('reference.aiPrompts.columns.name'), sortable: true, visible: true },
-  { key: 'providerLabel', label: t('reference.aiPrompts.columns.provider'), sortable: true, visible: true },
-  { key: 'model', label: t('reference.aiPrompts.columns.model'), sortable: true, visible: true },
-  { key: 'ownerDisplay', label: t('reference.aiPrompts.columns.owner'), sortable: false, visible: true },
-  { key: 'activeLabel', label: t('reference.aiPrompts.columns.active'), sortable: true, visible: true },
-  { key: 'updatedAt', label: t('reference.aiPrompts.columns.updatedAt'), sortable: true, visible: true },
+  { key: 'code', label: t('reference.exerciseReferences.columns.code'), sortable: true, visible: true },
+  { key: 'name', label: t('reference.exerciseReferences.columns.name'), sortable: true, visible: true },
+  {
+    key: 'muscleGroup',
+    label: t('reference.exerciseReferences.columns.muscleGroup'),
+    sortable: true,
+    visible: true,
+  },
+  { key: 'equipment', label: t('reference.exerciseReferences.columns.equipment'), sortable: true, visible: true },
+  { key: 'language', label: t('reference.exerciseReferences.columns.language'), sortable: true, visible: true },
+  { key: 'createdAt', label: t('reference.exerciseReferences.columns.createdAt'), sortable: true, visible: true },
 ];
 
 const columns = computed(() => {
@@ -134,35 +140,15 @@ const columns = computed(() => {
 });
 
 const formFields = computed(() => [
-  { key: 'code', label: t('reference.aiPrompts.form.code'), required: true },
-  { key: 'name', label: t('reference.aiPrompts.form.name'), required: true },
+  { key: 'code', label: t('reference.exerciseReferences.form.code'), required: true },
+  { key: 'name', label: t('reference.exerciseReferences.form.name'), required: true },
+  { key: 'description', label: t('reference.exerciseReferences.form.description'), type: 'textarea', rows: 4 },
+  { key: 'muscleGroup', label: t('reference.exerciseReferences.form.muscleGroup') },
+  { key: 'equipment', label: t('reference.exerciseReferences.form.equipment') },
   {
-    key: 'provider',
-    label: t('reference.aiPrompts.form.provider'),
-    type: 'select',
-    required: true,
-    options: providerOptions.value,
-  },
-  { key: 'model', label: t('reference.aiPrompts.form.model'), required: true },
-  {
-    key: 'owner',
-    label: t('reference.aiPrompts.form.owner'),
-    helper: t('reference.aiPrompts.form.ownerHelper'),
-  },
-  { key: 'description', label: t('reference.aiPrompts.form.description'), type: 'textarea' },
-  {
-    key: 'prompt',
-    label: t('reference.aiPrompts.form.prompt'),
-    type: 'textarea',
-    rows: 6,
-    required: true,
-    helper: t('reference.aiPrompts.form.promptHelper'),
-  },
-  {
-    key: 'active',
-    label: t('reference.aiPrompts.form.active'),
-    type: 'checkbox',
-    checkboxLabel: t('reference.aiPrompts.form.activeLabel'),
+    key: 'language',
+    label: t('reference.exerciseReferences.form.language'),
+    helper: t('reference.exerciseReferences.form.languageHelper'),
   },
 ]);
 
@@ -170,7 +156,19 @@ const modalTitle = computed(() =>
   activeItem.value?.id ? t('common.actions.edit') : t('common.actions.create')
 );
 
-const confirmMessage = computed(() => t('reference.aiPrompts.deleteQuestion'));
+const confirmMessage = computed(() => t('reference.exerciseReferences.deleteQuestion'));
+
+const formatDate = (value) => {
+  if (!value) return '—';
+  try {
+    return new Intl.DateTimeFormat(locale.value, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(value));
+  } catch (error) {
+    return value;
+  }
+};
 
 const persistColumns = (updatedColumns) => {
   columnsState.value = updatedColumns.map((column) => ({ ...column }));
@@ -187,52 +185,37 @@ const mapMeta = (data, pageData) => ({
     : 0,
 });
 
-const formatDateTime = (value) => {
-  if (!value) return '—';
-  try {
-    return new Date(value).toLocaleString(locale.value);
-  } catch (error) {
-    return value;
-  }
-};
-
-const fetchPrompts = async () => {
+const fetchExerciseReferences = async () => {
   loading.value = true;
   try {
     const params = {
       page: filters.page - 1,
       size: filters.perPage,
       sort: `${sort.field},${sort.direction}`,
-      code: filters.search || undefined,
-      name: filters.search || undefined,
-      provider: filters.provider || undefined,
-      owner: filters.owner || undefined,
+      search: filters.search || undefined,
+      language: filters.language || undefined,
+      muscleGroup: filters.muscleGroup || undefined,
+      equipment: filters.equipment || undefined,
     };
-    const { data } = await listAiPrompts(params);
+    const { data } = await listExerciseReferences(params);
     const pageData = data?.content ?? data?.data ?? data ?? [];
     rows.value = pageData.map((item) => ({
       id: item.id,
       code: item.code,
       name: item.name,
-      provider: item.provider,
-      providerLabel: t(`reference.aiPrompts.providers.${item.provider}`),
-      model: item.model,
-      owner: item.owner ?? '',
-      ownerDisplay: item.owner ?? t('reference.aiPrompts.ownerGlobal'),
       description: item.description,
-      prompt: item.prompt,
-      active: Boolean(item.active),
-      activeLabel: item.active
-        ? t('reference.aiPrompts.activeStatus.active')
-        : t('reference.aiPrompts.activeStatus.inactive'),
-      updatedAt: formatDateTime(item.updatedAt),
+      muscleGroup: item.muscleGroup,
+      equipment: item.equipment,
+      language: item.language,
+      createdAt: item.createdAt,
     }));
-    Object.assign(pagination, mapMeta(data, pageData));
+    const meta = mapMeta(data, pageData);
+    Object.assign(pagination, meta);
   } catch (error) {
     notifications.push({
       type: 'error',
       title: t('notifications.validationTitle'),
-      message: error.response?.data?.message ?? t('reference.aiPrompts.empty'),
+      message: error.response?.data?.message ?? t('reference.exerciseReferences.empty'),
     });
     rows.value = [];
     Object.assign(pagination, { page: filters.page, perPage: filters.perPage, total: 0, lastPage: 1, from: 0, to: 0 });
@@ -244,18 +227,18 @@ const fetchPrompts = async () => {
 const handleSort = ({ field, direction }) => {
   sort.field = field;
   sort.direction = direction;
-  fetchPrompts();
+  fetchExerciseReferences();
 };
 
 const handlePage = (page) => {
   filters.page = page;
-  fetchPrompts();
+  fetchExerciseReferences();
 };
 
 const handlePerPage = (perPage) => {
   filters.perPage = perPage;
   filters.page = 1;
-  fetchPrompts();
+  fetchExerciseReferences();
 };
 
 const openCreate = () => {
@@ -278,28 +261,24 @@ const openDelete = (ids) => {
 const handleSubmit = async (payload) => {
   saving.value = true;
   try {
-    const normalized = {
-      ...payload,
-      owner: payload.owner?.trim() || null,
-      active: Boolean(payload.active),
-    };
+    const normalized = { ...payload };
     if (activeItem.value?.id) {
-      await updateAiPrompt(activeItem.value.id, normalized);
+      await updateExerciseReference(activeItem.value.id, normalized);
     } else {
-      await createAiPrompt(normalized);
+      await createExerciseReference(normalized);
     }
     notifications.push({
       type: 'success',
       title: t('reference.title'),
-      message: t('reference.aiPrompts.saveSuccess'),
+      message: t('reference.exerciseReferences.createSuccess'),
     });
     modalOpen.value = false;
-    await fetchPrompts();
+    await fetchExerciseReferences();
   } catch (error) {
     notifications.push({
       type: 'error',
       title: t('notifications.validationTitle'),
-      message: error.response?.data?.message ?? t('reference.aiPrompts.empty'),
+      message: error.response?.data?.message ?? t('reference.exerciseReferences.empty'),
     });
   } finally {
     saving.value = false;
@@ -311,47 +290,29 @@ const handleConfirmDelete = async () => {
     return;
   }
   try {
-    await Promise.all(pendingDeletion.value.map((id) => deleteAiPrompt(id)));
+    await Promise.all(pendingDeletion.value.map((id) => deleteExerciseReference(id)));
     notifications.push({
       type: 'success',
       title: t('reference.title'),
-      message: t('reference.aiPrompts.deleteSuccess'),
+      message: t('reference.exerciseReferences.deleteSuccess'),
     });
-    confirmOpen.value = false;
-    pendingDeletion.value = [];
     selectedRows.value = [];
-    await fetchPrompts();
+    await fetchExerciseReferences();
   } catch (error) {
     notifications.push({
       type: 'error',
       title: t('notifications.validationTitle'),
-      message: error.response?.data?.message ?? t('reference.aiPrompts.deleteQuestion'),
+      message: error.response?.data?.message ?? t('reference.exerciseReferences.deleteQuestion'),
     });
   }
 };
 
 watch(
-  () => filters.search,
+  () => [filters.search, filters.language, filters.muscleGroup, filters.equipment],
   () => {
     filters.page = 1;
-    fetchPrompts();
-  },
-);
-
-watch(
-  () => filters.provider,
-  () => {
-    filters.page = 1;
-    fetchPrompts();
-  },
-);
-
-watch(
-  () => filters.owner,
-  () => {
-    filters.page = 1;
-    fetchPrompts();
-  },
+    fetchExerciseReferences();
+  }
 );
 
 watch(
@@ -365,11 +326,11 @@ watch(
       ...column,
       visible: visibility[column.key] ?? true,
     }));
-  },
+  }
 );
 
 onMounted(() => {
   columnsState.value = createColumns();
-  fetchPrompts();
+  fetchExerciseReferences();
 });
 </script>
