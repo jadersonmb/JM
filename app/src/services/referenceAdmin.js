@@ -33,3 +33,12 @@ export const listAiPrompts = (params = {}) => api.get('/api/v1/reference-managem
 export const createAiPrompt = (payload) => api.post('/api/v1/reference-management/ai-prompts', payload);
 export const updateAiPrompt = (id, payload) => api.put(`/api/v1/reference-management/ai-prompts/${id}`, payload);
 export const deleteAiPrompt = (id) => api.delete(`/api/v1/reference-management/ai-prompts/${id}`);
+
+export const listExerciseReferences = (params = {}) =>
+  api.get('/api/v1/reference-management/exercise-references', { params });
+export const createExerciseReference = (payload) =>
+  api.post('/api/v1/reference-management/exercise-references', payload);
+export const updateExerciseReference = (id, payload) =>
+  api.put(`/api/v1/reference-management/exercise-references/${id}`, payload);
+export const deleteExerciseReference = (id) =>
+  api.delete(`/api/v1/reference-management/exercise-references/${id}`);

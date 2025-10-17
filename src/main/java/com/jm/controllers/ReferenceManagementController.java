@@ -4,14 +4,16 @@ import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.CityDTO;
 import com.jm.dto.CountryDTO;
 import com.jm.dto.EducationLevelDTO;
+import com.jm.dto.ExerciseReferenceDTO;
 import com.jm.dto.MealDTO;
 import com.jm.dto.ProfessionDTO;
 import com.jm.enums.AiProvider;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
 import com.jm.services.EducationLevelService;
-import com.jm.services.MealService;
 import com.jm.services.AiPromptReferenceService;
+import com.jm.services.ExerciseReferenceService;
+import com.jm.services.MealService;
 import com.jm.services.ProfessionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
@@ -44,8 +46,9 @@ public class ReferenceManagementController {
     private final CityService cityService;
     private final EducationLevelService educationLevelService;
     private final ProfessionService professionService;
-    private final MealService mealService;
     private final AiPromptReferenceService aiPromptReferenceService;
+    private final MealService mealService;
+    private final ExerciseReferenceService exerciseReferenceService;
 
     @GetMapping("/countries")
     public ResponseEntity<Page<CountryDTO>> listCountries(Pageable pageable,
@@ -196,6 +199,39 @@ public class ReferenceManagementController {
     public ResponseEntity<Void> deleteMeal(@PathVariable UUID id) {
         ensureAdmin();
         mealService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/exercise-references")
+    public ResponseEntity<Page<ExerciseReferenceDTO>> listExerciseReferences(Pageable pageable,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String language,
+            @RequestParam(required = false) String muscleGroup,
+            @RequestParam(required = false) String equipment) {
+        ensureAdmin();
+        return ResponseEntity.ok(
+                exerciseReferenceService.search(pageable, search, language, muscleGroup, equipment));
+    }
+
+    @PostMapping("/exercise-references")
+    public ResponseEntity<ExerciseReferenceDTO> createExerciseReference(@RequestBody ExerciseReferenceDTO dto) {
+        ensureAdmin();
+        ExerciseReferenceDTO created = exerciseReferenceService.save(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/exercise-references/{id}")
+    public ResponseEntity<ExerciseReferenceDTO> updateExerciseReference(@PathVariable UUID id,
+            @RequestBody ExerciseReferenceDTO dto) {
+        ensureAdmin();
+        dto.setId(id);
+        return ResponseEntity.ok(exerciseReferenceService.save(dto));
+    }
+
+    @DeleteMapping("/exercise-references/{id}")
+    public ResponseEntity<Void> deleteExerciseReference(@PathVariable UUID id) {
+        ensureAdmin();
+        exerciseReferenceService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
