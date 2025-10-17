@@ -501,6 +501,8 @@
       clearForm: 'Limpar formulário',
       saveEvolution: 'Salvar evolução',
       addNew: '+ Adicionar',
+      uploadCardTitle: 'Enviar e salvar evolução',
+      uploadCardSubtitle: 'Anexe as fotos de progresso e mantenha as medidas alinhadas.',
       bodyPartChip: 'Parte do corpo: {part}',
       angleChip: 'Ângulo: {angle}',
       countLabel: '{count} foto(s)',
@@ -508,6 +510,7 @@
       view: 'Visualizar',
       compare: 'Comparar',
       weightChip: '{weight} kg',
+      previewTitle: 'Foto selecionada',
     },
     form: {
       title: 'Registrar novas fotos de evolução',

@@ -141,7 +141,7 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-[380px_1fr]">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-[0.4fr_0.6fr]">
         <aside v-if="activeTab === 'gallery'" class="space-y-4">
           <div
             v-if="editingEntry"
@@ -328,61 +328,76 @@
                       />
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div class="space-y-3">
-                    <label class="text-sm font-medium text-gray-600">{{ t('photoEvolution.form.fields.image.label') }}</label>
+              <div class="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-sm font-semibold text-blue-700">{{ t('photoEvolution.gallery.uploadCardTitle') }}</h3>
+                    <p class="text-xs text-blue-600">{{ t('photoEvolution.gallery.uploadCardSubtitle') }}</p>
+                  </div>
+                  <span class="text-xs font-medium text-blue-500">{{ uploadStatus }}</span>
+                </div>
+                <div class="space-y-3">
+                  <div
+                    v-for="(entryForm, index) in draftEntries"
+                    :key="`upload-${entryForm.uid}`"
+                    class="flex flex-col gap-3 rounded-lg bg-white/70 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div class="flex items-center gap-3">
-                      <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white">
+                      <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-lg border border-dashed border-blue-200 bg-white">
                         <img
                           v-if="entryForm.imagePreview"
                           :src="entryForm.imagePreview"
                           alt="preview"
                           class="h-full w-full object-cover"
                         />
-                        <PhotoIcon v-else class="h-8 w-8 text-gray-300" />
+                        <PhotoIcon v-else class="h-8 w-8 text-blue-200" />
                       </div>
-                      <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100">
-                        <PhotoIcon class="h-4 w-4" />
-                        {{ entryForm.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.gallery.uploadLabel') }}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          class="hidden"
-                          @change="(event) => handleDraftFileChange(event, index)"
-                        />
-                      </label>
+                      <div class="text-xs text-blue-600">
+                        <p class="font-semibold text-blue-700">
+                          {{ t('photoEvolution.form.batchEntryLabel', { index: index + 1 }) }}
+                        </p>
+                        <p>{{ t('photoEvolution.gallery.uploadHelper') }}</p>
+                      </div>
                     </div>
-                    <p class="text-xs text-gray-400">{{ t('photoEvolution.gallery.uploadHelper') }}</p>
+                    <label class="inline-flex cursor-pointer items-center gap-2 self-start rounded-lg border border-blue-200 bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-200 sm:self-auto">
+                      <PhotoIcon class="h-4 w-4" />
+                      {{ entryForm.imagePreview ? t('photoEvolution.form.fields.image.change') : t('photoEvolution.gallery.uploadLabel') }}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        class="hidden"
+                        @change="(event) => handleDraftFileChange(event, index)"
+                      />
+                    </label>
                   </div>
                 </div>
-              </div>
-
-              <div class="space-y-3">
-                <div class="flex items-center justify-between text-xs text-gray-500">
-                  <span>{{ uploadStatus }}</span>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="flex flex-1 flex-col gap-3 sm:flex-row">
+                    <button
+                      type="submit"
+                      :disabled="saving"
+                      class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ t('photoEvolution.gallery.saveEvolution') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="flex-1 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+                      @click="addDraftEntry"
+                    >
+                      {{ t('photoEvolution.gallery.addNew') }}
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    class="text-blue-500 hover:text-blue-600"
+                    class="text-sm font-semibold text-blue-600 underline-offset-4 transition hover:text-blue-700 hover:underline"
                     @click="resetDraftEntries"
                   >
                     {{ t('photoEvolution.gallery.clearForm') }}
-                  </button>
-                </div>
-                <div class="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="submit"
-                    :disabled="saving"
-                    class="flex-1 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {{ t('photoEvolution.gallery.saveEvolution') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition hover:border-blue-200 hover:text-blue-600"
-                    @click="addDraftEntry"
-                  >
-                    {{ t('photoEvolution.gallery.addNew') }}
                   </button>
                 </div>
               </div>
@@ -557,11 +572,11 @@
                     <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', { angle: group.angleLabel }) }}</span>
                   </div>
                 </div>
-                <div class="flex gap-3 overflow-x-auto pb-1">
+                <div class="flex gap-4 overflow-x-auto pb-1">
                   <div
                     v-for="entry in group.items"
                     :key="entry.id"
-                    class="group relative h-32 w-24 flex-shrink-0 overflow-hidden rounded-lg border border-transparent bg-gray-100 transition-all duration-300"
+                    class="group relative h-40 w-32 flex-shrink-0 overflow-hidden rounded-xl border border-transparent bg-gray-100 transition-all duration-300"
                     :class="comparisonIds.includes(entry.id) ? 'ring-2 ring-blue-500 ring-offset-2' : 'hover:border-blue-200 hover:shadow'"
                   >
                     <img
@@ -577,22 +592,51 @@
                       <span class="font-semibold">{{ formatDate(entry.capturedAt || entry.createdAt) }}</span>
                       <span v-if="entry.weight" class="text-[10px] text-white/80">{{ t('photoEvolution.gallery.weightChip', { weight: formatNumber(entry.weight) }) }}</span>
                     </div>
-                    <div class="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 opacity-0 transition group-hover:opacity-100">
+                    <div class="absolute inset-0 flex items-center justify-center gap-3 bg-black/60 opacity-0 transition group-hover:opacity-100">
                       <button
                         type="button"
-                        class="pointer-events-auto rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow"
+                        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-white text-gray-700 shadow"
                         @click="viewEntry(entry)"
                       >
-                        {{ t('photoEvolution.gallery.view') }}
+                        <EyeIcon class="h-5 w-5" />
+                        <span class="sr-only">{{ t('photoEvolution.gallery.view') }}</span>
                       </button>
                       <button
                         type="button"
-                        class="pointer-events-auto rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white shadow"
+                        class="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow"
                         @click="toggleComparison(entry)"
                       >
-                        {{ t('photoEvolution.gallery.compare') }}
+                        <ArrowsRightLeftIcon class="h-5 w-5" />
+                        <span class="sr-only">{{ t('photoEvolution.gallery.compare') }}</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="previewEntry"
+                class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-base font-semibold text-gray-800">{{ t('photoEvolution.gallery.previewTitle') }}</h3>
+                    <p class="text-sm text-gray-500">{{ formatDate(previewEntry.capturedAt || previewEntry.createdAt) }}</p>
+                  </div>
+                  <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.bodyPartChip', { part: bodyPartLabel(previewEntry.bodyPart) }) }}</span>
+                    <span class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.angleChip', { angle: angleLabel(previewEntry.angle) }) }}</span>
+                    <span v-if="previewEntry.weight" class="rounded-full bg-gray-100 px-3 py-1">{{ t('photoEvolution.gallery.weightChip', { weight: formatNumber(previewEntry.weight) }) }}</span>
+                  </div>
+                </div>
+                <div class="mt-4 overflow-hidden rounded-xl bg-gray-900/5">
+                  <img
+                    v-if="previewEntry.imageUrl"
+                    :src="previewEntry.imageUrl"
+                    :alt="formatDate(previewEntry.capturedAt || previewEntry.createdAt)"
+                    class="h-auto w-full max-h-[520px] rounded-xl object-cover"
+                  />
+                  <div v-else class="flex h-80 items-center justify-center text-gray-400">
+                    <PhotoIcon class="h-12 w-12" />
                   </div>
                 </div>
               </div>
@@ -699,6 +743,8 @@ import { useNotificationStore } from '@/stores/notifications';
 import photoEvolutionService from '@/services/photoEvolution';
 import {
   ArrowPathIcon,
+  ArrowsRightLeftIcon,
+  EyeIcon,
   PhotoIcon,
   PlusIcon,
   TrashIcon,
@@ -727,6 +773,7 @@ const loadingEntries = ref(false);
 const filterBodyPart = ref(null);
 const comparisonIds = ref([]);
 const comparisonBodyPart = ref(null);
+const previewEntry = ref(null);
 
 const numberFormatter = computed(() => new Intl.NumberFormat(locale.value, {
   minimumFractionDigits: 0,
@@ -1009,6 +1056,7 @@ function viewEntry(entry) {
   if (!entry) {
     return;
   }
+  previewEntry.value = entry;
   startEdit(entry);
   activeTab.value = 'gallery';
 }
@@ -1379,6 +1427,9 @@ async function deleteEntry(entry) {
   if (editingEntry.value?.id === entry.id) {
     resetEditing();
   }
+  if (previewEntry.value?.id === entry.id) {
+    previewEntry.value = null;
+  }
   await photoEvolutionService.remove(entry.id);
   notifications.push({
     type: 'success',
@@ -1652,6 +1703,20 @@ function openComparison() {
     query: buildComparisonQuery(comparisonIds.value),
   });
 }
+
+watch(entries, (list) => {
+  if (!previewEntry.value) {
+    return;
+  }
+  const found = (list ?? []).find((item) => item.id === previewEntry.value?.id);
+  previewEntry.value = found ?? null;
+});
+
+watch(activeTab, (tab) => {
+  if (tab !== 'gallery') {
+    previewEntry.value = null;
+  }
+});
 
 watch(comparisonIds, (ids) => {
   updateRouteComparisonQuery(ids);

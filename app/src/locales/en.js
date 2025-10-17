@@ -500,6 +500,8 @@ export default {
       clearForm: 'Clear form',
       saveEvolution: 'Save evolution',
       addNew: '+ Add new',
+      uploadCardTitle: 'Upload & save evolution',
+      uploadCardSubtitle: 'Attach progress photos and keep measurements aligned.',
       bodyPartChip: 'Body Part: {part}',
       angleChip: 'Angle: {angle}',
       countLabel: '{count} photo(s)',
@@ -507,6 +509,7 @@ export default {
       view: 'View',
       compare: 'Compare',
       weightChip: '{weight} kg',
+      previewTitle: 'Selected photo',
     },
     form: {
       title: 'Register new progress photos',
