@@ -100,153 +100,273 @@
           <p class="text-sm text-gray-500">All payments made through this subscription.</p>
         </header>
 
-        <div v-if="paymentsLoading" class="mt-6 space-y-4">
-          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
-          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
-          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
-        </div>
-
-        <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-100">
-          <article
-            v-for="item in paymentHistoryItems"
-            :key="item.id"
-            class="flex justify-between items-start py-3 transition-colors"
-          >
-            <div>
-              <p class="text-sm font-medium text-gray-800">{{ item.date }} · {{ item.description }}</p>
-              <div class="flex items-center gap-2 text-xs mt-1 flex-wrap">
-                <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
-                <button type="button" class="text-blue-600 hover:underline">{{ item.action }}</button>
-              </div>
+        <div class="mt-6 space-y-8">
+          <div v-if="recurringHistoryItems.length" class="space-y-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recurringList') }}</h3>
+            <div class="divide-y divide-gray-100">
+              <article
+                v-for="item in recurringHistoryItems"
+                :key="item.id"
+                class="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div class="space-y-2">
+                  <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
+                  <p class="text-xs text-gray-500">{{ item.subtitle }}</p>
+                  <div class="flex items-center gap-2 text-xs">
+                    <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-semibold text-gray-800">{{ item.amount }}</p>
+                  <p class="text-xs text-gray-500">{{ item.nextBilling }}</p>
+                </div>
+              </article>
             </div>
-            <p class="font-medium text-gray-800">{{ item.amount }}</p>
-          </article>
-        </div>
-        <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
-          <p>{{ t('payments.recentActivity.empty') }}</p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recentPayments') }}</h3>
+              <span v-if="paymentsLoading" class="text-xs text-gray-400">{{ t('common.loading') }}</span>
+            </div>
+
+            <div v-if="paymentsLoading" class="mt-4 space-y-4">
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+            </div>
+
+            <div v-else-if="paymentHistoryItems.length" class="mt-4 divide-y divide-gray-100">
+              <article
+                v-for="item in paymentHistoryItems"
+                :key="item.id"
+                class="flex flex-col gap-3 py-4 md:flex-row md:items-start md:justify-between"
+              >
+                <div>
+                  <p class="text-sm font-medium text-gray-800">{{ item.date }} · {{ item.description }}</p>
+                  <div class="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                    <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
+                    <button
+                      v-for="action in item.actions"
+                      :key="action.type"
+                      type="button"
+                      :disabled="action.disabled"
+                      :class="[
+                        'font-medium transition hover:underline',
+                        action.disabled
+                          ? 'cursor-not-allowed text-gray-400 hover:text-gray-400 hover:no-underline'
+                          : 'text-blue-600 hover:text-blue-700'
+                      ]"
+                      @click="handleHistoryAction(item, action.type)"
+                    >
+                      {{ action.label }}
+                    </button>
+                  </div>
+                </div>
+                <p class="text-sm font-semibold text-gray-800 md:text-right">{{ item.amount }}</p>
+              </article>
+            </div>
+
+            <div v-else class="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+              <p>{{ t('payments.recentActivity.empty') }}</p>
+            </div>
+          </div>
         </div>
       </section>
     </div>
   </div>
 
-  <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.subscription.title') }}</h2>
-          <p class="text-sm text-gray-500">{{ t('payments.subscription.subtitle') }}</p>
-        </div>
-        <span v-if="activeSubscription" :class="[
-          'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase',
-          subscriptionBadgeClass(activeSubscription.status),
-        ]">
-          {{ subscriptionStatusLabel(activeSubscription.status) }}
-        </span>
-      </header>
-
-      <div v-if="subscriptionsLoading" class="mt-6 space-y-3">
-        <div class="h-5 w-full animate-pulse rounded bg-gray-200"></div>
-        <div class="h-5 w-full animate-pulse rounded bg-gray-200"></div>
-        <div class="h-5 w-1/2 animate-pulse rounded bg-gray-200"></div>
-      </div>
-
-      <div v-else-if="activeSubscription" class="mt-6 space-y-6">
-        <dl class="grid gap-4">
-          <div class="flex flex-col gap-1">
-            <dt class="text-sm text-gray-500">{{ t('payments.subscription.plan') }}</dt>
-            <dd class="text-base font-semibold text-gray-800">
-              {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
-            </dd>
+  <div
+    v-else
+    class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
+  >
+    <div class="space-y-6">
+      <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="text-sm font-medium text-blue-600">{{ t('payments.subscription.title') }}</p>
+            <h2 class="text-xl font-semibold text-gray-800">{{ t('payments.subscription.subtitle') }}</h2>
           </div>
+          <span
+            v-if="activeSubscription"
+            :class="[
+              'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase',
+              subscriptionBadgeClass(activeSubscription.status),
+            ]"
+          >
+            {{ subscriptionStatusLabel(activeSubscription.status) }}
+          </span>
+        </header>
+
+        <div v-if="subscriptionsLoading" class="mt-6 space-y-4">
+          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+          <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+          <div class="h-16 w-2/3 animate-pulse rounded-lg bg-gray-200"></div>
+        </div>
+
+        <div v-else-if="activeSubscription" class="mt-6 space-y-6">
           <div class="grid gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-1">
-              <dt class="text-sm text-gray-500">{{ t('payments.subscription.amount') }}</dt>
-              <dd class="text-base font-semibold text-gray-800">{{ formatCurrency(activeSubscription.amount) }}</dd>
-            </div>
-            <div class="flex flex-col gap-1">
-              <dt class="text-sm text-gray-500">{{ t('payments.subscription.nextBilling') }}</dt>
-              <dd class="text-base font-semibold text-gray-800">
+            <article class="relative rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <h3 class="text-sm font-semibold text-blue-700">
+                {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
+              </h3>
+              <p class="mt-2 text-xs uppercase tracking-wide text-blue-500">
+                {{ subscriptionIntervalLabel(activeSubscription.interval) }}
+              </p>
+              <p class="mt-3 text-2xl font-semibold text-blue-900">
+                {{ formatCurrency(activeSubscription.amount) }}
+              </p>
+              <p class="mt-1 text-xs text-blue-600">
+                {{ t('payments.subscription.nextBilling') }}:
                 {{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}
-              </dd>
+              </p>
+            </article>
+
+            <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <h3 class="text-sm font-semibold text-gray-800">{{ t('payments.subscription.card') }}</h3>
+              <p class="mt-2 text-sm text-gray-600">{{ primaryCardLabel }}</p>
+              <p class="mt-4 text-xs text-gray-400">
+                {{ subscriptionIntervalLabel(activeSubscription.interval) }}
+              </p>
+            </article>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <h3 class="text-sm font-semibold text-gray-800">{{ t('payments.subscription.details') }}</h3>
+            <dl class="mt-4 grid gap-4 sm:grid-cols-2">
+              <div class="space-y-1">
+                <dt class="text-xs uppercase tracking-wide text-gray-500">{{ t('payments.subscription.plan') }}</dt>
+                <dd class="text-sm font-semibold text-gray-800">
+                  {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
+                </dd>
+              </div>
+              <div class="space-y-1">
+                <dt class="text-xs uppercase tracking-wide text-gray-500">{{ t('payments.subscription.statusLabel') }}</dt>
+                <dd class="text-sm font-semibold text-gray-800">
+                  {{ subscriptionStatusLabel(activeSubscription.status) }}
+                </dd>
+              </div>
+              <div class="space-y-1">
+                <dt class="text-xs uppercase tracking-wide text-gray-500">{{ t('payments.subscription.amount') }}</dt>
+                <dd class="text-sm font-semibold text-gray-800">{{ formatCurrency(activeSubscription.amount) }}</dd>
+              </div>
+              <div class="space-y-1">
+                <dt class="text-xs uppercase tracking-wide text-gray-500">{{ t('payments.subscription.nextBilling') }}</dt>
+                <dd class="text-sm font-semibold text-gray-800">
+                  {{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+              <p class="text-xs text-gray-500">
+                {{ t('payments.subscription.manageHint') }}
+              </p>
+              <button
+                type="button"
+                class="rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200 disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="cancelingSubscription"
+                aria-label="Cancel Subscription"
+                @click="handleCancelSubscription"
+              >
+                <span v-if="cancelingSubscription" class="flex items-center justify-center gap-2">
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
+                  {{ t('payments.subscription.cancelling') }}
+                </span>
+                <span v-else>{{ t('payments.subscription.cancel') }}</span>
+              </button>
             </div>
           </div>
-          <div class="flex flex-col gap-1">
-            <dt class="text-sm text-gray-500">{{ t('payments.subscription.card') }}</dt>
-            <dd class="text-base font-semibold text-gray-800">{{ primaryCardLabel }}</dd>
-          </div>
-        </dl>
-
-        <div class="grid gap-3 sm:grid-cols-3">
-          <!--<button type="button"
-            class="rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
-            aria-label="Upgrade Plan">
-            <span v-if="false"
-              class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-            Upgrade Plan
-          </button>
-          <button type="button"
-            class="rounded-lg bg-green-100 px-4 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-200"
-            aria-label="Change Plan">
-            <span v-if="false"
-              class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-            Change Plan
-          </button> -->
-          <div></div>
-          <div></div>
-          <button type="button"
-            class="rounded-lg bg-red-100 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
-            :disabled="cancelingSubscription" aria-label="Cancel Subscription" @click="handleCancelSubscription">
-            <span v-if="cancelingSubscription" class="flex items-center justify-center gap-2">
-              <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-              {{ t('payments.subscription.cancelling') }}
-            </span>
-            <span v-else>{{ t('payments.subscription.cancel') }}</span>
-          </button>
         </div>
-      </div>
 
-      <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
-        <p class="font-semibold text-gray-700">{{ t('payments.subscription.emptyTitle') }}</p>
-        <p class="mt-1 text-gray-500">{{ t('payments.subscription.emptyDescription') }}</p>
-      </div>
-    </section>
+        <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+          <p class="font-semibold text-gray-700">{{ t('payments.subscription.emptyTitle') }}</p>
+          <p class="mt-1 text-gray-500">{{ t('payments.subscription.emptyDescription') }}</p>
+        </div>
+      </section>
+    </div>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-800">{{ t('payments.subscription.paymentHisotry') }}</h2>
+    <div class="space-y-6">
+      <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <header class="flex flex-col gap-1">
+          <h2 class="text-xl font-semibold text-gray-800">{{ t('payments.subscription.paymentHisotry') }}</h2>
           <p class="text-sm text-gray-500">{{ t('payments.subscription.paymentHisotryDescription') }}</p>
-        </div>
-      </header>
+        </header>
 
-      <div v-if="paymentsLoading" class="mt-6 space-y-4">
-        <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
-        <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
-        <div class="h-16 w-full animate-pulse rounded bg-gray-200"></div>
-      </div>
-
-      <div v-else-if="paymentHistoryItems.length" class="mt-6 divide-y divide-gray-200">
-        <article v-for="item in paymentHistoryItems" :key="item.id"
-          class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div class="space-y-2">
-            <p class="text-sm text-gray-500">{{ item.date }}</p>
-            <p class="text-base font-semibold text-gray-800">{{ item.description }}</p>
-            <div class="flex flex-wrap items-center gap-3">
-              <span
-                :class="['inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', item.statusClass]">
-                {{ item.statusLabel }}
-              </span>
-              <span class="text-sm text-gray-500">{{ item.action }}</span>
+        <div class="mt-6 space-y-8">
+          <div v-if="recurringHistoryItems.length" class="space-y-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recurringList') }}</h3>
+            <div class="divide-y divide-gray-100">
+              <article
+                v-for="item in recurringHistoryItems"
+                :key="item.id"
+                class="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between"
+              >
+                <div class="space-y-2">
+                  <p class="text-sm font-semibold text-gray-800">{{ item.title }}</p>
+                  <p class="text-xs text-gray-500">{{ item.subtitle }}</p>
+                  <div class="flex items-center gap-2 text-xs">
+                    <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="text-sm font-semibold text-gray-800">{{ item.amount }}</p>
+                  <p class="text-xs text-gray-500">{{ item.nextBilling }}</p>
+                </div>
+              </article>
             </div>
           </div>
-          <p class="text-right text-base font-semibold text-gray-800">{{ item.amount }}</p>
-        </article>
-      </div>
 
-      <div v-else class="mt-6 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
-        <p>{{ t('payments.recentActivity.empty') }}</p>
-      </div>
-    </section>
+          <div>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recentPayments') }}</h3>
+              <span v-if="paymentsLoading" class="text-xs text-gray-400">{{ t('common.loading') }}</span>
+            </div>
+
+            <div v-if="paymentsLoading" class="mt-4 space-y-4">
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+              <div class="h-16 w-full animate-pulse rounded-lg bg-gray-200"></div>
+            </div>
+
+            <div v-else-if="paymentHistoryItems.length" class="mt-4 divide-y divide-gray-100">
+              <article
+                v-for="item in paymentHistoryItems"
+                :key="item.id"
+                class="flex flex-col gap-3 py-4 md:flex-row md:items-start md:justify-between"
+              >
+                <div>
+                  <p class="text-sm font-medium text-gray-800">{{ item.date }} · {{ item.description }}</p>
+                  <div class="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                    <span :class="['px-2 py-0.5 rounded', item.statusClass]">{{ item.statusLabel }}</span>
+                    <button
+                      v-for="action in item.actions"
+                      :key="action.type"
+                      type="button"
+                      :disabled="action.disabled"
+                      :class="[
+                        'font-medium transition hover:underline',
+                        action.disabled
+                          ? 'cursor-not-allowed text-gray-400 hover:text-gray-400 hover:no-underline'
+                          : 'text-blue-600 hover:text-blue-700'
+                      ]"
+                      @click="handleHistoryAction(item, action.type)"
+                    >
+                      {{ action.label }}
+                    </button>
+                  </div>
+                </div>
+                <p class="text-sm font-semibold text-gray-800 md:text-right">{{ item.amount }}</p>
+              </article>
+            </div>
+
+            <div v-else class="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+              <p>{{ t('payments.recentActivity.empty') }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
   <transition name="fade">
@@ -389,13 +509,13 @@ const refundMessage = computed(() => {
 });
 
 const paymentStatusMeta = {
-  PAID: { label: 'Paid', className: 'bg-green-100 text-green-700', action: 'Invoice · View' },
-  COMPLETED: { label: 'Paid', className: 'bg-green-100 text-green-700', action: 'Invoice · View' },
-  REFUNDED: { label: 'Refunded', className: 'bg-amber-100 text-amber-700', action: 'Details · View', negative: true },
-  FAILED: { label: 'Failed', className: 'bg-red-100 text-red-700', action: 'Action required · Retry' },
-  DECLINED: { label: 'Failed', className: 'bg-red-100 text-red-700', action: 'Action required · Retry' },
-  PROCESSING: { label: 'Processing', className: 'bg-gray-100 text-gray-600', action: 'Details · View' },
-  DEFAULT: { label: 'Processing', className: 'bg-gray-100 text-gray-600', action: 'Details · View' },
+  PAID: { label: 'Paid', className: 'bg-green-100 text-green-700', showInvoice: true },
+  COMPLETED: { label: 'Paid', className: 'bg-green-100 text-green-700', showInvoice: true },
+  REFUNDED: { label: 'Refunded', className: 'bg-amber-100 text-amber-700', showInvoice: true, negative: true },
+  FAILED: { label: 'Failed', className: 'bg-red-100 text-red-700', showInvoice: false, negative: true },
+  DECLINED: { label: 'Failed', className: 'bg-red-100 text-red-700', showInvoice: false, negative: true },
+  PROCESSING: { label: 'Processing', className: 'bg-gray-100 text-gray-600', showInvoice: false },
+  DEFAULT: { label: 'Processing', className: 'bg-gray-100 text-gray-600', showInvoice: false },
 };
 
 const paymentHistoryItems = computed(() => {
@@ -407,14 +527,49 @@ const paymentHistoryItems = computed(() => {
       const meta = paymentStatusMeta[status] ?? paymentStatusMeta.DEFAULT;
       const amount = Number(payment.amount ?? 0);
       const signedAmount = meta.negative ? -Math.abs(amount) : amount;
+      const invoiceUrl = resolveInvoiceUrl(payment.metadata);
+      const actions = [
+        {
+          type: 'invoice',
+          label: t('payments.history.actions.invoice'),
+          disabled: !meta.showInvoice || !invoiceUrl,
+        },
+        { type: 'details', label: t('payments.history.actions.details'), disabled: false },
+      ];
       return {
         id: payment.id ?? payment.paymentId,
         date: formatHistoryDate(payment.createdAt ?? payment.updatedAt),
         description: payment.description ?? activeSubscription.value?.plan?.name ?? t('payments.subscription.planUnknown'),
         statusLabel: meta.label,
         statusClass: meta.className,
-        action: meta.action,
         amount: formatCurrency(signedAmount),
+        invoiceUrl,
+        actions,
+        payment,
+      };
+    });
+});
+
+const recurringHistoryItems = computed(() => {
+  if (!subscriptions.value?.length) {
+    return [];
+  }
+  return subscriptions.value
+    .slice()
+    .sort((a, b) => new Date(b.nextBillingDate ?? 0) - new Date(a.nextBillingDate ?? 0))
+    .map((subscription) => {
+      const intervalLabel = subscriptionIntervalLabel(subscription.interval);
+      const statusLabel = subscriptionStatusLabel(subscription.status);
+      return {
+        id: subscription.id,
+        title: subscription.plan?.name ?? t('payments.subscription.planUnknown'),
+        subtitle: intervalLabel,
+        statusLabel,
+        statusClass: subscriptionBadgeClass(subscription.status),
+        amount: formatCurrency(subscription.amount),
+        nextBilling: subscription.nextBillingDate
+          ? `${t('payments.subscription.nextBilling')}: ${formatSubscriptionDate(subscription.nextBillingDate)}`
+          : t('payments.subscription.noNextBilling'),
       };
     });
 });
@@ -828,6 +983,23 @@ async function handleCreateSubscription(payload) {
   }
 }
 
+function handleHistoryAction(item, actionType) {
+  const action = item.actions?.find((entry) => entry.type === actionType);
+  if (!action || action.disabled) {
+    if (actionType === 'invoice') {
+      viewInvoice(item.payment, item.invoiceUrl);
+    }
+    return;
+  }
+  if (actionType === 'invoice') {
+    viewInvoice(item.payment, item.invoiceUrl);
+    return;
+  }
+  if (actionType === 'details') {
+    openPaymentDetails(item.payment);
+  }
+}
+
 function openPaymentDetails(payment) {
   selectedPayment.value = payment;
 }
@@ -923,6 +1095,42 @@ function formatCurrency(value) {
   return new Intl.NumberFormat(currentLocaleTag(), { style: 'currency', currency }).format(value ?? 0);
 }
 
+function viewInvoice(payment, directUrl) {
+  const url = directUrl || resolveInvoiceUrl(payment?.metadata);
+  if (url && typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener');
+    return;
+  }
+  notifications.push({
+    type: 'warning',
+    title: t('payments.notifications.invoiceTitle'),
+    message: t('payments.notifications.invoiceUnavailable'),
+  });
+}
+
+function resolveInvoiceUrl(metadata) {
+  if (!metadata) return null;
+  const candidates = [
+    'invoiceUrl',
+    'invoice_url',
+    'hostedInvoiceUrl',
+    'hosted_invoice_url',
+    'invoice',
+    'invoicePdf',
+    'invoice_pdf',
+    'receiptUrl',
+    'receipt_url',
+    'url',
+  ];
+  for (const key of candidates) {
+    const value = metadata?.[key];
+    if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
 function formatDate(value) {
   if (!value) return '';
   try {
@@ -942,7 +1150,6 @@ function formatHistoryDate(value) {
 }
 
 function timelineMeta(payment) {
-  console.log(payment);
   const status = (payment.status ?? '').toUpperCase();
   const amount = formatCurrency(payment.amount);
   const extraDetails = payment.description ? ` ${payment.description}` : '';
