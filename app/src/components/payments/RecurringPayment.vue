@@ -1,140 +1,144 @@
 <template>
-  <form class="flex flex-col gap-6" @submit.prevent="submit">
-    <section class="space-y-3">
-      <header class="flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-slate-700">{{ t('payments.recurring.selectPlanTitle') }}</h3>
-        <span v-if="loadingPlans" class="text-xs text-slate-500">{{ t('payments.recurring.loading') }}</span>
+  <form class="space-y-6" @submit.prevent="submit">
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <header class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-lg font-semibold text-gray-800">Select a subscription plan</h3>
+          <p class="text-sm text-gray-500">Choose the billing cycle that matches the customer needs.</p>
+        </div>
+        <span v-if="loadingPlans" class="text-xs text-gray-400">Loading…</span>
       </header>
-      <p v-if="planError" class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      <p v-if="planError" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
         {{ planError }}
       </p>
-      <div v-else>
+      <div v-else class="mt-4">
         <p
           v-if="!plans.length && !loadingPlans"
-          class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500"
+          class="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500"
         >
           {{ t('payments.recurring.noPlans') }}
         </p>
-        <div v-else class="grid gap-3 md:grid-cols-2">
-          <button v-for="plan in plans" :key="plan.id" type="button"
-            class="flex h-full flex-col justify-between rounded-2xl border px-4 py-4 text-left transition" :class="form.paymentPlanId === plan.id
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow'
-                : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-400 hover:bg-emerald-50'
-              " @click="selectPlan(plan.id)">
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            v-for="plan in plans"
+            :key="plan.id"
+            type="button"
+            class="relative border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all duration-300 cursor-pointer text-left bg-white hover:shadow-md"
+            :class="form.paymentPlanId === plan.id
+              ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-400'
+              : ''"
+            @click="selectPlan(plan.id)"
+          >
             <div class="space-y-2">
-              <p class="text-sm font-semibold">{{ plan.name }}</p>
-              <p class="text-xs text-slate-500">{{ plan.description || intervalLabel(plan.interval) }}</p>
+              <h4 class="font-semibold text-gray-800">{{ plan.name }}</h4>
+              <p class="text-sm text-gray-500">{{ plan.description || intervalLabel(plan.interval) }}</p>
             </div>
-            <div class="mt-4">
-              <p class="text-2xl font-semibold text-slate-900">{{ formatCurrency(plan.amount, plan.currency) }}</p>
-              <p class="text-xs uppercase tracking-wide text-slate-500">{{ intervalLabel(plan.interval) }}</p>
+            <div class="mt-4 space-y-1">
+              <p class="text-2xl font-semibold text-gray-800">{{ formatCurrency(plan.amount, plan.currency) }}</p>
+              <p class="text-xs text-gray-400 uppercase tracking-wide">{{ intervalLabel(plan.interval) }}</p>
+            </div>
+            <div
+              v-if="form.paymentPlanId === plan.id"
+              class="absolute top-2 right-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full"
+            >
+              ✔ Selected
             </div>
           </button>
         </div>
       </div>
     </section>
 
-    <section class="grid gap-4 md:grid-cols-1">
-      <!--<label class="flex flex-col gap-1">
-        <span class="text-sm font-medium text-slate-600">{{ t('payments.recurring.chargeTimingLabel') }}</span>
-        <select v-model="form.immediateCharge" class="input">
-          <option :value="true">{{ t('payments.recurring.chargeTimingImmediate') }}</option>
-          <option :value="false">{{ t('payments.recurring.chargeTimingLater') }}</option>
-        </select>
-      </label> -->
-      <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        <p class="font-semibold text-slate-700">{{ t('payments.recurring.selectedPlanTitle') }}</p>
-        <p v-if="selectedPlan" class="mt-1 text-slate-900">
-          {{ selectedPlan.name }} - {{ formatCurrency(selectedPlan.amount, selectedPlan.currency) }} - {{
-            intervalLabel(selectedPlan.interval) }}
-        </p>
-        <p v-else class="mt-1 text-xs text-slate-500">{{ t('payments.recurring.selectedPlanEmpty') }}</p>
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-sm text-gray-700">
+      <div class="flex items-center justify-between gap-4">
+        <span>
+          <template v-if="selectedPlan">
+            Selected plan: {{ selectedPlan.name }} - {{ formatCurrency(selectedPlan.amount, selectedPlan.currency) }} -
+            {{ intervalLabel(selectedPlan.interval) }}
+          </template>
+          <template v-else>
+            {{ t('payments.recurring.selectedPlanEmpty') }}
+          </template>
+        </span>
+        <button type="button" class="text-gray-500 text-xs border border-gray-300 rounded-full px-3 py-1 hover:bg-gray-100">
+          Editable
+        </button>
       </div>
     </section>
 
-    <section class="space-y-3">
-      <h3 class="text-sm font-semibold text-slate-700">{{ t('payments.recurring.methodTitle') }}</h3>
-      <div class="grid gap-3 md:grid-cols-1">
-        <label v-for="method in supportedMethods" :key="method.value"
-          class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition" :class="form.paymentMethod === method.value
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
-            ">
-          <input v-model="form.paymentMethod" type="radio" name="recurringPaymentMethod" :value="method.value"
-            class="h-4 w-4 text-emerald-500" />
-          <div class="flex flex-col">
-            <span class="font-semibold">{{ method.label }}</span>
-            <span class="text-xs text-slate-500">{{ method.description }}</span>
-          </div>
-        </label>
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+      <header class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-800">Payment method</h3>
+        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+      </header>
+      <div class="rounded-xl border border-green-400 bg-green-50 p-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+          <p class="font-medium text-gray-800">Credit card</p>
+        </div>
+        <p class="text-gray-600 text-sm">Bill the saved card for every cycle.</p>
       </div>
     </section>
 
-    <section v-if="showCardSelector" class="space-y-3">
-      <h3 class="text-sm font-semibold text-slate-700">{{ t('payments.recurring.cards.title') }}</h3>
-      <div v-if="cards.length" class="grid gap-3">
-        <label v-for="card in cards" :key="card.id"
-          class="flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition" :class="form.paymentMethodId === card.id
-              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-              : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-400'
-            ">
+    <section v-if="showCardSelector" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">
+      <h3 class="text-lg font-semibold text-gray-800">Select card</h3>
+      <div v-if="cards.length" class="space-y-3">
+        <label
+          v-for="card in cards"
+          :key="card.id"
+          class="border border-gray-200 rounded-xl p-4 flex justify-between items-center cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-md"
+          :class="form.paymentMethodId === card.id ? 'border-blue-500 bg-blue-50' : 'bg-white'"
+        >
           <div class="flex items-center gap-3">
-            <input v-model="form.paymentMethodId" type="radio" name="recurringCardId" :value="card.id"
-              class="h-4 w-4 text-emerald-500" />
-                        <div class="flex flex-col">
-              <div class="flex items-center gap-2">
-                <span :class="['rounded-full btn-primary w-10 h-8', brandMeta(card.brand).class]">{{ brandMeta(card.brand).label }}</span>
-                <span class="font-medium text-slate-700">**** {{ card.lastFour }}</span>
-              </div>
-              <span class="text-xs text-slate-500">{{
-                t('payments.recurring.cards.expires', { month: card.expiryMonth, year: card.expiryYear })
-              }}</span>
+            <input
+              v-model="form.paymentMethodId"
+              type="radio"
+              name="recurringCardId"
+              :value="card.id"
+              class="sr-only"
+            />
+            <div
+              :class="['w-10 h-10 flex items-center justify-center rounded-full font-semibold text-sm border', brandMeta(card.brand).class]"
+            >
+              {{ brandMeta(card.brand).initial }}
+            </div>
+            <div>
+              <p class="font-medium text-gray-800">{{ brandMeta(card.brand).label }} •••• {{ card.lastFour }}</p>
+              <p class="text-xs text-gray-500">{{ t('payments.recurring.cards.expires', { month: card.expiryMonth, year: card.expiryYear }) }}</p>
             </div>
           </div>
-          <span v-if="card.defaultCard"
-            class="rounded-full bg-emerald-100 px-2 py-1 text-xs font-medium text-emerald-700">
-            {{ t('payments.recurring.cards.defaultBadge') }}
-          </span>
+          <span class="text-xs text-gray-400">{{ cardBadge(card) }}</span>
         </label>
       </div>
-      <p v-else class="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+      <p v-else class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
         {{ t('payments.recurring.cards.empty') }}
       </p>
     </section>
 
-    <!-- <section class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <details class="group">
-        <summary class="flex cursor-pointer items-center justify-between text-sm font-semibold text-slate-700">
-          Advanced gateway metadata
-          <span class="text-xs text-slate-500 group-open:hidden">(optional)</span>
-        </summary>
-        <div class="mt-3 grid gap-3 md:grid-cols-2">
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Stripe customer ID</span>
-            <input v-model="form.stripeCustomerId" type="text" class="input" placeholder="cus_123" />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-500">Asaas customer ID</span>
-            <input v-model="form.asaasCustomerId" type="text" class="input" placeholder="cus_abc" />
-          </label>
-        </div>
-      </details> 
-    </section> -->
-
-    <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-      <input v-model="form.acceptedTerms" type="checkbox" class="mt-1 h-4 w-4 text-emerald-500" required />
-      <span>
-        {{ t('payments.recurring.termsNotice') }}
-      </span>
-    </label>
-
-    <footer class="flex justify-end">
-      <button type="submit" class="btn-primary" :disabled="!canSubmit || loading">
-        <PlusIcon class="h-5 w-5" />
-        <span v-if="loading" class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
-        <span>{{ loading ? t('payments.recurring.submitLoading') : t('payments.recurring.submit') }}</span>
-      </button>
-    </footer>
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <label class="flex items-start gap-2 text-sm text-gray-600">
+        <input
+          v-model="form.acceptedTerms"
+          type="checkbox"
+          class="mt-1 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+          required
+        />
+        I confirm the customer agreed to recurring charges and understand that cancellation or refunds must follow consumer
+        protection laws.
+      </label>
+      <p class="text-xs text-gray-400 mt-2">
+        You can change plans any time. Next charge will follow the selected cycle.
+      </p>
+      <div class="mt-4 flex justify-end">
+        <button
+          type="submit"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+          :disabled="!canSubmit || loading"
+        >
+          <span v-if="loading" class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-transparent"></span>
+          <span>{{ loading ? t('payments.recurring.submitLoading') : 'Payment' }}</span>
+        </button>
+      </div>
+    </section>
   </form>
 </template>
 
@@ -142,7 +146,6 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { listPaymentPlans } from '@/services/payments';
-import { PlusIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
   cards: {
@@ -164,19 +167,6 @@ const emit = defineEmits(['create']);
 const { t, locale } = useI18n();
 
 const localeTag = computed(() => (locale.value === 'pt' ? 'pt-BR' : 'en-US'));
-
-const supportedMethods = computed(() => [
-  {
-    value: 'CREDIT_CARD',
-    label: t('payments.recurring.methods.card.label'),
-    description: t('payments.recurring.methods.card.description'),
-  },
-  /*{
-    value: 'PIX',
-    label: t('payments.recurring.methods.pix.label'),
-    description: t('payments.recurring.methods.pix.description'),
-  },*/
-]);
 
 const plans = ref([]);
 const loadingPlans = ref(false);
@@ -233,15 +223,24 @@ async function loadPlans() {
 function brandMeta(brand) {
   const key = (brand || '').toLowerCase();
   const map = {
-    visa: { label: 'Visa', class: 'bg-blue-100 text-blue-700 border border-blue-200' },
-    mastercard: { label: 'Mastercard', class: 'bg-orange-100 text-orange-700 border border-orange-200' },
-    americanexpress: { label: 'Amex', class: 'bg-teal-100 text-teal-700 border border-teal-200' },
-    amex: { label: 'Amex', class: 'bg-teal-100 text-teal-700 border border-teal-200' },
+    visa: { label: 'Visa', initial: 'V', class: 'bg-blue-100 text-blue-600 border-blue-200' },
+    mastercard: { label: 'Mastercard', initial: 'M', class: 'bg-orange-100 text-orange-600 border-orange-200' },
+    americanexpress: { label: 'American Express', initial: 'A', class: 'bg-teal-100 text-teal-600 border-teal-200' },
+    amex: { label: 'American Express', initial: 'A', class: 'bg-teal-100 text-teal-600 border-teal-200' },
   };
-  return map[key] || {
-    label: brand || t('payments.cardForm.brandFallback'),
-    class: 'bg-slate-100 text-slate-600 border border-slate-200',
-  };
+  const fallbackLabel = brand || t('payments.cardForm.brandFallback');
+  return map[key] || { label: fallbackLabel, initial: (fallbackLabel || 'C').charAt(0).toUpperCase(), class: 'bg-slate-100 text-slate-600 border-slate-200' };
+}
+
+function cardBadge(card) {
+  if (card.defaultCard) {
+    return 'Default';
+  }
+  const badge = card.label || card.nickname || card.metadata?.tag || card.metadata?.label;
+  if (badge) {
+    return badge;
+  }
+  return 'Personal';
 }
 
 function selectPlan(planId) {
