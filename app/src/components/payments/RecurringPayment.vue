@@ -130,7 +130,7 @@
 
     <footer class="flex justify-end">
       <button type="submit" class="btn-primary" :disabled="!canSubmit || loading">
-        <span v-if="loading" class="loader h-4 w-4" />
+        <span v-if="loading" class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
         <span>{{ loading ? t('payments.recurring.submitLoading') : t('payments.recurring.submit') }}</span>
       </button>
     </footer>

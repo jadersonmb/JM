@@ -11,7 +11,6 @@ import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
-import com.jm.dto.WhatsAppMessageResponse;
 import com.jm.dto.WhatsAppNutritionEntryRequest;
 import com.jm.entity.Food;
 import com.jm.entity.FoodCategory;
@@ -31,7 +30,6 @@ import com.jm.speciation.WhatsAppSpecification;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.utils.SecurityUtils;
-import com.jm.services.AiPromptReferenceService;
 import com.jm.enums.AiProvider;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
@@ -40,13 +38,11 @@ import com.jm.services.ai.AiRequestType;
 import com.jm.services.ai.AiResponse;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -101,6 +97,8 @@ public class WhatsAppNutritionService {
                 \"protein_g\": number in grams,
                 \"carbs_g\": number in grams,
                 \"fat_g\": number in grams
+                \"fiber_g\": number in grams
+                \"Ingested calories\": number in kcal
               },
               \"categories\": [
                 { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
@@ -127,7 +125,9 @@ public class WhatsAppNutritionService {
                    "calories": number or null,
                    "protein": number or null,
                    "carbs": number or null,
-                   "fat": number or null
+                   "fat": number or null,
+                   "fiber_g: number or null,
+                   "Ingested calories: number or null,
                    "summary": "short sentence about this food or null"
                  }
               ],
