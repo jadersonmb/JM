@@ -7,6 +7,9 @@ import com.jm.events.ReminderDueEvent;
 import com.jm.repository.ReminderRepository;
 import com.jm.services.WhatsAppService;
 import com.jm.services.support.ReminderScheduleSupport;
+
+import jakarta.transaction.Transactional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -40,6 +43,7 @@ public class ReminderEventListener {
 
     @Async
     @EventListener
+    @Transactional
     public void handleReminderDue(ReminderDueEvent event) {
         reminderRepository.findById(event.getReminderId())
                 .ifPresent(reminder -> dispatchReminder(reminder, event.isTest()));
@@ -101,7 +105,8 @@ public class ReminderEventListener {
                 reminder.setCompletedAt(null);
                 reminder.setActive(Boolean.TRUE);
                 LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(mode, reminder.getScheduledAt(),
-                        reminder.getRepeatTimeOfDay(), ReminderScheduleSupport.parseWeekdays(reminder.getRepeatWeekdays()),
+                        reminder.getRepeatTimeOfDay(),
+                        ReminderScheduleSupport.parseWeekdays(reminder.getRepeatWeekdays()),
                         reminder.getRepeatIntervalMinutes(), dispatchMoment.plusSeconds(1));
                 if (next != null) {
                     reminder.setScheduledAt(next);
@@ -119,8 +124,10 @@ public class ReminderEventListener {
                     reminder.setCompleted(Boolean.FALSE);
                     reminder.setCompletedAt(null);
                     reminder.setActive(Boolean.TRUE);
-                    LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(mode, reminder.getScheduledAt(),
-                            reminder.getRepeatTimeOfDay(), ReminderScheduleSupport.parseWeekdays(reminder.getRepeatWeekdays()),
+                    LocalDateTime next = ReminderScheduleSupport.determineNextScheduledAt(mode,
+                            reminder.getScheduledAt(),
+                            reminder.getRepeatTimeOfDay(),
+                            ReminderScheduleSupport.parseWeekdays(reminder.getRepeatWeekdays()),
                             reminder.getRepeatIntervalMinutes(), dispatchMoment.plusSeconds(1));
                     if (next != null) {
                         reminder.setScheduledAt(next);

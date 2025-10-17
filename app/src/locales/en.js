@@ -175,7 +175,7 @@ export default {
     subtitle: 'Stay on track with your daily goals.',
     searchPlaceholder: 'Search reminders...',
     actions: {
-      new: '+ New Reminder',
+      new: 'New Reminder',
       edit: 'Edit reminder',
       delete: 'Delete reminder',
       test: 'Send test message',

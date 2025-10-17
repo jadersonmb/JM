@@ -175,7 +175,7 @@
     subtitle: 'Mantenha o foco nas metas do dia.',
     searchPlaceholder: 'Buscar lembretes...',
     actions: {
-      new: '+ Novo lembrete',
+      new: 'Novo lembrete',
       edit: 'Editar lembrete',
       delete: 'Excluir lembrete',
       test: 'Enviar teste',
@@ -1513,12 +1513,12 @@
     },
   },
   layout: {
-    settings: 'ConfiguraÃ§Ãµes',
+    settings: 'Configurações',
     profile: 'Perfil',
     logout: 'Sair',
     logoutNotification: {
-      title: 'SessÃ£o encerrada',
-      message: 'VocÃª saiu do sistema.',
+      title: 'Sessão encerrada',
+      message: 'Você saiu do sistema.',
     },
     help: {
       title: 'Precisa de ajuda?',
