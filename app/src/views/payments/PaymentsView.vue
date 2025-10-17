@@ -100,7 +100,7 @@
           <p class="text-sm text-gray-500">All payments made through this subscription.</p>
         </header>
 
-        <div class="mt-6 space-y-8">
+        <div class="mt-6 space-y-8 max-h-[32rem] overflow-y-auto pr-1">
           <div v-if="recurringHistoryItems.length" class="space-y-4">
             <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recurringList') }}</h3>
             <div class="divide-y divide-gray-100">
