@@ -6,33 +6,22 @@
         <h1 class="text-2xl font-semibold text-slate-900">{{ t('diet.title') }}</h1>
         <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('diet.description') }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <button type="button" class="btn-primary" @click="createDiet">
-          {{ t('diet.new') }}
-        </button>
-      </div>
     </header>
 
-    <DataTable
-      :columns="tableColumns"
-      :rows="diets.items"
-      :loading="loading"
-      :selectable="false"
-      :pagination="diets.meta"
-      :empty-state="t('diet.list.empty')"
-      @change:page="handlePage"
-      @change:per-page="handlePerPage"
-      @refresh="fetchDiets"
-    >
+    <DataTable :columns="tableColumns" :rows="diets.items" :loading="loading" :selectable="false"
+      :pagination="diets.meta" :empty-state="t('diet.list.empty')" @change:page="handlePage"
+      @change:per-page="handlePerPage" @refresh="fetchDiets">
+      <template #toolbar>
+        <button type="button" class="btn-primary" @click="createDiet">
+          <PlusIcon class="h-4 w-4" />
+          <span>{{ t('common.actions.create') }}</span>
+        </button>
+      </template>
       <template v-if="isAdmin" #filters>
         <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
           <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.list.filters.patient') }}</span>
-          <input
-            type="text"
-            class="input"
-            v-model="filters.patientName"
-            :placeholder="t('diet.list.filters.patientPlaceholder')"
-          />
+          <input type="text" class="input" v-model="filters.patientName"
+            :placeholder="t('diet.list.filters.patientPlaceholder')" />
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
           <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.list.filters.mealType') }}</span>
@@ -61,36 +50,45 @@
       </template>
 
       <template #cell:meals="{ row }">
-        <span class="inline-flex items-center rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">
+        <span
+          class="inline-flex items-center rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600">
           {{ row.mealCount }}
         </span>
       </template>
 
       <template #cell:active="{ row }">
-        <span
-          class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-          :class="row.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
-        >
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+          :class="row.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'">
           {{ row.active ? t('diet.status.active') : t('diet.status.inactive') }}
         </span>
       </template>
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="viewDiet(row)">{{ t('common.actions.view') }}</button>
-          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="editDiet(row)">{{ t('common.actions.edit') }}</button>
-          <button type="button" class="btn-ghost text-red-500 font-semibold" @click="confirmRemoval(row)">{{ t('diet.delete') }}</button>
+          <button type="button"
+            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+            @click="() => viewDiet(row)">
+            <EyeIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.view') }}</span>
+          </button>
+          <button type="button"
+            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+            @click="() => editDiet(row)">
+            <PencilSquareIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.edit') }}</span>
+          </button>
+          <button type="button"
+            class="rounded-xl border border-transparent bg-red-50 p-2 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+            @click="() => confirmRemoval(row)">
+            <TrashIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.delete') }}</span>
+          </button>
         </div>
       </template>
     </DataTable>
 
-    <ConfirmDialog
-      v-model="confirmOpen"
-      :title="t('diet.list.confirmDelete.title')"
-      :message="t('diet.list.confirmDelete.message')"
-      :confirm-label="t('diet.delete')"
-      @confirm="removeDiet"
-    />
+    <ConfirmDialog v-model="confirmOpen" :title="t('diet.list.confirmDelete.title')"
+      :message="t('diet.list.confirmDelete.message')" :confirm-label="t('diet.delete')" @confirm="removeDiet" />
   </div>
 </template>
 
@@ -103,6 +101,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import DietService from '@/services/DietService';
 import { useNotificationStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
+import { TrashIcon, PencilSquareIcon, EyeIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 const { t } = useI18n();
 const router = useRouter();

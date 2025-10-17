@@ -146,12 +146,12 @@ const timezoneOptions = computed(() => [
 ]);
 
 const toggleOptions = computed(() => [
-  {
+  /*{
     key: 'darkMode',
     label: t('settings.preferences.toggles.darkMode.label'),
     description: t('settings.preferences.toggles.darkMode.description'),
     icon: MoonIcon,
-  },
+  },*/
   {
     key: 'emailNotifications',
     label: t('settings.preferences.toggles.emailNotifications.label'),

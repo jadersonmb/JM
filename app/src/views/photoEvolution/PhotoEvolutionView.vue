@@ -307,7 +307,7 @@
               class="inline-flex items-center gap-2 rounded-2xl border border-dashed border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-600 transition hover:border-primary-300"
               @click="addDraftEntry"
             >
-              <PlusIcon class="h-4 w-4" />
+              <PlusCircleIcon class="h-4 w-4" />
               {{ t('photoEvolution.form.actions.addPhoto') }}
             </button>
             <button
@@ -316,7 +316,7 @@
               class="inline-flex items-center justify-center gap-2 rounded-2xl border border-transparent bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowPathIcon v-if="saving" class="h-5 w-5 animate-spin" />
-              <PlusIcon v-else class="h-5 w-5" />
+              <PlusCircleIcon v-else class="h-5 w-5" />
               {{ t('photoEvolution.form.actions.saveBatch') }}
             </button>
           </div>
@@ -515,6 +515,7 @@ import {
   PlusIcon,
   TrashIcon,
   XMarkIcon,
+  PlusCircleIcon,
 } from '@heroicons/vue/24/outline';
 
 const { t, locale } = useI18n();

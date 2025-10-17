@@ -6,24 +6,17 @@
         <h1 class="text-2xl font-semibold text-slate-900">{{ t('goals.title') }}</h1>
         <p class="mt-1 max-w-2xl text-sm text-slate-500">{{ t('goals.description') }}</p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <button type="button" class="btn-primary" @click="createGoal">
-          {{ t('goals.new') }}
-        </button>
-      </div>
     </header>
 
-    <DataTable
-      :columns="tableColumns"
-      :rows="goals.items"
-      :loading="loading"
-      :selectable="false"
-      :pagination="goals.meta"
-      :empty-state="t('goals.list.empty')"
-      @change:page="handlePage"
-      @change:per-page="handlePerPage"
-      @refresh="fetchGoals"
-    >
+    <DataTable :columns="tableColumns" :rows="goals.items" :loading="loading" :selectable="false"
+      :pagination="goals.meta" :empty-state="t('goals.list.empty')" @change:page="handlePage"
+      @change:per-page="handlePerPage" @refresh="fetchGoals">
+      <template #toolbar>
+        <button type="button" class="btn-primary" @click="createGoal">
+          <PlusIcon class="h-4 w-4" />
+          <span>{{ t('common.actions.create') }}</span>
+        </button>
+      </template>
       <template #filters>
         <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
           <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('goals.list.filters.type') }}</span>
@@ -61,33 +54,33 @@
       </template>
 
       <template #cell:active="{ row }">
-        <span
-          class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-          :class="row.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'"
-        >
+        <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+          :class="row.active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'">
           {{ row.active ? t('goals.status.active') : t('goals.status.inactive') }}
         </span>
       </template>
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="btn-ghost text-primary-600 font-semibold" @click="editGoal(row)">
-            {{ t('common.actions.edit') }}
+          <button type="button"
+            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+            @click="() => editGoal(row)">
+            <PencilSquareIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.edit') }}</span>
           </button>
-          <button type="button" class="btn-ghost text-red-500 font-semibold" @click="confirmRemoval(row)">
-            {{ t('common.actions.delete') }}
+          <button type="button"
+            class="rounded-xl border border-transparent bg-red-50 p-2 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+            @click="() => confirmRemoval(row)">
+            <TrashIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.delete') }}</span>
           </button>
         </div>
       </template>
     </DataTable>
 
-    <ConfirmDialog
-      v-model="confirmOpen"
-      :title="t('goals.list.confirmDelete.title')"
-      :message="t('goals.list.confirmDelete.message')"
-      :confirm-label="t('common.actions.delete')"
-      @confirm="removeGoal"
-    />
+    <ConfirmDialog v-model="confirmOpen" :title="t('goals.list.confirmDelete.title')"
+      :message="t('goals.list.confirmDelete.message')" :confirm-label="t('common.actions.delete')"
+      @confirm="removeGoal" />
   </div>
 </template>
 
@@ -99,6 +92,7 @@ import DataTable from '@/components/DataTable.vue';
 import ConfirmDialog from '@/components/ConfirmDialog.vue';
 import GoalService from '@/services/GoalService';
 import { useNotificationStore } from '@/stores/notifications';
+import { PencilSquareIcon, TrashIcon, PlusIcon } from '@heroicons/vue/24/outline';
 
 const { t } = useI18n();
 const router = useRouter();

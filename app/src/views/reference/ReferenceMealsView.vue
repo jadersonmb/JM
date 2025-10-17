@@ -63,11 +63,17 @@
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="text-sm font-semibold text-primary-600" @click="openEdit(row.id)">
-            {{ t('common.actions.edit') }}
+          <button type="button"
+            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+             @click="openEdit(row.id)">
+            <PencilSquareIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.edit') }}</span>
           </button>
-          <button type="button" class="text-sm font-semibold text-red-500" @click="openDelete([row.id])">
-            {{ t('common.actions.delete') }}
+          <button type="button"
+            class="rounded-xl border border-transparent bg-red-50 p-2 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+            @click="openDelete([row.id])">
+            <TrashIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.delete') }}</span>
           </button>
         </div>
       </template>

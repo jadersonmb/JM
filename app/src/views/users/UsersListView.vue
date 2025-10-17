@@ -9,16 +9,16 @@
       <template #toolbar="{ selected }">
         <button type="button" class="btn-primary" @click="openCreate">
           <PlusIcon class="h-4 w-4" />
-          <span>New Patient</span>
+          <span>{{ t('common.actions.create') }}</span>
         </button>
         <button type="button" class="btn-secondary" :disabled="selected.length !== 1" @click="openEdit(selected[0])">
           <PencilSquareIcon class="h-4 w-4" />
-          <span>Edit</span>
+          <span>{{ t('common.actions.edit') }}</span>
         </button>
         <button type="button" class="btn-secondary text-red-600 hover:border-red-200 hover:text-red-600"
           :disabled="selected.length === 0" @click="openBulkDelete">
           <TrashIcon class="h-4 w-4" />
-          <span>Delete</span>
+          <span>{{ t('common.actions.delete')}}</span>
         </button>
       </template>
 
@@ -133,11 +133,17 @@
 
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
-          <button type="button" class="text-sm font-semibold text-primary-600" @click="openEdit(row.id)">
-            Edit
+          <button type="button"
+            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+             @click="openEdit(row.id)">
+            <PencilSquareIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.edit') }}</span>
           </button>
-          <button type="button" class="text-sm font-semibold text-red-500" @click="prepareDelete(row.id)">
-            Delete
+          <button type="button"
+            class="rounded-xl border border-transparent bg-red-50 p-2 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+            @click="prepareDelete(row.id)">
+            <TrashIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.delete') }}</span>
           </button>
         </div>
       </template>
@@ -182,7 +188,7 @@ import { useI18n } from 'vue-i18n';
 
 const notifications = useNotificationStore();
 const auth = useAuthStore();
-const { locale } = useI18n();
+const { t, locale } = useI18n();
 
 const FILTER_STORAGE_KEY = 'users.table.filters';
 

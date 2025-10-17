@@ -46,6 +46,7 @@
           />
         </div>
         <button class="btn-secondary" @click="refreshData" :disabled="loading">
+          <ArrowPathIcon class="h-4 w-4" />
           <span v-if="loading">{{ t('whatsappNutrition.actions.refreshing') }}</span>
           <span v-else>{{ t('whatsappNutrition.actions.refresh') }}</span>
         </button>
@@ -54,10 +55,12 @@
           @click="confirmDelete"
           :disabled="!selectedMessageId || deleting"
         >
+          <TrashIcon class="h-4 w-4" />
           <span v-if="deleting">{{ t('whatsappNutrition.actions.deleting') }}</span>
           <span v-else>{{ t('whatsappNutrition.actions.delete') }}</span>
         </button>
         <button class="btn-primary" @click="openCreateModal" :disabled="createDisabled">
+          <PlusIcon class="h-4 w-4" />
           {{ t('whatsappNutrition.actions.create') }}
         </button>
       </div>
@@ -309,6 +312,7 @@ import MacroBar from '@/views/whatsapp/components/MacroBar.vue';
 import NutritionEntryModal from '@/views/whatsapp/components/NutritionEntryModal.vue';
 import { useNotificationStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
+import { TrashIcon, PlusIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 
 const { t, locale } = useI18n();
 const notifications = useNotificationStore();

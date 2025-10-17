@@ -144,7 +144,7 @@ export default {
         },
       },
       actions: {
-        save: 'Save preferences',
+        save: 'Save',
       },
       toast: {
         title: 'Preferences updated',
@@ -253,7 +253,7 @@ export default {
       },
       actions: {
         cancel: 'Cancel',
-        save: 'Save reminder',
+        save: 'Save',
         saving: 'Saving...',
       },
     },
@@ -588,9 +588,9 @@ export default {
   goals: {
     title: 'Nutrition Goals',
     description: 'Define and monitor personalized nutrition targets for your patients.',
-    new: 'New Goal',
-    edit: 'Edit Goal',
-    save: 'Save Goal',
+    new: 'New',
+    edit: 'Edit',
+    save: 'Save',
     deleted: 'Goal removed successfully',
     type: 'Goal Type',
     unit: 'Unit',
@@ -752,7 +752,7 @@ export default {
     new: 'New Diet Plan',
     edit: 'Edit Diet Plan',
     view: 'Diet Plan Overview',
-    save: 'Save diet',
+    save: 'Save',
     delete: 'Delete',
     status: {
       all: 'All',
@@ -916,7 +916,7 @@ export default {
       termsNotice:
         'I confirm the customer agreed to recurring charges and understand that cancellation or refunds must follow consumer protection laws.',
       submitLoading: 'Creating...',
-      submit: 'Create subscription',
+      submit: 'Payment',
       methods: {
         card: {
           label: 'Credit card',
@@ -962,7 +962,7 @@ export default {
       interval: 'Interval',
       nextBilling: 'Next billing date',
       card: 'Card',
-      cancel: 'Cancel Subscription',
+      cancel: 'Cancel',
       paymentHisotry: 'Payment history',
       paymentHisotryDescription: 'All payments made through this subscription.',
       noPayments: 'No payments made yet.',
@@ -1505,8 +1505,8 @@ export default {
     actions: {
       refresh: 'Refresh data',
       refreshing: 'Refreshing...',
-      create: 'Create entry',
-      delete: 'Delete entry',
+      create: 'Create',
+      delete: 'Delete',
       deleting: 'Deleting...',
     },
     dateNavigator: {
@@ -1624,7 +1624,7 @@ export default {
         noCategory: 'No category',
       },
       actions: {
-        create: 'Create entry',
+        create: 'Create',
         update: 'Save changes',
         upload: 'Upload image',
         removeImage: 'Remove image',

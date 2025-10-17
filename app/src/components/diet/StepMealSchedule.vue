@@ -8,6 +8,7 @@
         :disabled="disabled"
         @click="addMeal"
       >
+      <PlusCircleIcon class="h-5 w-5" />
         {{ t('common.actions.addMeal') }}
       </button>
     </div>
@@ -52,13 +53,11 @@
               />
             </label>
           </div>
-          <button
-            v-if="!disabled"
-            type="button"
-            class="btn-ghost text-red-500"
-            @click="removeMeal(index)"
-          >
-            {{ t('common.actions.delete') }}
+          <button type="button"
+            class="rounded-xl border border-transparent bg-red-50 p-2 text-red-600 transition hover:border-red-200 hover:bg-red-100"
+            @click="removeMeal(index)">
+            <TrashIcon class="h-3 w-3" />
+            <span class="sr-only">{{ t('common.actions.delete') }}</span>
           </button>
         </div>
       </div>
@@ -69,6 +68,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { TrashIcon, PlusCircleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },

@@ -20,6 +20,7 @@
           </div>
           <div class="flex grade gap-2">
             <button type="button" class="btn-primary" :disabled="anamnesisLoading" @click="startNewAnamnesis">
+              <PlusIcon class="h-4 w-4" />
               <span v-if="anamnesisLoading" class="loader h-4 w-4"></span>
               <span v-else>{{ t('anamnesis.admin.new') }}</span>
             </button>
@@ -57,8 +58,8 @@
                   {{ item.consultationGoal || t('common.placeholders.empty') }}
                 </td>
                 <td class="px-4 py-3 text-left">
-                  <button type="button" class="btn-ghost text-primary-600" @click="selectAnamnesis(item)">
-                    <PencilSquareIcon class="h-4 w-4" />
+                  <button type="button" class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100" @click="selectAnamnesis(item)">
+                    <EyeIcon class="h-3 w-3" />
                   </button>
                 </td>
               </tr>
@@ -78,8 +79,11 @@
               <h2 class="text-lg font-semibold text-slate-900 font-bold">{{ t('anamnesis.summary.title') }}</h2>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button type="button" class="btn-secondary" @click="editSelectedAnamnesis">
-                {{ t('common.actions.edit') }}
+              <button type="button"
+                class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+                @click="() => editSelectedAnamnesis()">
+                <PencilSquareIcon class="h-5 w-5" />
+                <span class="sr-only">{{ t('common.actions.edit') }}</span>
               </button>
               <!--<button v-if="isAdmin" type="button" class="btn-ghost text-primary-600" @click="startNewAnamnesis">
                 {{ t('anamnesis.summary.newRecord') }}
@@ -250,7 +254,7 @@ import {
   getMeasurementUnits,
 } from '@/services/reference';
 import { getUserSettings } from '@/services/settings';
-import { Bars3Icon, PencilSquareIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, EyeIcon } from '@heroicons/vue/24/outline';
 
 const STORAGE_KEY = 'jm_anamnesis_wizard_draft';
 

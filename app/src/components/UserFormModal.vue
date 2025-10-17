@@ -178,7 +178,7 @@
                 <span class="h-4 w-4 animate-spin rounded-full border-2 border-primary-100 border-t-primary-600" />
                 Saving...
               </span>
-              <span v-else>{{ isEdit ? 'Update user' : 'Create user' }}</span>
+              <span v-else>{{ isEdit ? 'Update' : 'Create' }}</span>
             </button>
           </div>
         </form>
