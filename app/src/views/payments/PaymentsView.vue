@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isAdmin || activeSubscription?.status !== 'ACTIVE'"
-    class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
+    class="grid rounded-3xl grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
   >
     <div class="space-y-6">
       <!-- <PaymentMethodSelection v-model="currentMethod" /> -->
@@ -100,7 +100,7 @@
           <p class="text-sm text-gray-500">All payments made through this subscription.</p>
         </header>
 
-        <div class="mt-6 space-y-8 max-h-[32rem] overflow-y-auto pr-1">
+        <div class="mt-6 space-y-8 max-h-[60rem] overflow-y-auto pr-1">
           <div v-if="recurringHistoryItems.length" class="space-y-4">
             <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('payments.subscription.recurringList') }}</h3>
             <div class="divide-y divide-gray-100">
@@ -178,7 +178,7 @@
 
   <div
     v-else
-    class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
+    class="grid rounded-3xl grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)] gap-6 p-6 bg-gray-50 min-h-screen"
   >
     <div class="space-y-6">
       <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
