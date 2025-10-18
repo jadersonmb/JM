@@ -160,6 +160,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  selectedPlan: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['create']);
@@ -171,6 +175,7 @@ const localeTag = computed(() => (locale.value === 'pt' ? 'pt-BR' : 'en-US'));
 const plans = ref([]);
 const loadingPlans = ref(false);
 const planError = ref('');
+const pendingPlanId = ref(null);
 
 const form = reactive({
   paymentPlanId: null,
@@ -210,7 +215,16 @@ async function loadPlans() {
     plans.value = data ?? [];
     if (plans.value.length) {
       const existing = plans.value.find((plan) => plan.id === form.paymentPlanId);
-      selectPlan(existing ? existing.id : plans.value[0].id);
+      if (existing) {
+        selectPlan(existing.id);
+      } else {
+        ensureSelectedPlan();
+        if (!form.paymentPlanId && plans.value.length) {
+          selectPlan(plans.value[0].id);
+        }
+      }
+    } else {
+      pendingPlanId.value = null;
     }
   } catch (error) {
     console.error('Failed to load plans', error);
@@ -247,6 +261,15 @@ function selectPlan(planId) {
   form.paymentPlanId = planId;
 }
 
+function ensureSelectedPlan() {
+  if (!pendingPlanId.value) return;
+  const match = plans.value.find((plan) => plan.id === pendingPlanId.value);
+  if (match) {
+    selectPlan(match.id);
+    pendingPlanId.value = null;
+  }
+}
+
 function intervalLabel(interval) {
   const key = (interval ?? 'unknown').toLowerCase();
   return t(`payments.intervals.${key}`);
@@ -275,5 +298,18 @@ function submit() {
 
 onMounted(() => {
   loadPlans();
+});
+
+watch(
+  () => props.selectedPlan,
+  (plan) => {
+    pendingPlanId.value = plan?.id ?? null;
+    ensureSelectedPlan();
+  },
+  { immediate: true, deep: true },
+);
+
+watch(plans, () => {
+  ensureSelectedPlan();
 });
 </script>
