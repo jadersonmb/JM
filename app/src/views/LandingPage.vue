@@ -46,7 +46,7 @@
               :class="locale === 'en' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-emerald-600'"
               @click="setLocale('en')"
             >
-              🇬🇧 <span>EN</span>
+              <span>EN</span>
             </button>
             <button
               type="button"
@@ -54,7 +54,7 @@
               :class="locale === 'pt' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-emerald-600'"
               @click="setLocale('pt')"
             >
-              🇧🇷 <span>PT</span>
+              <span>PT</span>
             </button>
           </div>
           <button
@@ -159,7 +159,7 @@
             <div class="absolute -bottom-16 -right-12 hidden h-56 w-56 rounded-full bg-emerald-100 opacity-40 blur-3xl lg:block"></div>
             <div class="relative overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1556911220-e15b29be8c79?auto=format&fit=crop&w=1200&q=80"
+                src="https://cdn.abrahao.com.br/base/178/254/5ac/fotografando-comida-celular.jpg"
                 alt="Healthy meal"
                 class="h-full w-full object-cover"
                 loading="lazy"
@@ -338,7 +338,7 @@
                   v-model="contactForm.name"
                   type="text"
                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  placeholder="{{ t('contact.form.namePlaceholder') }}"
+                  placeholder="Jane Doe"
                   required
                 />
               </div>
@@ -370,7 +370,7 @@
                   v-model="contactForm.message"
                   rows="4"
                   class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  placeholder="{{ t('contact.form.messagePlaceholder') }}"
+                  placeholder="Share context, goals, and timing so we can tailor our response."
                   required
                 ></textarea>
               </div>
@@ -558,12 +558,12 @@ const messages = {
         {
           title: 'Get actionable insights',
           description: 'Receive tips that keep your meal tasty while nudging better nutritional balance.',
-          image: 'https://images.unsplash.com/photo-1586201375754-1a9f94b6c03e?q=80&w=800',
+          image: 'https://geekyants.com/_next/image?url=https%3A%2F%2Fstatic-cdn.geekyants.com%2Farticleblogcomponent%2F46872%2F2025-09-04%2F018572424-1756964266.png&w=1920&q=75',
         },
         { 
           title: 'Track over time',
           description: 'Daily and weekly summaries reveal progress, habits, and improvement opportunities.',
-          image: 'https://images.unsplash.com/photo-1611078489935-0cb964f06fd6?auto=format&fit=crop&w=800&q=80',
+          image: 'https://pub-83a83e2ebd0e4cdf8d1e1b42e7e0e711.r2.dev/track_over_time.png',
         },
         {
           title: 'Stay engaged on WhatsApp',
