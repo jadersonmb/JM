@@ -13,7 +13,7 @@
           <div class="relative">
             <button
               type="button"
-              class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-blue-300 hover:text-blue-600"
+              class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-emerald-300 hover:text-emerald-600"
               @click="togglePeriodDropdown"
             >
               <span>{{ selectedPeriod.label }}</span>
@@ -28,7 +28,7 @@
                 :key="option.value"
                 type="button"
                 class="w-full px-4 py-2 text-left text-sm text-gray-600 transition-all duration-300 hover:bg-gray-50"
-                :class="option.value === selectedPeriodValue ? 'bg-blue-50 font-medium text-blue-600' : ''"
+                :class="option.value === selectedPeriodValue ? 'bg-emerald-50 font-medium text-emerald-600' : ''"
                 @click="selectPeriod(option.value)"
               >
                 {{ option.label }}
@@ -37,7 +37,7 @@
           </div>
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-blue-300 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all duration-300 hover:border-emerald-300 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
             @click="refreshData"
             :disabled="loading"
           >
@@ -57,7 +57,7 @@
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-300 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
             @click="openCreateModal"
             :disabled="createDisabled"
           >
@@ -110,8 +110,8 @@
               type="button"
               class="rounded-full border px-3 py-1 text-sm font-medium transition-all duration-300"
               :class="isFeedFilterActive(option.value)
-                ? 'border-blue-300 bg-blue-100 text-blue-600'
-                : 'border-gray-300 bg-white text-gray-500 hover:border-blue-200 hover:text-blue-600'"
+                ? 'border-emerald-300 bg-emerald-100 text-emerald-600'
+                : 'border-gray-300 bg-white text-gray-500 hover:border-emerald-200 hover:text-emerald-600'"
               @click="toggleFeedFilter(option.value)"
             >
               {{ option.label }}
@@ -146,7 +146,7 @@
                 :key="item.id"
                 :class="[
                   'flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md',
-                  selectedMessageId === item.id ? 'border-blue-500 ring-2 ring-blue-100' : ''
+                  selectedMessageId === item.id ? 'border-emerald-500 ring-2 ring-emerald-100' : ''
                 ]"
                 @click="selectMessage(item)"
                 @dblclick.stop="openEditModal(item)"
@@ -188,7 +188,7 @@
                       <span class="rounded bg-purple-100 px-2 py-0.5 font-medium text-purple-700">
                         Protein {{ formatMacro(item.nutrition.protein) }}g
                       </span>
-                      <span class="rounded bg-blue-100 px-2 py-0.5 font-medium text-blue-700">
+                      <span class="rounded bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">
                         Carbs {{ formatMacro(item.nutrition.carbs) }}g
                       </span>
                       <span class="rounded bg-yellow-100 px-2 py-0.5 font-medium text-yellow-700">
@@ -224,14 +224,14 @@
                   <div class="flex gap-2">
                     <button
                       type="button"
-                      class="text-gray-400 transition-all duration-300 hover:text-blue-500"
+                      class="text-gray-400 transition-all duration-300 hover:text-emerald-500"
                       @click.stop="openEditModal(item)"
                     >
                       <PencilSquareIcon class="h-5 w-5" />
                     </button>
                     <button
                       type="button"
-                      class="text-gray-400 transition-all duration-300 hover:text-blue-500"
+                      class="text-gray-400 transition-all duration-300 hover:text-emerald-500"
                       @click.stop="selectMessage(item)"
                     >
                       <MagnifyingGlassIcon class="h-5 w-5" />
@@ -252,7 +252,7 @@
               {{ formatNumber(dashboard.totalCalories) }} kcal
             </h3>
             <span
-              class="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-4 py-1 text-sm font-medium text-blue-600"
+              class="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-4 py-1 text-sm font-medium text-emerald-600"
             >
               Meals Analyzed: {{ formatNumber(dashboard.mealsAnalyzed) }}
             </span>
@@ -265,10 +265,10 @@
               type="button"
               class="rounded-full border px-3 py-1 text-sm font-medium transition-all duration-300"
               :class="option.value === 'export'
-                ? 'border-gray-300 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-600'
+                ? 'border-gray-300 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-600'
                 : option.value === selectedPeriodValue
-                  ? 'border-blue-300 bg-blue-100 text-blue-600'
-                  : 'border-gray-300 bg-white text-gray-500 hover:border-blue-200 hover:text-blue-600'"
+                  ? 'border-emerald-300 bg-emerald-100 text-emerald-600'
+                  : 'border-gray-300 bg-white text-gray-500 hover:border-emerald-200 hover:text-emerald-600'"
               @click="handleQuickFilter(option.value)"
             >
               {{ option.label }}
@@ -634,7 +634,7 @@ const macroItems = computed(() => {
       label: t('whatsappNutrition.dashboard.macros.carbs'),
       amount: totals.carbs ?? 0,
       percentage: clampPercentage(percentages.carbs),
-      color: 'bg-blue-500',
+      color: 'bg-emerald-500',
     },
     {
       key: 'fat',
@@ -687,7 +687,7 @@ const categoryMaxCalories = computed(() =>
   categoryBreakdown.value.reduce((max, item) => Math.max(max, item.calories ?? 0, max), 0),
 );
 
-const categoryColors = ['bg-blue-400', 'bg-emerald-400', 'bg-amber-400', 'bg-purple-400', 'bg-rose-400', 'bg-teal-400'];
+const categoryColors = ['bg-emerald-400', 'bg-emerald-500', 'bg-amber-400', 'bg-purple-400', 'bg-rose-400', 'bg-teal-400'];
 
 const categoryColor = (index) => categoryColors[index % categoryColors.length];
 

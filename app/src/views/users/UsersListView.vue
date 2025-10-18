@@ -40,7 +40,7 @@
             <MagnifyingGlassIcon
               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input v-model="searchInput" type="search" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent  text-sm
+           focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent  text-sm
            placeholder:text-gray-400" placeholder="Name or email" />
           </div>
         </div>
@@ -145,7 +145,7 @@
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
           <button type="button"
-            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+            class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100"
              @click="openEdit(row.id)">
             <PencilSquareIcon class="h-3 w-3" />
             <span class="sr-only">{{ t('common.actions.edit') }}</span>
