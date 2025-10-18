@@ -124,4 +124,6 @@ payments:
 email:
   from: ${EMAIL_FROM:no-reply@jm.com}
   confirmation-base-url: ${EMAIL_CONFIRMATION_BASE_URL:https://app.jm.com/confirm-account}
+  login-base-url: ${EMAIL_LOGIN_BASE_URL:https://app.nutrivision.ai}
+  password-recovery-base-url: ${EMAIL_PASSWORD_RECOVERY_BASE_URL:https://app.nutrivision.ai/reset-password}
   default-language: ${EMAIL_DEFAULT_LANGUAGE:en-US}

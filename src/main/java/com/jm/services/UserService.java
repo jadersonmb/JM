@@ -1,7 +1,9 @@
 package com.jm.services;
 
+import com.jm.configuration.config.EmailProperties;
+import com.jm.dto.ChangePasswordDTO;
 import com.jm.dto.UserDTO;
-import com.jm.services.email.*;
+import com.jm.services.email.EmailNotificationService;
 import com.jm.entity.Users;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
@@ -22,12 +24,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final SecureRandom PASSWORD_RANDOM = new SecureRandom();
+    private static final String PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%";
+    private static final int PASSWORD_LENGTH = 12;
+    private static final int PASSWORD_RECOVERY_EXPIRATION_MINUTES = 30;
     private final UserRepository repository;
     private final UserMapper mapper;
     private final MessageSource messageSource;
@@ -37,11 +45,12 @@ public class UserService {
     private final EducationLevelRepository educationLevelRepository;
     private final ProfessionRepository professionRepository;
     private final EmailNotificationService emailNotificationService;
+    private final EmailProperties emailProperties;
 
     public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
             PasswordEncoder passwordEncoder, CountryRepository countriesRepository, CityRepository cityRepository,
             EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository,
-            EmailNotificationService emailNotificationService) {
+            EmailNotificationService emailNotificationService, EmailProperties emailProperties) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
@@ -51,6 +60,7 @@ public class UserService {
         this.educationLevelRepository = educationLevelRepository;
         this.professionRepository = professionRepository;
         this.emailNotificationService = emailNotificationService;
+        this.emailProperties = emailProperties;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -59,6 +69,9 @@ public class UserService {
 
     public void createUser(Users user) {
         boolean isNew = user.getId() == null;
+        if (isNew && user.getFirstAccess() == null) {
+            user.setFirstAccess(Boolean.TRUE);
+        }
         Users saved = repository.save(user);
         if (isNew) {
             emailNotificationService.sendUserConfirmation(saved);
@@ -76,19 +89,34 @@ public class UserService {
 
         applyReferenceData(entity, dto);
 
-        encodePasswordIfPresent(entity, dto.getPassword());
+        boolean isNewUser = entity.getId() == null;
+        String temporaryPassword = null;
+        if (isNewUser) {
+            temporaryPassword = generateTemporaryPassword();
+            entity.setPassword(passwordEncoder.encode(temporaryPassword));
+            entity.setFirstAccess(Boolean.TRUE);
+        } else {
+            encodePasswordIfPresent(entity, dto.getPassword());
+        }
 
         if (entity.getType() == null) {
             entity.setType(Users.Type.CLIENT);
         }
 
-        boolean isNew = entity.getId() == null;
         Users saved = repository.save(entity);
-        if (isNew) {
+
+        if (isNewUser) {
+            UserDTO welcomeDto = mapper.toDTO(saved);
+            welcomeDto.setPassword(temporaryPassword);
+            welcomeDto.setLocale(dto.getLocale());
+            emailNotificationService.sendWelcomeEmail(welcomeDto);
             emailNotificationService.sendUserConfirmation(saved);
         }
+
         logger.debug("User {} saved with id {}", saved.getEmail(), saved.getId());
-        return mapper.toDTO(saved);
+        UserDTO result = mapper.toDTO(saved);
+        result.setPassword(null);
+        return result;
     }
 
     public Users findByEntityId(UUID id) throws JMException {
@@ -110,6 +138,7 @@ public class UserService {
     public UserDTO updatePassword(UUID userId, String rawPassword) throws JMException {
         Users user = findEntityById(userId);
         encodePasswordIfPresent(user, rawPassword);
+        user.setFirstAccess(Boolean.FALSE);
         Users updated = repository.save(user);
         return mapper.toDTO(updated);
     }
@@ -117,8 +146,53 @@ public class UserService {
     public UserDTO updatePasswordByEmail(String email, String rawPassword) throws JMException {
         Users user = repository.findByEmail(email).orElseThrow(this::userNotFound);
         encodePasswordIfPresent(user, rawPassword);
+        user.setFirstAccess(Boolean.FALSE);
         Users updated = repository.save(user);
         return mapper.toDTO(updated);
+    }
+
+    public void initiatePasswordRecovery(String email) throws JMException {
+        Users user = repository.findByEmail(email).orElseThrow(this::userNotFound);
+        String token = UUID.randomUUID().toString();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(PASSWORD_RECOVERY_EXPIRATION_MINUTES);
+        user.setPasswordRecoveryToken(token);
+        user.setPasswordRecoveryTokenExpiresAt(expiresAt);
+        Users saved = repository.save(user);
+        UserDTO dto = mapper.toDTO(saved);
+        dto.setLocale(user.getLocale());
+        dto.setPassword(null);
+        emailNotificationService.sendPasswordRecoveryEmail(dto, buildPasswordRecoveryUrl(token));
+    }
+
+    public UserDTO resetPasswordWithToken(String token, String rawPassword) throws JMException {
+        if (!StringUtils.hasText(token)) {
+            throw invalidToken();
+        }
+        Users user = repository.findByPasswordRecoveryToken(token).orElseThrow(this::invalidToken);
+        if (user.getPasswordRecoveryTokenExpiresAt() == null
+                || user.getPasswordRecoveryTokenExpiresAt().isBefore(LocalDateTime.now())) {
+            throw expiredToken();
+        }
+        encodePasswordIfPresent(user, rawPassword);
+        user.setPasswordRecoveryToken(null);
+        user.setPasswordRecoveryTokenExpiresAt(null);
+        user.setFirstAccess(Boolean.FALSE);
+        Users saved = repository.save(user);
+        UserDTO dto = mapper.toDTO(saved);
+        dto.setPassword(null);
+        return dto;
+    }
+
+    public void changePasswordFirstAccess(ChangePasswordDTO dto) {
+        Users user = repository.findById(dto.getUserId()).orElseThrow(this::userNotFound);
+
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw invalidPassword();
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        user.setFirstAccess(Boolean.FALSE);
+        repository.save(user);
     }
 
     public Users getUserFromLabel(int hasCode) {
@@ -133,10 +207,57 @@ public class UserService {
                 messageDetails);
     }
 
+    private JMException invalidToken() {
+        ProblemType problemType = ProblemType.INVALID_TOKEN;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), null,
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
+    }
+
+    private JMException expiredToken() {
+        ProblemType problemType = ProblemType.EXPIRED_TOKEN;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), null,
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
+    }
+
+    private JMException invalidPassword() {
+        ProblemType problemType = ProblemType.INVALID_PASSWORD;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), null,
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
+    }
+
     private void encodePasswordIfPresent(Users entity, String rawPassword) {
         if (StringUtils.hasText(rawPassword)) {
             entity.setPassword(passwordEncoder.encode(rawPassword));
         }
+    }
+
+    private String buildPasswordRecoveryUrl(String token) {
+        String base = emailProperties.getPasswordRecoveryBaseUrl();
+        if (!StringUtils.hasText(base)) {
+            base = "https://app.nutrivision.ai/reset-password";
+        }
+        if (base.contains("?")) {
+            if (base.endsWith("?")) {
+                return base + "token=" + token;
+            }
+            return base + "&token=" + token;
+        }
+        return base + "?token=" + token;
+    }
+
+    private String generateTemporaryPassword() {
+        StringBuilder builder = new StringBuilder(PASSWORD_LENGTH);
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            int index = PASSWORD_RANDOM.nextInt(PASSWORD_ALPHABET.length());
+            builder.append(PASSWORD_ALPHABET.charAt(index));
+        }
+        return builder.toString();
     }
 
     private void applyReferenceData(Users entity, UserDTO dto) {

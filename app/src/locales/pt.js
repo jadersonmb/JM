@@ -26,6 +26,17 @@
     referenceMeals: 'Tipos de refeição',
     referenceProfessions: 'Profissões',
   },
+  firstAccess: {
+    title: 'Defina sua nova senha',
+    subtitle: 'Por segurança, é necessário criar uma nova senha antes de continuar.',
+    current: 'Senha temporária',
+    new: 'Nova senha',
+    confirm: 'Confirmar senha',
+    save: 'Salvar senha',
+    saving: 'Salvando...',
+    mismatch: 'As senhas não correspondem.',
+    error: 'Não foi possível alterar a senha.',
+  },
   settings: {
     sections: {
       profile: {

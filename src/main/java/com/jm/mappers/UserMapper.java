@@ -28,6 +28,7 @@ public interface UserMapper {
     @Mapping(target = "country", ignore = true)
     @Mapping(target = "educationLevel", ignore = true)
     @Mapping(target = "profession", ignore = true)
+    @Mapping(target = "firstAccess", ignore = true)
     @Mapping(target = "imagens", ignore = true)
     @Mapping(target = "anamneses", ignore = true)
     Users toEntity(UserDTO dto);
@@ -38,6 +39,7 @@ public interface UserMapper {
     @Mapping(target = "educationLevel", ignore = true)
     @Mapping(target = "profession", ignore = true)
     @Mapping(target = "password", ignore = true)
+    @Mapping(target = "firstAccess", ignore = true)
     @Mapping(target = "imagens", ignore = true)
     @Mapping(target = "anamneses", ignore = true)
     void updateEntityFromDto(UserDTO dto, @MappingTarget Users entity);

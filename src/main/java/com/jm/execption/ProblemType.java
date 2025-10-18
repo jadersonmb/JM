@@ -9,6 +9,9 @@ public enum ProblemType {
     INVALID_BODY_PARAM("/invalid-body", "Invaled Body", "invalid_message_body_param"),
     INVALID_VALUE_LONG_DATABASE("/invaled-long-database", "Value Long", "invalid_value_long_database"),
     INVALID_DATA("/invalid-data", "Invalid Data", "invalid_data"),
+    INVALID_TOKEN("/invalid-token", "Invalid token", "token.invalid"),
+    EXPIRED_TOKEN("/expired-token", "Expired token", "token.expired"),
+    INVALID_PASSWORD("/invalid-password", "Invalid password", "invalid_password"),
 
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
