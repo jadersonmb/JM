@@ -26,6 +26,17 @@ export default {
     referenceMeals: 'Meal types',
     referenceProfessions: 'Professions',
   },
+  firstAccess: {
+    title: 'Set your new password',
+    subtitle: 'For security reasons, please create a new password before continuing.',
+    current: 'Temporary password',
+    new: 'New password',
+    confirm: 'Confirm password',
+    save: 'Save password',
+    saving: 'Saving...',
+    mismatch: 'Passwords do not match.',
+    error: 'Failed to change password.',
+  },
   settings: {
     sections: {
       profile: {

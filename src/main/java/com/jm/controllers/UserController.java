@@ -1,5 +1,6 @@
 package com.jm.controllers;
 
+import com.jm.dto.ChangePasswordDTO;
 import com.jm.dto.UserDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
@@ -72,6 +73,13 @@ public class UserController {
         logger.debug("REST request to initiate password recovery for {}", email);
         userService.initiatePasswordRecovery(email);
         return ResponseEntity.accepted().build();
+    }
+
+    @PutMapping("/change-password-first-access")
+    public ResponseEntity<Void> changePasswordFirstAccess(@RequestBody ChangePasswordDTO dto) {
+        logger.debug("REST request to change password on first access for user {}", dto.getUserId());
+        userService.changePasswordFirstAccess(dto);
+        return ResponseEntity.ok().build();
     }
 
     @ExceptionHandler({ JMException.class })

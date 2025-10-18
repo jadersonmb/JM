@@ -112,21 +112,35 @@
           </ul>
         </div>
 
-        <p v-if="errors.form" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{
-          errors.form }}</p>
+        <p
+          v-if="errors.form"
+          class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+        >
+          {{ errors.form }}
+        </p>
       </form>
     </div>
   </div>
+  <FirstAccessModal
+    :visible="showFirstAccessModal"
+    :user-id="userId"
+    @updated="handlePasswordUpdated"
+  />
 </template>
 
 <script setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { useRouter, RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import FirstAccessModal from '@/components/FirstAccessModal.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+
+const showFirstAccessModal = ref(false);
+const userId = ref('');
+const pendingRedirect = ref('/dashboard/nutrition');
 
 const form = reactive({
   email: '',
@@ -149,8 +163,14 @@ const resetErrors = () => {
 const handleSubmit = async () => {
   resetErrors();
   try {
-    await auth.login({ email: form.email, password: form.password });
+    const data = await auth.login({ email: form.email, password: form.password });
     const redirect = route.query.redirect ?? '/dashboard/nutrition';
+    if (data?.user?.firstAccess) {
+      userId.value = data.user.id;
+      pendingRedirect.value = redirect;
+      showFirstAccessModal.value = true;
+      return;
+    }
     router.push(redirect);
   } catch (error) {
     const response = error.response;
@@ -162,5 +182,14 @@ const handleSubmit = async () => {
       errors.form = 'Unable to sign in. Check your credentials.';
     }
   }
+};
+
+const handlePasswordUpdated = () => {
+  showFirstAccessModal.value = false;
+  if (auth.user) {
+    auth.user.firstAccess = false;
+    auth.persist();
+  }
+  router.push(pendingRedirect.value || '/dashboard/nutrition');
 };
 </script>

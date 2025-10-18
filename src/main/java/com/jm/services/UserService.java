@@ -1,6 +1,7 @@
 package com.jm.services;
 
 import com.jm.configuration.config.EmailProperties;
+import com.jm.dto.ChangePasswordDTO;
 import com.jm.dto.UserDTO;
 import com.jm.services.email.EmailNotificationService;
 import com.jm.entity.Users;
@@ -68,6 +69,9 @@ public class UserService {
 
     public void createUser(Users user) {
         boolean isNew = user.getId() == null;
+        if (isNew && user.getFirstAccess() == null) {
+            user.setFirstAccess(Boolean.TRUE);
+        }
         Users saved = repository.save(user);
         if (isNew) {
             emailNotificationService.sendUserConfirmation(saved);
@@ -90,6 +94,7 @@ public class UserService {
         if (isNewUser) {
             temporaryPassword = generateTemporaryPassword();
             entity.setPassword(passwordEncoder.encode(temporaryPassword));
+            entity.setFirstAccess(Boolean.TRUE);
         } else {
             encodePasswordIfPresent(entity, dto.getPassword());
         }
@@ -133,6 +138,7 @@ public class UserService {
     public UserDTO updatePassword(UUID userId, String rawPassword) throws JMException {
         Users user = findEntityById(userId);
         encodePasswordIfPresent(user, rawPassword);
+        user.setFirstAccess(Boolean.FALSE);
         Users updated = repository.save(user);
         return mapper.toDTO(updated);
     }
@@ -140,6 +146,7 @@ public class UserService {
     public UserDTO updatePasswordByEmail(String email, String rawPassword) throws JMException {
         Users user = repository.findByEmail(email).orElseThrow(this::userNotFound);
         encodePasswordIfPresent(user, rawPassword);
+        user.setFirstAccess(Boolean.FALSE);
         Users updated = repository.save(user);
         return mapper.toDTO(updated);
     }
@@ -169,10 +176,23 @@ public class UserService {
         encodePasswordIfPresent(user, rawPassword);
         user.setPasswordRecoveryToken(null);
         user.setPasswordRecoveryTokenExpiresAt(null);
+        user.setFirstAccess(Boolean.FALSE);
         Users saved = repository.save(user);
         UserDTO dto = mapper.toDTO(saved);
         dto.setPassword(null);
         return dto;
+    }
+
+    public void changePasswordFirstAccess(ChangePasswordDTO dto) {
+        Users user = repository.findById(dto.getUserId()).orElseThrow(this::userNotFound);
+
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw invalidPassword();
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        user.setFirstAccess(Boolean.FALSE);
+        repository.save(user);
     }
 
     public Users getUserFromLabel(int hasCode) {
@@ -197,6 +217,14 @@ public class UserService {
 
     private JMException expiredToken() {
         ProblemType problemType = ProblemType.EXPIRED_TOKEN;
+        String messageDetails = messageSource.getMessage(problemType.getMessageSource(), null,
+                LocaleContextHolder.getLocale());
+        return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),
+                messageDetails);
+    }
+
+    private JMException invalidPassword() {
+        ProblemType problemType = ProblemType.INVALID_PASSWORD;
         String messageDetails = messageSource.getMessage(problemType.getMessageSource(), null,
                 LocaleContextHolder.getLocale());
         return new JMException(HttpStatus.BAD_REQUEST.value(), problemType.getTitle(), problemType.getUri(),

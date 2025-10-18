@@ -48,6 +48,9 @@ public class Users {
 
     private String password;
 
+    @Column(name = "first_access")
+    private Boolean firstAccess;
+
     private String locale;
 
     private String passwordRecoveryToken;

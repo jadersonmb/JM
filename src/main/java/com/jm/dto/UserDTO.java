@@ -43,4 +43,5 @@ public class UserDTO {
     private LocalDate birthDate;
     private Integer age;
     private String consultationGoal;
+    private Boolean firstAccess;
 }
