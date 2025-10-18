@@ -30,6 +30,12 @@
           >
             {{ t('nav.chat') }}
           </button>
+          <RouterLink
+            to="/login"
+            class="hidden rounded-full border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-600 shadow-sm transition-all hover:border-emerald-300 hover:text-emerald-700 lg:inline-flex"
+          >
+            {{ t('nav.login') }}
+          </RouterLink>
           <div class="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1 text-xs font-semibold">
             <button
               type="button"
@@ -100,6 +106,13 @@
           >
             {{ t('nav.chat') }}
           </button>
+          <RouterLink
+            to="/login"
+            class="block w-full rounded-xl border border-emerald-200 px-3 py-2 text-center text-sm font-semibold text-emerald-600 transition-all hover:border-emerald-300 hover:text-emerald-700"
+            @click="isMenuOpen = false"
+          >
+            {{ t('nav.login') }}
+          </RouterLink>
         </div>
       </div>
     </header>
@@ -140,7 +153,7 @@
             <div class="absolute -bottom-16 -right-12 hidden h-56 w-56 rounded-full bg-emerald-100 opacity-40 blur-3xl lg:block"></div>
             <div class="relative overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1556911220-e15b29be8c79?q=80&w=800"
+                src="https://images.unsplash.com/photo-1556911220-e15b29be8c79?auto=format&fit=crop&w=1200&q=80"
                 alt="Healthy meal"
                 class="h-full w-full object-cover"
                 loading="lazy"
@@ -399,6 +412,7 @@ const messages = {
       how: 'How it works',
       contact: 'Contact',
       chat: 'Chat on WhatsApp',
+      login: 'Log in',
     },
     hero: {
       badge: 'AI-powered nutrition',
@@ -438,7 +452,7 @@ const messages = {
       title: 'From photo to insights in seconds',
       subtitle: 'See how NutriVision turns a meal photo into instant analysis via WhatsApp.',
       stepLabel: 'Step {number}',
-      steps: [
+        steps: [
         {
           title: 'Capture your meal',
           description: 'Take a photo or paste a link directly in WhatsApp to kick off the experience.',
@@ -454,10 +468,10 @@ const messages = {
           description: 'Receive tips that keep your meal tasty while nudging better nutritional balance.',
           image: 'https://images.unsplash.com/photo-1586201375754-1a9f94b6c03e?q=80&w=800',
         },
-        {
+        { 
           title: 'Track over time',
           description: 'Daily and weekly summaries reveal progress, habits, and improvement opportunities.',
-          image: 'https://images.unsplash.com/photo-1554284126-aa88f22d8b72?q=80&w=800',
+          image: 'https://images.unsplash.com/photo-1611078489935-0cb964f06fd6?auto=format&fit=crop&w=800&q=80',
         },
         {
           title: 'Stay engaged on WhatsApp',
@@ -547,6 +561,7 @@ const messages = {
       how: 'Como funciona',
       contact: 'Contato',
       chat: 'Conversar no WhatsApp',
+      login: 'Entrar',
     },
     hero: {
       badge: 'Nutrição com Inteligência Artificial',
@@ -602,11 +617,11 @@ const messages = {
           description: 'Dicas para manter o sabor enquanto equilibra melhor a nutrição.',
           image: 'https://images.unsplash.com/photo-1586201375754-1a9f94b6c03e?q=80&w=800',
         },
-        {
-          title: 'Acompanhe sua evolução',
-          description: 'Sumários diários e semanais mostram progresso, hábitos e oportunidades.',
-          image: 'https://images.unsplash.com/photo-1554284126-aa88f22d8b72?q=80&w=800',
-        },
+          {
+            title: 'Acompanhe sua evolução',
+            description: 'Sumários diários e semanais mostram progresso, hábitos e oportunidades.',
+            image: 'https://images.unsplash.com/photo-1611078489935-0cb964f06fd6?auto=format&fit=crop&w=800&q=80',
+          },
         {
           title: 'Fique engajado no WhatsApp',
           description: 'Faça perguntas, solicite listas de compras ou planeje refeições sem sair do chat.',
