@@ -20,6 +20,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +47,12 @@ public class Users {
     private int hashCode;
 
     private String password;
+
+    private String locale;
+
+    private String passwordRecoveryToken;
+
+    private LocalDateTime passwordRecoveryTokenExpiresAt;
 
     @Enumerated(EnumType.STRING)
     private Type type;

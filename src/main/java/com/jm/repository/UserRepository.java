@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<Users, UUID>, JpaSpecifica
 
     Optional<Users> findByPhoneNumber(String phoneNumber);
 
+    Optional<Users> findByPasswordRecoveryToken(String token);
+
     List<Users> findTop50ByTypeOrderByNameAsc(Users.Type type);
 
     List<Users> findTop20ByTypeAndNameContainingIgnoreCaseOrderByNameAsc(Users.Type type, String name);

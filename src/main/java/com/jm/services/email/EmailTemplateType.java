@@ -2,7 +2,9 @@ package com.jm.services.email;
 
 public enum EmailTemplateType {
 
-    USER_CONFIRMATION("user-confirmation");
+    USER_CONFIRMATION("user-confirmation"),
+    WELCOME("welcome"),
+    PASSWORD_RECOVERY("password-recovery");
 
     private final String templateName;
 

@@ -26,6 +26,7 @@ public class UserDTO {
     private String street;
     private String state;
     private String postalCode;
+    private String locale;
     private UUID cityId;
     private String cityName;
     private UUID countryId;

@@ -1,6 +1,7 @@
 package com.jm.services.email;
 
 import com.jm.configuration.config.EmailProperties;
+import com.jm.dto.UserDTO;
 import com.jm.entity.UserConfiguration;
 import com.jm.entity.Users;
 import com.jm.repository.UserConfigurationRepository;
@@ -55,8 +56,54 @@ public class EmailNotificationService {
         emailSender.send(message);
     }
 
+    @Transactional(readOnly = true)
+    public void sendWelcomeEmail(UserDTO dto) {
+        if (dto == null || !StringUtils.hasText(dto.getEmail())) {
+            logger.warn("Skipping welcome email because user data is incomplete");
+            return;
+        }
+        Optional<UserConfiguration> configuration = resolveConfiguration(dto);
+        if (!shouldSendEmail(configuration)) {
+            logger.info("Email notifications disabled for user {}", dto.getId());
+            return;
+        }
+        Locale locale = resolveLocale(dto, configuration);
+        String loginUrl = resolveLoginUrl();
+        TemplateEmailContent content = templateResolver.resolve(EmailTemplateType.WELCOME, locale,
+                Map.of("userName", defaultName(dto), "userEmail", dto.getEmail(),
+                        "temporaryPassword", dto.getPassword() != null ? dto.getPassword() : "",
+                        "loginUrl", loginUrl));
+        EmailMessage message = new EmailMessage(dto.getEmail(), content.subject(), content.body());
+        emailSender.send(message);
+    }
+
+    @Transactional(readOnly = true)
+    public void sendPasswordRecoveryEmail(UserDTO dto, String resetUrl) {
+        if (dto == null || !StringUtils.hasText(dto.getEmail())) {
+            logger.warn("Skipping password recovery email because user data is incomplete");
+            return;
+        }
+        Optional<UserConfiguration> configuration = resolveConfiguration(dto);
+        if (!shouldSendEmail(configuration)) {
+            logger.info("Email notifications disabled for user {}", dto.getId());
+            return;
+        }
+        Locale locale = resolveLocale(dto, configuration);
+        TemplateEmailContent content = templateResolver.resolve(EmailTemplateType.PASSWORD_RECOVERY, locale,
+                Map.of("userName", defaultName(dto), "resetUrl", resetUrl != null ? resetUrl : ""));
+        EmailMessage message = new EmailMessage(dto.getEmail(), content.subject(), content.body());
+        emailSender.send(message);
+    }
+
     private boolean shouldSendEmail(Optional<UserConfiguration> configuration) {
         return configuration.map(UserConfiguration::isEmailNotifications).orElse(true);
+    }
+
+    private Optional<UserConfiguration> resolveConfiguration(UserDTO dto) {
+        if (dto != null && dto.getId() != null) {
+            return configurationRepository.findByUserId(dto.getId());
+        }
+        return Optional.empty();
     }
 
     private Locale resolveLocale(Optional<UserConfiguration> configuration) {
@@ -67,6 +114,13 @@ public class EmailNotificationService {
             return Locale.forLanguageTag(emailProperties.getDefaultLanguage());
         }
         return Locale.getDefault();
+    }
+
+    private Locale resolveLocale(UserDTO dto, Optional<UserConfiguration> configuration) {
+        if (dto != null && StringUtils.hasText(dto.getLocale())) {
+            return Locale.forLanguageTag(dto.getLocale());
+        }
+        return resolveLocale(configuration);
     }
 
     private String buildConfirmationLink(UUID userId) {
@@ -88,5 +142,22 @@ public class EmailNotificationService {
             return user.getName();
         }
         return "Usuário";
+    }
+
+    private String defaultName(UserDTO dto) {
+        if (dto == null) {
+            return "";
+        }
+        if (StringUtils.hasText(dto.getName())) {
+            return dto.getName();
+        }
+        return "User";
+    }
+
+    private String resolveLoginUrl() {
+        if (StringUtils.hasText(emailProperties.getLoginBaseUrl())) {
+            return emailProperties.getLoginBaseUrl();
+        }
+        return "https://app.nutrivision.ai";
     }
 }

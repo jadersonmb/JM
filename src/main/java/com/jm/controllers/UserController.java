@@ -67,6 +67,13 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/recovery-password")
+    public ResponseEntity<Void> recoveryPassword(@RequestParam String email) throws JMException {
+        logger.debug("REST request to initiate password recovery for {}", email);
+        userService.initiatePasswordRecovery(email);
+        return ResponseEntity.accepted().build();
+    }
+
     @ExceptionHandler({ JMException.class })
     public ResponseEntity<?> Exception(JMException ex) {
         Problem problem = createProblemBuild(ex.getStatus(), ex.getDetails(), ex.getType(), ex.getTitle())
