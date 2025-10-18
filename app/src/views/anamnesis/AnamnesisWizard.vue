@@ -10,7 +10,7 @@
         {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
       </div>
     </header>
-    <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[30%_70%]' : ''">
+    <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[40%_60%]' : ''">
       <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
