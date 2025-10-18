@@ -189,45 +189,64 @@
         </div>
       </section>
 
-      <section id="pricing" class="bg-white">
-        <div class="mx-auto max-w-6xl px-6 py-20">
-          <div class="mx-auto max-w-3xl text-center">
-            <h2 class="text-3xl font-semibold text-slate-900 sm:text-4xl">{{ t('pricing.title') }}</h2>
-            <p class="mt-4 text-base text-slate-600">{{ t('pricing.subtitle') }}</p>
-          </div>
-          <div class="mt-12 grid gap-6 lg:grid-cols-3">
-            <article
-              v-for="plan in pricingPlans"
-              :key="plan.name"
-              class="group flex flex-col gap-6 rounded-3xl border border-slate-100 bg-slate-50 p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-lg"
+      <section id="pricing" class="bg-white py-20">
+        <div class="mx-auto max-w-6xl px-6 text-center">
+          <h2 class="mb-12 text-3xl font-bold text-slate-900 sm:text-4xl">{{ t('pricing.title') }}</h2>
+
+          <div v-if="plansLoading" class="grid gap-6 md:grid-cols-3">
+            <div
+              v-for="index in 3"
+              :key="index"
+              class="rounded-2xl border border-slate-100 bg-slate-50 p-8 shadow-sm"
             >
-              <div class="space-y-2">
-                <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-600">
-                  {{ plan.cadence }}
-                </span>
-                <h3 class="text-2xl font-semibold text-slate-900">{{ plan.name }}</h3>
-                <p class="text-sm leading-relaxed text-slate-600">{{ plan.description }}</p>
-              </div>
-              <div class="space-y-3">
-                <div class="text-4xl font-bold text-slate-900">{{ plan.price }}</div>
-                <p class="text-xs uppercase tracking-wide text-slate-500">{{ plan.billing }}</p>
-              </div>
-              <ul class="flex flex-1 flex-col gap-3 text-sm text-slate-600">
-                <li v-for="feature in plan.features" :key="feature" class="flex items-start gap-2">
-                  <span class="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-xs text-emerald-600">✔</span>
-                  <span>{{ feature }}</span>
-                </li>
-              </ul>
+              <div class="h-6 w-1/2 animate-pulse rounded bg-slate-200"></div>
+              <div class="mt-4 h-10 w-2/3 animate-pulse rounded bg-slate-200"></div>
+              <div class="mt-6 h-4 w-full animate-pulse rounded bg-slate-200"></div>
+              <div class="mt-2 h-4 w-5/6 animate-pulse rounded bg-slate-200"></div>
+              <div class="mt-8 h-10 w-full animate-pulse rounded bg-slate-200"></div>
+            </div>
+          </div>
+
+          <div
+            v-else-if="planError"
+            class="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700"
+          >
+            {{ planError }}
+          </div>
+
+          <div v-else class="grid gap-6 md:grid-cols-3">
+            <div
+              v-for="plan in plans"
+              :key="plan.id"
+              class="rounded-2xl border border-slate-100 p-8 text-left shadow-sm transition hover:shadow-lg"
+            >
+              <h3 class="mb-2 text-xl font-semibold text-slate-900">{{ plan.name }}</h3>
+              <p class="mb-4 text-3xl font-bold text-emerald-600">
+                {{ formatPlanPrice(plan) }}
+                <span class="text-sm font-normal text-slate-500">/{{ intervalLabel(plan) }}</span>
+              </p>
+              <p class="mb-6 text-sm text-slate-600">{{ plan.description }}</p>
               <button
                 type="button"
-                class="inline-flex w-full items-center justify-center rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:scale-105 hover:shadow-md"
-                @click="openWhatsApp"
+                class="w-full rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700"
+                @click="openRegisterModal(plan)"
               >
-                {{ t('pricing.cta') }}
+                {{ t('pricing.subscribe') }}
               </button>
-            </article>
+            </div>
           </div>
+
+          <p v-if="!plansLoading && !planError && !plans.length" class="mt-6 text-sm text-slate-500">
+            {{ t('pricing.empty') }}
+          </p>
         </div>
+
+        <RegisterUserPaymentModal
+          v-if="showModal"
+          :selected-plan="selectedPlan"
+          @close="showModal = false"
+          @success="handleSubscriptionSuccess"
+        />
       </section>
 
       <section id="how" class="bg-white">
@@ -449,8 +468,10 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import axios from '@/services/api';
+import RegisterUserPaymentModal from '@/components/landing/RegisterUserPaymentModal.vue';
 
 const messages = {
   en: {
@@ -498,47 +519,30 @@ const messages = {
       ],
     },
     pricing: {
-      title: 'Flexible plans that scale with your clients',
-      subtitle: 'Choose the cadence that fits your program and unlock concierge onboarding, analytics, and premium support.',
-      cta: 'Request this plan',
-      plans: [
-        {
-          name: 'Quarterly Launch',
-          cadence: '3-month plan',
-          price: '$199',
-          billing: 'billed every quarter',
-          description: 'Perfect for pilot cohorts and nutrition squads validating the experience.',
-          features: [
-            'Up to 200 active members',
-            'AI meal insights in English & Portuguese',
-            'Progress dashboards and CSV exports',
-          ],
-        },
-        {
-          name: 'Semiannual Growth',
-          cadence: '6-month plan',
-          price: '$349',
-          billing: 'billed every 6 months',
-          description: 'Scale programs with richer analytics, coaching automations, and co-branded flows.',
-          features: [
-            'Up to 500 active members',
-            'Custom goals and macro presets',
-            'Priority success manager & onboarding',
-          ],
-        },
-        {
-          name: 'Annual Elite',
-          cadence: '12-month plan',
-          price: '$599',
-          billing: 'billed annually',
-          description: 'For enterprise wellness teams that need advanced controls, SSO, and premium SLAs.',
-          features: [
-            'Unlimited active members',
-            'Advanced analytics API access',
-            '24/7 concierge and white-label options',
-          ],
-        },
-      ],
+      title: 'Choose your plan',
+      subscribe: 'Subscribe Now',
+      empty: 'We are preparing new plans for you. Please check back soon.',
+      loadError: 'Unable to load subscription plans. Please try again later.',
+      interval: {
+        day: 'day',
+        week: 'week',
+        month: 'month',
+        year: 'year',
+      },
+    },
+    register: {
+      title: 'Create your account',
+      subtitle: 'You’re subscribing to {plan}',
+      planFallback: 'our plan',
+      name: 'Full name',
+      email: 'Email',
+      phone: 'WhatsApp number',
+      validationError: 'Please fill in all required fields before continuing.',
+      planRequired: 'Select a plan to continue with your subscription.',
+      successTitle: 'Subscription confirmed',
+      successMessage: 'All set! Redirecting you to your dashboard...',
+      errorTitle: 'Unable to complete subscription',
+      errorMessage: 'We could not finish your subscription. Please try again in a few minutes.',
     },
     how: {
       title: 'From photo to insights in seconds',
@@ -692,47 +696,30 @@ const messages = {
       ],
     },
     pricing: {
-      title: 'Planos flexíveis para cada fase da sua operação',
-      subtitle: 'Escolha a recorrência ideal e tenha onboarding guiado, analytics avançado e suporte premium.',
-      cta: 'Solicitar este plano',
-      plans: [
-        {
-          name: 'Lançamento Trimestral',
-          cadence: 'Plano de 3 meses',
-          price: 'R$ 990',
-          billing: 'cobrança a cada trimestre',
-          description: 'Ideal para turmas piloto e squads validando a experiência com clientes.',
-          features: [
-            'Até 200 membros ativos',
-            'Insights das refeições em Português e Inglês',
-            'Painéis de progresso e exportação CSV',
-          ],
-        },
-        {
-          name: 'Crescimento Semestral',
-          cadence: 'Plano de 6 meses',
-          price: 'R$ 1.790',
-          billing: 'cobrança a cada 6 meses',
-          description: 'Escale programas com analytics enriquecidos, automações e fluxos co-branded.',
-          features: [
-            'Até 500 membros ativos',
-            'Metas personalizadas e presets de macros',
-            'Sucesso do cliente prioritário e onboarding guiado',
-          ],
-        },
-        {
-          name: 'Elite Anual',
-          cadence: 'Plano de 12 meses',
-          price: 'R$ 2.990',
-          billing: 'cobrança anual',
-          description: 'Para times enterprise que precisam de controles avançados, SSO e SLA premium.',
-          features: [
-            'Membros ativos ilimitados',
-            'Acesso API de analytics avançado',
-            'Atendimento 24/7 e opções white-label',
-          ],
-        },
-      ],
+      title: 'Escolha seu plano',
+      subscribe: 'Assinar agora',
+      empty: 'Estamos preparando novos planos. Volte em breve.',
+      loadError: 'Não foi possível carregar os planos no momento. Tente novamente mais tarde.',
+      interval: {
+        day: 'dia',
+        week: 'semana',
+        month: 'mês',
+        year: 'ano',
+      },
+    },
+    register: {
+      title: 'Crie sua conta',
+      subtitle: 'Você está assinando o plano {plan}',
+      planFallback: 'nosso plano',
+      name: 'Nome completo',
+      email: 'E-mail',
+      phone: 'Número do WhatsApp',
+      validationError: 'Preencha todos os campos obrigatórios para continuar.',
+      planRequired: 'Selecione um plano para concluir sua assinatura.',
+      successTitle: 'Assinatura confirmada',
+      successMessage: 'Tudo pronto! Vamos direcionar você para o painel...',
+      errorTitle: 'Não foi possível concluir a assinatura',
+      errorMessage: 'Não conseguimos finalizar sua assinatura. Tente novamente em alguns instantes.',
     },
     how: {
       title: 'Da foto ao insight em segundos',
@@ -848,12 +835,19 @@ const { t, tm, locale } = useI18n({ legacy: false, locale: 'en', fallbackLocale:
 const isMenuOpen = ref(false);
 
 const featureCards = computed(() => tm('features.cards'));
-const pricingPlans = computed(() => tm('pricing.plans'));
 const howSteps = computed(() => tm('how.steps'));
 const demoTopics = computed(() => tm('demo.topics'));
 const demoMessages = computed(() => tm('demo.chat.messages'));
 const contactChannels = computed(() => tm('contact.channels'));
 const contactCards = computed(() => tm('contact.cards'));
+
+const plans = ref([]);
+const plansLoading = ref(false);
+const planError = ref('');
+const showModal = ref(false);
+const selectedPlan = ref(null);
+
+const localeTag = computed(() => (locale.value === 'pt' ? 'pt-PT' : 'en-US'));
 
 const demoForm = reactive({
   number: '',
@@ -876,6 +870,47 @@ watch(
   },
   { immediate: true }
 );
+
+async function fetchPlans() {
+  plansLoading.value = true;
+  planError.value = '';
+  try {
+    const { data } = await axios.get('/api/v1/plans');
+    const records = Array.isArray(data) ? data : data?.content ?? [];
+    plans.value = records;
+  } catch (error) {
+    console.error('Failed to load plans', error);
+    planError.value = error?.response?.data?.details ?? error?.response?.data?.message ?? t('pricing.loadError');
+  } finally {
+    plansLoading.value = false;
+  }
+}
+
+function formatPlanPrice(plan) {
+  const amount = Number(plan?.amount ?? plan?.price ?? 0);
+  const currency = plan?.currency ?? 'EUR';
+  return new Intl.NumberFormat(localeTag.value, {
+    style: 'currency',
+    currency,
+  }).format(amount);
+}
+
+function intervalLabel(plan) {
+  const key = String(plan?.interval ?? 'month').toLowerCase();
+  const path = `pricing.interval.${key}`;
+  const label = t(path);
+  return label !== path ? label : key;
+}
+
+function openRegisterModal(plan) {
+  selectedPlan.value = plan;
+  showModal.value = true;
+}
+
+function handleSubscriptionSuccess() {
+  showModal.value = false;
+  window.location.href = '/app/nutrition/dashboard';
+}
 
 const scrollTo = (sectionId) => {
   const element = document.getElementById(sectionId);
@@ -904,6 +939,8 @@ const submitDemo = () => {
 const submitContact = () => {
   console.log('Contact form submitted', { ...contactForm });
 };
+
+onMounted(fetchPlans);
 </script>
 
 <style scoped>

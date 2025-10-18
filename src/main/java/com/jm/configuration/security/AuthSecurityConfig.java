@@ -79,7 +79,10 @@ public class AuthSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**", "/api/auth/**", "/oauth2/token", "/oauth2/jwks").permitAll()
+                        .requestMatchers("/public/**", "/api/auth/**", "/oauth2/token", "/oauth2/jwks",
+                                "/api/v1/plans", "/api/v1/plans/**", "/v1/api/payment-plans",
+                                "/api/v1/users", "/api/v1/users/**", "/api/v1/whatsapp/**",
+                                "/v1/api/payments/subscription", "/v1/api/payments/subscription/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt());
