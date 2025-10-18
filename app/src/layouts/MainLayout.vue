@@ -138,7 +138,7 @@
                   <img v-if="auth.user?.avatarUrl" :src="auth.user.avatarUrl" alt="Profile"
                     class="h-10 w-10 rounded-2xl object-cover" />
                   <div v-else class="flex h-full w-full items-center justify-center text-sm font-semibold">
-                    {{ auth.initials || 'JM' }}
+                    {{ auth.initials || '🌿' }}
                   </div>
                 </div>
                 <div class="hidden text-sm lg:block">
@@ -451,7 +451,7 @@ watch(
   () => preferences.locale,
   () => {
     if (route.meta.titleKey) {
-      document.title = `${t(route.meta.titleKey)} - JM Admin`;
+      document.title = `${t(route.meta.titleKey)} · 🌿 NutriVision AI`;
     }
   },
 );
