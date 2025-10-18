@@ -3,7 +3,7 @@
     <div
       class="relative mx-auto w-full max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-10 shadow-[0_30px_80px_-40px_rgba(15,23,42,1)] backdrop-blur-xl lg:grid lg:grid-cols-[1.2fr_1fr]">
       <div
-        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.35),_rgba(15,23,42,0))]">
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.35),_rgba(15,23,42,0))]">
       </div>
       <div class="relative flex flex-col justify-between gap-10 text-white">
         <div>
@@ -16,6 +16,63 @@
             <!--<img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
               class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" /> -->
           </div>
+          <div class="mt-8 space-y-6">
+          <ul class="space-y-3 text-sm text-slate-200/80 text-white text-left">
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-emerald-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Complete analysis: calories, proteins, carbohydrates and fats</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-emerald-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Personalized tips for every meal</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-amber-300 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Detailed reports of your nutritional progress</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-purple-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Direct integration via WhatsApp - quick and easy</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-cyan-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Advanced AI for accurate food identification</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Real-time monitoring of your consumption</span>
+            </li>
+            <!-- Novos benefícios adicionados -->
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-green-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Allergy and dietary restriction alerts</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-indigo-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Weekly progress tracking and insights</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-yellow-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Portion size recommendations</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-pink-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Meal planning suggestions</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-teal-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Hydration tracking and reminders</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-orange-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Nutritional goal setting and monitoring</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <span class="h-3 w-3 rounded-full bg-lime-400 mt-1 flex-shrink-0"></span>
+              <span class="text-white">Food database with 10,000+ items</span>
+            </li>
+          </ul>
+        </div>
         </div>
       </div>
       <form class="relative mt-10 card lg:mt-0" @submit.prevent="handleSubmit">
@@ -53,71 +110,8 @@
           </span>
           <span v-else>Sign in</span>
         </button>
-
-        <div class="mt-8 space-y-6">
-          <ul class="space-y-3 text-sm text-slate-200/80 text-black text-left">
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-emerald-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Complete analysis: calories, proteins, carbohydrates and fats</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-blue-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Personalized tips for every meal</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-amber-300 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Detailed reports of your nutritional progress</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-purple-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Direct integration via WhatsApp - quick and easy</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-cyan-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Advanced AI for accurate food identification</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-red-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Real-time monitoring of your consumption</span>
-            </li>
-            <!-- Novos benefícios adicionados -->
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-green-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Allergy and dietary restriction alerts</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-indigo-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Weekly progress tracking and insights</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-yellow-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Portion size recommendations</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-pink-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Meal planning suggestions</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-teal-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Hydration tracking and reminders</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-orange-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Nutritional goal setting and monitoring</span>
-            </li>
-            <li class="flex items-start gap-3">
-              <span class="h-3 w-3 rounded-full bg-lime-400 mt-1 flex-shrink-0"></span>
-              <span class="text-black">Food database with 10,000+ items</span>
-            </li>
-          </ul>
-        </div>
-
-        <p
-          v-if="errors.form"
-          class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
-        >
-          {{ errors.form }}
-        </p>
+        <p v-if="errors.form" class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">{{
+          errors.form }}</p>
       </form>
     </div>
   </div>
@@ -164,7 +158,7 @@ const handleSubmit = async () => {
   resetErrors();
   try {
     const data = await auth.login({ email: form.email, password: form.password });
-    const redirect = route.query.redirect ?? '/dashboard/nutrition';
+    const redirect = route.query.redirect ?? '/app/dashboard/nutrition';
     if (data?.user?.firstAccess) {
       userId.value = data.user.id;
       pendingRedirect.value = redirect;

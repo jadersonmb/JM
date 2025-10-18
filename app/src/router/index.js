@@ -19,12 +19,18 @@ const router = createRouter({
     },
     {
       path: '/',
+      name: 'landing',
+      component: () => import('@/views/LandingPage.vue'),
+      meta: { guestOnly: true, title: 'NutriVision AI' },
+    },
+    {
+      path: '/app',
       component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
       children: [
         {
           path: '',
-          redirect: { name: 'dashboard/nutrition' },
+          redirect: { name: 'dashboard-nutrition' },
         },
         {
           path: 'dashboard',
@@ -220,13 +226,15 @@ router.beforeEach(async (to) => {
     }
   }
 
+  const baseTitle = '🌿 NutriVision AI';
+
   if (to.meta.titleKey) {
     const title = i18n.global.t(to.meta.titleKey);
-    document.title = `${title} - JM Admin`;
+    document.title = `${title} · ${baseTitle}`;
   } else if (to.meta.title) {
-    document.title = `${to.meta.title} - JM Admin`;
+    document.title = `${to.meta.title} · ${baseTitle}`;
   } else {
-    document.title = 'JM Admin';
+    document.title = baseTitle;
   }
 
   return true;
