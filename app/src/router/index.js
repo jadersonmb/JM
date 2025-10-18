@@ -19,12 +19,18 @@ const router = createRouter({
     },
     {
       path: '/',
+      name: 'landing',
+      component: () => import('@/views/LandingPage.vue'),
+      meta: { guestOnly: true, title: 'NutriVision AI' },
+    },
+    {
+      path: '/app',
       component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
       children: [
         {
           path: '',
-          redirect: { name: 'dashboard/nutrition' },
+          redirect: { name: 'dashboard-nutrition' },
         },
         {
           path: 'dashboard',
