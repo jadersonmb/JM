@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-    <div class="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl animate-fadeIn">
+    <div class="relative w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl animate-fadeIn">
       <button
         type="button"
         class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700"
@@ -47,7 +47,7 @@
           <RecurringPayment
             :selected-plan="props.selectedPlan"
             :loading="loading"
-            :cards="[]"
+            :ensure-customer="ensureCustomer"
             @create="handleRecurringCreate"
           />
         </form>
@@ -82,6 +82,8 @@ const form = reactive({
   phoneNumber: '',
 });
 
+const customer = ref(null);
+
 const loading = ref(false);
 const errorMessage = ref('');
 
@@ -103,6 +105,7 @@ async function createOrFetchUser() {
   const payload = buildUserPayload();
   try {
     const { data } = await axios.post('/api/v1/users', payload);
+    customer.value = data;
     return data;
   } catch (error) {
     const status = error.response?.status;
@@ -113,11 +116,48 @@ async function createOrFetchUser() {
         });
         const existing = data?.content?.[0];
         if (existing) {
+          customer.value = existing;
           return existing;
         }
       } catch (fetchError) {
         console.error('Failed to fetch existing user', fetchError);
       }
+    }
+    throw error;
+  }
+}
+
+async function ensureCustomer(options = {}) {
+  const silent = Boolean(options?.silent);
+
+  if (!isFormValid()) {
+    if (!silent) {
+      errorMessage.value = t('register.validationError');
+      notifications.push({
+        type: 'warning',
+        title: t('register.errorTitle'),
+        message: errorMessage.value,
+      });
+    }
+    throw new Error('form-invalid');
+  }
+
+  if (customer.value?.id) {
+    return customer.value;
+  }
+
+  try {
+    const user = await createOrFetchUser();
+    return user;
+  } catch (error) {
+    if (!silent) {
+      const responseMessage = error.response?.data?.details || error.response?.data?.message;
+      errorMessage.value = responseMessage || t('register.errorMessage');
+      notifications.push({
+        type: 'error',
+        title: t('register.errorTitle'),
+        message: errorMessage.value,
+      });
     }
     throw error;
   }
@@ -136,7 +176,7 @@ async function handleRecurringCreate(payload) {
 
   loading.value = true;
   try {
-    const user = await createOrFetchUser();
+    const user = await ensureCustomer({ silent: true });
     if (!user?.id) {
       throw new Error('Missing user identifier');
     }
