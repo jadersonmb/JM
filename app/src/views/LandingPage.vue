@@ -43,7 +43,7 @@
               :class="locale === 'en' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-emerald-600'"
               @click="setLocale('en')"
             >
-              🇬🇧 <span>EN</span>
+              <span>EN</span>
             </button>
             <button
               type="button"
@@ -51,7 +51,7 @@
               :class="locale === 'pt' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-emerald-600'"
               @click="setLocale('pt')"
             >
-              🇧🇷 <span>PT</span>
+              <span>PT</span>
             </button>
           </div>
           <button
@@ -153,7 +153,7 @@
             <div class="absolute -bottom-16 -right-12 hidden h-56 w-56 rounded-full bg-emerald-100 opacity-40 blur-3xl lg:block"></div>
             <div class="relative overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl">
               <img
-                src="https://images.unsplash.com/photo-1556911220-e15b29be8c79?auto=format&fit=crop&w=1200&q=80"
+                src="https://cdn.abrahao.com.br/base/178/254/5ac/fotografando-comida-celular.jpg"
                 alt="Healthy meal"
                 class="h-full w-full object-cover"
                 loading="lazy"
