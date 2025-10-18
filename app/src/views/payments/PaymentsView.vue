@@ -155,7 +155,7 @@
                         'font-medium transition hover:underline',
                         action.disabled
                           ? 'cursor-not-allowed text-gray-400 hover:text-gray-400 hover:no-underline'
-                          : 'text-blue-600 hover:text-blue-700'
+                          : 'text-emerald-600 hover:text-emerald-700'
                       ]"
                       @click="handleHistoryAction(item, action.type)"
                     >
@@ -184,7 +184,7 @@
       <section class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p class="text-sm font-medium text-blue-600">{{ t('payments.subscription.title') }}</p>
+            <p class="text-sm font-medium text-emerald-600">{{ t('payments.subscription.title') }}</p>
             <h2 class="text-xl font-semibold text-gray-800">{{ t('payments.subscription.subtitle') }}</h2>
           </div>
           <span
@@ -206,17 +206,17 @@
 
         <div v-else-if="activeSubscription" class="mt-6 space-y-6">
           <div class="grid gap-4 sm:grid-cols-2">
-            <article class="relative rounded-xl border border-blue-100 bg-blue-50 p-5">
-              <h3 class="text-sm font-semibold text-blue-700">
+            <article class="relative rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+              <h3 class="text-sm font-semibold text-emerald-700">
                 {{ activeSubscription.plan?.name ?? t('payments.subscription.planUnknown') }}
               </h3>
-              <p class="mt-2 text-xs uppercase tracking-wide text-blue-500">
+              <p class="mt-2 text-xs uppercase tracking-wide text-emerald-500">
                 {{ subscriptionIntervalLabel(activeSubscription.interval) }}
               </p>
-              <p class="mt-3 text-2xl font-semibold text-blue-900">
+              <p class="mt-3 text-2xl font-semibold text-emerald-900">
                 {{ formatCurrency(activeSubscription.amount) }}
               </p>
-              <p class="mt-1 text-xs text-blue-600">
+              <p class="mt-1 text-xs text-emerald-600">
                 {{ t('payments.subscription.nextBilling') }}:
                 {{ formatSubscriptionDate(activeSubscription.nextBillingDate) }}
               </p>
@@ -348,7 +348,7 @@
                         'font-medium transition hover:underline',
                         action.disabled
                           ? 'cursor-not-allowed text-gray-400 hover:text-gray-400 hover:no-underline'
-                          : 'text-blue-600 hover:text-blue-700'
+                          : 'text-emerald-600 hover:text-emerald-700'
                       ]"
                       @click="handleHistoryAction(item, action.type)"
                     >
@@ -1297,7 +1297,7 @@ onBeforeUnmount(() => {
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 9999px;
-  border: 2px solid #cbd5f5;
+  border: 2px solid #d1fae5;
   background: #fff;
   color: #64748b;
 }
@@ -1321,13 +1321,13 @@ onBeforeUnmount(() => {
 }
 
 .timeline-info {
-  border-color: #bfdbfe !important;
+  border-color: #a7f3d0 !important;
   background: #eff6ff !important;
-  color: #1d4ed8 !important;
+  color: #047857 !important;
 }
 
 .timeline-default {
-  border-color: #cbd5f5 !important;
+  border-color: #d1fae5 !important;
   background: #f8fafc !important;
   color: #475569 !important;
 }

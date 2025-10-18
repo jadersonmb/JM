@@ -16,12 +16,12 @@
             v-model="searchTerm"
             :placeholder="t('reminders.searchPlaceholder')"
             type="text"
-            class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700 shadow-sm transition focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700 shadow-sm transition focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
         </div>
         <button
           type="button"
-          class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2"
+          class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-offset-2"
           @click="openCreateModal"
         >
           <PlusCircleIcon class="h-5 w-5" />
@@ -42,7 +42,7 @@
         <article
           v-for="reminder in reminders"
           :key="reminder.id"
-          class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
+          class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:border-emerald-200 hover:shadow-lg"
         >
           <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="flex flex-1 items-start gap-4">
@@ -103,7 +103,7 @@
               <label class="flex items-center gap-2 text-sm text-gray-600">
                 <input
                   type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  class="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                   :checked="reminder.completed"
                   @change="() => handleToggleCompleted(reminder)"
                 />
@@ -116,7 +116,7 @@
                 <button
                   type="button"
                   class="relative inline-flex h-6 w-11 items-center rounded-full transition"
-                  :class="reminder.active ? 'bg-blue-500' : 'bg-gray-300'"
+                  :class="reminder.active ? 'bg-emerald-500' : 'bg-gray-300'"
                   @click="() => handleToggleActive(reminder)"
                 >
                   <span class="sr-only">{{ t('reminders.card.toggleAria', { title: reminder.title }) }}</span>
@@ -137,7 +137,7 @@
                 </button>
                 <button
                   type="button"
-                  class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+                  class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100"
                   @click="() => openEditModal(reminder)"
                 >
                   <PencilSquareIcon class="h-5 w-5" />
@@ -164,7 +164,7 @@
         <p class="mt-2 text-sm text-gray-500">{{ t('reminders.empty.subtitle') }}</p>
         <button
           type="button"
-          class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+          class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-600 transition hover:bg-emerald-100"
           @click="openCreateModal"
         >
           <PlusCircleIcon class="h-5 w-5" />
@@ -207,7 +207,7 @@
                 v-model="form.title"
                 type="text"
                 :placeholder="t('reminders.form.fields.title.placeholder')"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
             </div>
             <div class="md:col-span-2">
@@ -218,7 +218,7 @@
                 v-model="form.description"
                 rows="3"
                 :placeholder="t('reminders.form.fields.description.placeholder')"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
             </div>
             <div>
@@ -227,7 +227,7 @@
               </label>
               <select
                 v-model="form.repeatMode"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               >
                 <option
                   v-for="option in repeatModeOptions"
@@ -245,7 +245,7 @@
               <input
                 v-model="form.scheduledAt"
                 type="datetime-local"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
               <p v-if="form.repeatMode !== 'DATE_TIME'" class="mt-1 text-xs text-gray-400">
                 {{ scheduledAtPlaceholder }}
@@ -258,7 +258,7 @@
               <input
                 v-model="form.repeatTimeOfDay"
                 type="time"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
             </div>
             <div v-if="needsWeekdaySelection" class="md:col-span-2">
@@ -272,8 +272,8 @@
                   type="button"
                   class="rounded-lg border px-3 py-2 text-xs font-semibold transition"
                   :class="isWeekdaySelected(option.value)
-                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:text-blue-500'"
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-600'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:text-emerald-500'"
                   @click="toggleWeekday(option.value)"
                 >
                   {{ option.label }}
@@ -288,7 +288,7 @@
                 v-model.number="form.repeatIntervalMinutes"
                 type="number"
                 min="1"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
               <p class="mt-1 text-xs text-gray-400">
                 {{ t('reminders.form.fields.interval.hint') }}
@@ -302,7 +302,7 @@
                 v-model.number="form.repeatCountTotal"
                 type="number"
                 min="1"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               />
             </div>
             <div>
@@ -311,7 +311,7 @@
               </label>
               <select
                 v-model="form.priority"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               >
                 <option
                   v-for="option in priorityOptions"
@@ -328,7 +328,7 @@
               </label>
               <select
                 v-model="form.type"
-                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                class="mt-1 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
               >
                 <option v-for="option in typeOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -344,11 +344,11 @@
                   v-model="targetSearch"
                   type="text"
                   :placeholder="t('reminders.form.fields.target.searchPlaceholder')"
-                  class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 />
                 <select
                   v-model="form.targetUserId"
-                  class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 >
                   <option value="" disabled>{{ t('reminders.form.fields.target.placeholder') }}</option>
                   <option
@@ -378,7 +378,7 @@
             </button>
             <button
               type="submit"
-              class="inline-flex items-center justify-center rounded-xl bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              class="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               :disabled="isSubmitting"
             >
               {{ isSubmitting ? t('reminders.form.actions.saving') : t('reminders.form.actions.save') }}
@@ -456,7 +456,7 @@ const weekdayOrder = weekdayValues.reduce((accumulator, value, index) => {
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
 const typeVisuals = {
-  HEALTH: { icon: HeartIcon, bg: 'bg-blue-100', text: 'text-blue-600' },
+  HEALTH: { icon: HeartIcon, bg: 'bg-emerald-100', text: 'text-emerald-600' },
   STUDY: { icon: AcademicCapIcon, bg: 'bg-purple-100', text: 'text-purple-600' },
   WORK: { icon: BriefcaseIcon, bg: 'bg-amber-100', text: 'text-amber-600' },
   MEAL: { icon: CakeIcon, bg: 'bg-emerald-100', text: 'text-emerald-600' },

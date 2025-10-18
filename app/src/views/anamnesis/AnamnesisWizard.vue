@@ -10,7 +10,7 @@
         {{ t('common.stepIndicator', { current: currentStepIndex + 1, total: steps.length }) }}
       </div>
     </header>
-    <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[30%_70%]' : ''">
+    <div class="mt-8 grid gap-6" :class="isAdmin ? 'lg:grid-cols-[40%_60%]' : ''">
       <section v-if="isAdmin" class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -57,7 +57,7 @@
                   {{ item.consultationGoal || t('common.placeholders.empty') }}
                 </td>
                 <td class="px-4 py-3 text-left">
-                  <button type="button" class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100" @click="selectAnamnesis(item)">
+                  <button type="button" class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100" @click="selectAnamnesis(item)">
                     <EyeIcon class="h-3 w-3" />
                   </button>
                 </td>
@@ -79,7 +79,7 @@
             </div>
             <div class="flex flex-wrap gap-2">
               <button type="button"
-                class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+                class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100"
                 @click="() => editSelectedAnamnesis()">
                 <PencilSquareIcon class="h-5 w-5" />
                 <span class="sr-only">{{ t('common.actions.edit') }}</span>
@@ -92,25 +92,25 @@
 
           <dl class="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-emerald-600 font-bold">
                 {{ t('anamnesis.summary.fields.patient') }}
               </dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('patientName') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-emerald-600 font-bold">
                 {{ t('anamnesis.summary.fields.phone') }}
               </dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('phoneNumber') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-emerald-600 font-bold">
                 {{ t('anamnesis.summary.fields.goal') }}
               </dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('consultationGoal') }}</dd>
             </div>
             <div>
-              <dt class="text-xs uppercase tracking-wide text-slate-400 text-blue-600 font-bold">
+              <dt class="text-xs uppercase tracking-wide text-slate-400 text-emerald-600 font-bold">
                 {{ t('anamnesis.summary.fields.diagnosis') }}
               </dt>
               <dd class="mt-1 text-sm text-slate-700">{{ summaryField('diagnosis') }}</dd>

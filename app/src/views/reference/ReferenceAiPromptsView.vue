@@ -61,7 +61,7 @@
       <template #actions="{ row }">
         <div class="flex items-center gap-2">
           <button type="button"
-            class="rounded-xl border border-transparent bg-blue-50 p-2 text-blue-600 transition hover:border-blue-200 hover:bg-blue-100"
+            class="rounded-xl border border-transparent bg-emerald-50 p-2 text-emerald-600 transition hover:border-emerald-200 hover:bg-emerald-100"
              @click="openEdit(row.id)">
             <PencilSquareIcon class="h-3 w-3" />
             <span class="sr-only">{{ t('common.actions.edit') }}</span>

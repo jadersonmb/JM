@@ -586,7 +586,7 @@ const goalsOption = computed(() => {
   }), {});
 
   return {
-    color: ['#93c5fd', '#2563eb'],
+    color: ['#6ee7b7', '#059669'],
     tooltip: {
       trigger: 'item',
       backgroundColor: '#0f172a',
@@ -616,17 +616,17 @@ const goalsOption = computed(() => {
       splitNumber: 5,
       splitLine: {
         lineStyle: {
-          color: '#cbd5f5',
+          color: '#d1fae5',
         },
       },
       splitArea: {
         areaStyle: {
-          color: ['rgba(59,130,246,0.08)', 'rgba(37,99,235,0.04)'],
+          color: ['rgba(16,185,129,0.08)', 'rgba(5,150,105,0.04)'],
         },
       },
       axisLine: {
         lineStyle: {
-          color: '#bfdbfe',
+          color: '#a7f3d0',
         },
       },
     },
@@ -637,13 +637,13 @@ const goalsOption = computed(() => {
           {
             value: metrics.map((metric) => metric.target),
             name: targetLabel,
-            lineStyle: { color: '#a5b4fc' },
+            lineStyle: { color: '#6ee7b7' },
             areaStyle: { opacity: 0.3 },
           },
           {
             value: metrics.map((metric) => metric.achieved),
             name: achievedLabel,
-            lineStyle: { color: '#2563eb' },
+            lineStyle: { color: '#059669' },
             areaStyle: { opacity: 0.2 },
           },
         ],
@@ -660,7 +660,7 @@ const macrosOption = computed(() => {
   const fatLabel = t('nutritionDashboard.metrics.fat');
 
   return {
-    color: ['#2563eb', '#38bdf8', '#fb923c'],
+    color: ['#059669', '#34d399', '#fb923c'],
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#0f172a',
@@ -737,7 +737,7 @@ const hydrationOption = computed(() => {
   const targetLabel = t('nutritionDashboard.charts.hydration.target');
 
   return {
-    color: ['#38bdf8', '#2563eb'],
+    color: ['#34d399', '#059669'],
     tooltip: {
       trigger: 'axis',
       valueFormatter: (value) => `${Number(value ?? 0).toLocaleString()} ml`,
@@ -896,7 +896,7 @@ const bodyOption = computed(() => {
   const muscleLabel = t('nutritionDashboard.charts.body.muscle');
 
   return {
-    color: ['#2563eb', '#38bdf8', '#f43f5e', '#22c55e'],
+    color: ['#059669', '#34d399', '#f43f5e', '#22c55e'],
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'line' },

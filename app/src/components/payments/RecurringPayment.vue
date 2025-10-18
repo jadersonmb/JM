@@ -23,9 +23,9 @@
             v-for="plan in plans"
             :key="plan.id"
             type="button"
-            class="relative border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-all duration-300 cursor-pointer text-left bg-white hover:shadow-md"
+            class="relative border border-gray-200 rounded-xl p-4 hover:border-emerald-300 transition-all duration-300 cursor-pointer text-left bg-white hover:shadow-md"
             :class="form.paymentPlanId === plan.id
-              ? 'border-blue-500 bg-blue-50 shadow-sm ring-1 ring-blue-400'
+              ? 'border-emerald-500 bg-emerald-50 shadow-sm ring-1 ring-emerald-400'
               : ''"
             @click="selectPlan(plan.id)"
           >
@@ -85,8 +85,8 @@
         <label
           v-for="card in cards"
           :key="card.id"
-          class="border border-gray-200 rounded-xl p-4 flex justify-between items-center cursor-pointer transition-all duration-300 hover:border-blue-300 hover:shadow-md"
-          :class="form.paymentMethodId === card.id ? 'border-blue-500 bg-blue-50' : 'bg-white'"
+          class="border border-gray-200 rounded-xl p-4 flex justify-between items-center cursor-pointer transition-all duration-300 hover:border-emerald-300 hover:shadow-md"
+          :class="form.paymentMethodId === card.id ? 'border-emerald-500 bg-emerald-50' : 'bg-white'"
         >
           <div class="flex items-center gap-3">
             <input
@@ -119,7 +119,7 @@
         <input
           v-model="form.acceptedTerms"
           type="checkbox"
-          class="mt-1 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+          class="mt-1 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
           required
         />
         I confirm the customer agreed to recurring charges and understand that cancellation or refunds must follow consumer
@@ -131,10 +131,10 @@
       <div class="mt-4 flex justify-end">
         <button
           type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="!canSubmit || loading"
         >
-          <span v-if="loading" class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-transparent"></span>
+          <span v-if="loading" class="mr-2 inline-flex h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent"></span>
           <span>{{ loading ? t('payments.recurring.submitLoading') : 'Payment' }}</span>
         </button>
       </div>
@@ -223,7 +223,7 @@ async function loadPlans() {
 function brandMeta(brand) {
   const key = (brand || '').toLowerCase();
   const map = {
-    visa: { label: 'Visa', initial: 'V', class: 'bg-blue-100 text-blue-600 border-blue-200' },
+    visa: { label: 'Visa', initial: 'V', class: 'bg-emerald-100 text-emerald-600 border-emerald-200' },
     mastercard: { label: 'Mastercard', initial: 'M', class: 'bg-orange-100 text-orange-600 border-orange-200' },
     americanexpress: { label: 'American Express', initial: 'A', class: 'bg-teal-100 text-teal-600 border-teal-200' },
     amex: { label: 'American Express', initial: 'A', class: 'bg-teal-100 text-teal-600 border-teal-200' },
