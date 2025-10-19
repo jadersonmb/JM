@@ -1,94 +1,94 @@
 CREATE TABLE IF NOT EXISTS actions (
-    id BINARY(16) PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS objects (
-    id BINARY(16) PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS permissions (
-    id BINARY(16) PRIMARY KEY,
+    id CHAR(36) PRIMARY KEY,
     code VARCHAR(100) NOT NULL UNIQUE,
     description VARCHAR(255),
-    action_id BINARY(16) NOT NULL,
-    object_id BINARY(16) NOT NULL,
+    action_id CHAR(36) NOT NULL,
+    object_id CHAR(36) NOT NULL,
     CONSTRAINT fk_permission_action FOREIGN KEY (action_id) REFERENCES actions(id),
     CONSTRAINT fk_permission_object FOREIGN KEY (object_id) REFERENCES objects(id)
 );
 
 CREATE TABLE IF NOT EXISTS role_permission (
-    role_id BINARY(16) NOT NULL,
-    permission_id BINARY(16) NOT NULL,
+    role_id CHAR(36) NOT NULL,
+    permission_id CHAR(36) NOT NULL,
     PRIMARY KEY (role_id, permission_id),
     CONSTRAINT fk_role_permission_role FOREIGN KEY (role_id) REFERENCES roles(id),
     CONSTRAINT fk_role_permission_permission FOREIGN KEY (permission_id) REFERENCES permissions(id)
 );
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'INSERIR'
+SELECT UUID(), 'INSERIR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'INSERIR');
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'ALTERAR'
+SELECT UUID(), 'ALTERAR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'ALTERAR');
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'CONSULTAR'
+SELECT UUID(), 'CONSULTAR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'CONSULTAR');
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'EXCLUIR'
+SELECT UUID(), 'EXCLUIR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'EXCLUIR');
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'FINALIZAR'
+SELECT UUID(), 'FINALIZAR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'FINALIZAR');
 
 INSERT INTO actions (id, name)
-SELECT UUID_TO_BIN(UUID()), 'APROVAR'
+SELECT UUID(), 'APROVAR'
 WHERE NOT EXISTS (SELECT 1 FROM actions WHERE name = 'APROVAR');
 
 INSERT INTO objects (id, name, description)
-SELECT UUID_TO_BIN(UUID()), 'USERS', 'User management screens'
+SELECT UUID(), 'USERS', 'User management screens'
 WHERE NOT EXISTS (SELECT 1 FROM objects WHERE name = 'USERS');
 
 INSERT INTO objects (id, name, description)
-SELECT UUID_TO_BIN(UUID()), 'ROLES', 'Role management screens'
+SELECT UUID(), 'ROLES', 'Role management screens'
 WHERE NOT EXISTS (SELECT 1 FROM objects WHERE name = 'ROLES');
 
 INSERT INTO permissions (id, code, description, action_id, object_id)
-SELECT UUID_TO_BIN(UUID()), 'ROLE_USERS_CREATE', 'Permission to create users', a.id, o.id
+SELECT UUID(), 'ROLE_USERS_CREATE', 'Permission to create users', a.id, o.id
 FROM actions a
          JOIN objects o ON o.name = 'USERS'
 WHERE a.name = 'INSERIR'
   AND NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'ROLE_USERS_CREATE');
 
 INSERT INTO permissions (id, code, description, action_id, object_id)
-SELECT UUID_TO_BIN(UUID()), 'ROLE_USERS_READ', 'Permission to read users', a.id, o.id
+SELECT UUID(), 'ROLE_USERS_READ', 'Permission to read users', a.id, o.id
 FROM actions a
          JOIN objects o ON o.name = 'USERS'
 WHERE a.name = 'CONSULTAR'
   AND NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'ROLE_USERS_READ');
 
 INSERT INTO permissions (id, code, description, action_id, object_id)
-SELECT UUID_TO_BIN(UUID()), 'ROLE_USERS_UPDATE', 'Permission to update users', a.id, o.id
+SELECT UUID(), 'ROLE_USERS_UPDATE', 'Permission to update users', a.id, o.id
 FROM actions a
          JOIN objects o ON o.name = 'USERS'
 WHERE a.name = 'ALTERAR'
   AND NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'ROLE_USERS_UPDATE');
 
 INSERT INTO permissions (id, code, description, action_id, object_id)
-SELECT UUID_TO_BIN(UUID()), 'ROLE_USERS_DELETE', 'Permission to delete users', a.id, o.id
+SELECT UUID(), 'ROLE_USERS_DELETE', 'Permission to delete users', a.id, o.id
 FROM actions a
          JOIN objects o ON o.name = 'USERS'
 WHERE a.name = 'EXCLUIR'
   AND NOT EXISTS (SELECT 1 FROM permissions WHERE code = 'ROLE_USERS_DELETE');
 
 INSERT INTO permissions (id, code, description, action_id, object_id)
-SELECT UUID_TO_BIN(UUID()), 'ROLE_ADMIN_MANAGE_ROLES', 'Permission to manage user roles', a.id, o.id
+SELECT UUID(), 'ROLE_ADMIN_MANAGE_ROLES', 'Permission to manage user roles', a.id, o.id
 FROM actions a
          JOIN objects o ON o.name = 'ROLES'
 WHERE a.name = 'ALTERAR'

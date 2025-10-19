@@ -21,6 +21,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,6 +46,7 @@ public class Users {
             @Parameter(name = "uuid_gen_strategy_class", value = "org.hibernate.id.uuid.CustomVersionOneStrategy")
     })
     @Column(name = "id", updatable = false, nullable = false)
+    @JdbcTypeCode(SqlTypes.CHAR)
     private UUID id;
 
     private String name;

@@ -6,7 +6,6 @@ import com.jm.entity.Users;
 import com.jm.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -49,8 +48,22 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh", "/public/**", "/swagger", "/swagger/**", "/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/plans", "/api/v1/plans/**").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh",
+                                "/public/**",
+                                "/swagger",
+                                "/swagger/**",
+                                "/api-docs/**",
+                                "/api/v1/plans",
+                                "/api/v1/plans/**",
+                                "/v1/api/payment-plans",
+                                "/v1/api/payment-plans/**",
+                                "/api/v1/users",
+                                "/api/v1/users/**",
+                                "/v1/api/payments/subscription",
+                                "/v1/api/payments/subscription/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
