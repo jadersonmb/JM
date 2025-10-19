@@ -85,6 +85,9 @@ export const useAuthStore = defineStore('auth', {
           await this.loadProfile();
         }
         return data;
+      } catch (error) {
+        this.reset();
+        throw error;
       } finally {
         this.loading = false;
       }

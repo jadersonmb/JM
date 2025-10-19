@@ -80,7 +80,7 @@ opencv:
   show-video: true
 
 jwt:
-  secret: ${JWT_SECRET:TXlTdXBlclNlY3JldEtleU1lZXRzc2VjdXJl}
+  secret: ${JWT_SECRET:ykqk15jCWOFXO2NfCdGdZ/L1D0TbjBKgvZyPDGT/Yfw=}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
