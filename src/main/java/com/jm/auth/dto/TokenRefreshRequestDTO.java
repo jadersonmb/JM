@@ -1,4 +1,4 @@
-package com.jm.dto;
+package com.jm.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

@@ -38,6 +38,10 @@ export const useAuthStore = defineStore('auth', {
         .map((role) => (role?.name ? role.name.toUpperCase() : null))
         .filter(Boolean);
     },
+    permissions: (state) => {
+      if (!Array.isArray(state.user?.permissions)) return [];
+      return state.user.permissions;
+    },
   },
   actions: {
     hydrate() {
@@ -109,6 +113,10 @@ export const useAuthStore = defineStore('auth', {
     setUser(user) {
       this.user = user;
       this.persist();
+    },
+    hasPermission(permission) {
+      if (!permission) return true;
+      return this.permissions.includes(permission);
     },
     logout() {
       this.token = '';

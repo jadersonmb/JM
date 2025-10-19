@@ -46,4 +46,5 @@ public class UserDTO {
     private String consultationGoal;
     private Boolean firstAccess;
     private Set<RoleDTO> roles;
+    private Set<String> permissions;
 }

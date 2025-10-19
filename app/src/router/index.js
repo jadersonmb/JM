@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+import { can } from '@/utils/permissions';
 import i18n from '@/plugins/i18n';
 
 const router = createRouter({
@@ -48,13 +49,13 @@ const router = createRouter({
           path: 'users',
           name: 'users',
           component: () => import('@/views/users/UsersListView.vue'),
-          meta: { titleKey: 'routes.users' },
+          meta: { titleKey: 'routes.users', permission: 'ROLE_USERS_READ' },
         },
         {
           path: 'users/roles',
           name: 'user-roles',
           component: () => import('@/views/users/UserRolesView.vue'),
-          meta: { titleKey: 'routes.userRoles', requiresAdmin: true },
+          meta: { titleKey: 'routes.userRoles', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
         },
         {
           path: 'exercises',
@@ -149,50 +150,50 @@ const router = createRouter({
         {
           path: 'references',
           component: () => import('@/views/reference/ReferenceLayout.vue'),
-          meta: { titleKey: 'routes.references', requiresAdmin: true },
+          meta: { titleKey: 'routes.references', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
           children: [
             { path: '', redirect: { name: 'reference-countries' } },
             {
               path: 'countries',
               name: 'reference-countries',
               component: () => import('@/views/reference/ReferenceCountriesView.vue'),
-              meta: { titleKey: 'routes.referenceCountries', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceCountries', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'ai-prompts',
               name: 'reference-ai-prompts',
               component: () => import('@/views/reference/ReferenceAiPromptsView.vue'),
-              meta: { titleKey: 'routes.referenceAiPrompts', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceAiPrompts', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'exercise-references',
               name: 'reference-exercise-references',
               component: () => import('@/views/reference/ReferenceExerciseReferencesView.vue'),
-              meta: { titleKey: 'routes.referenceExerciseReferences', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceExerciseReferences', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'cities',
               name: 'reference-cities',
               component: () => import('@/views/reference/ReferenceCitiesView.vue'),
-              meta: { titleKey: 'routes.referenceCities', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceCities', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'education-levels',
               name: 'reference-education-levels',
               component: () => import('@/views/reference/ReferenceEducationLevelsView.vue'),
-              meta: { titleKey: 'routes.referenceEducationLevels', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceEducationLevels', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'meals',
               name: 'reference-meals',
               component: () => import('@/views/reference/ReferenceMealsView.vue'),
-              meta: { titleKey: 'routes.referenceMeals', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceMeals', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
             {
               path: 'professions',
               name: 'reference-professions',
               component: () => import('@/views/reference/ReferenceProfessionsView.vue'),
-              meta: { titleKey: 'routes.referenceProfessions', requiresAdmin: true },
+              meta: { titleKey: 'routes.referenceProfessions', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
             },
           ],
         },
@@ -202,6 +203,12 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
+    },
+    {
+      path: '/unauthorized',
+      name: 'unauthorized',
+      component: () => import('@/views/UnauthorizedView.vue'),
+      meta: { titleKey: 'routes.unauthorized' },
     },
   ],
 });
@@ -225,11 +232,13 @@ router.beforeEach(async (to) => {
     return { name: 'dashboard' };
   }
 
-  if (to.matched.some((record) => record.meta.requiresAdmin)) {
-    const isAdmin = auth.roles.includes('ADMIN');
-    if (!isAdmin) {
-      return { name: 'dashboard' };
-    }
+  const requiredPermission = to.matched
+    .filter((record) => record.meta?.permission)
+    .map((record) => record.meta.permission)
+    .find(Boolean);
+
+  if (requiredPermission && !can(requiredPermission)) {
+    return { name: 'unauthorized' };
   }
 
   const baseTitle = '🌿 NutriVision AI';

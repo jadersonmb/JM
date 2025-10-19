@@ -92,6 +92,18 @@ api.interceptors.response.use(
       }
     }
 
+    if (response?.status === 403) {
+      notification.push({
+        type: 'warning',
+        title: i18n.global.t('auth.accessDeniedTitle'),
+        message: i18n.global.t('auth.accessDeniedMessage'),
+      });
+      if (!window.location.pathname.includes('/unauthorized')) {
+        window.location.href = '/unauthorized';
+      }
+      return Promise.reject(error);
+    }
+
     if (response) {
       const message = response.data?.message || response.data?.details || i18n.global.t('common.error');
       notification.push({ type: 'error', title: 'Request failed', message });

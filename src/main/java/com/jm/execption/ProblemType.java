@@ -13,6 +13,7 @@ public enum ProblemType {
     EXPIRED_TOKEN("/expired-token", "Expired token", "token.expired"),
     INVALID_PASSWORD("/invalid-password", "Invalid password", "invalid_password"),
     INVALID_CREDENTIALS("/invalid-credentials", "Invalid credentials", "auth.invalid.credentials"),
+    FORBIDDEN("/forbidden", "Access Denied", "auth.access.denied"),
 
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),

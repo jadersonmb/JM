@@ -26,6 +26,7 @@
     referenceEducationLevels: 'Escolaridades',
     referenceMeals: 'Tipos de refeição',
     referenceProfessions: 'Profissões',
+    unauthorized: 'Acesso negado',
   },
   pricing: {
     title: 'Escolha seu plano',
@@ -695,13 +696,19 @@
   auth: {
     invalid: 'Credenciais inválidas.',
     expired: 'Sessão expirada. Faça login novamente.',
+    accessDeniedTitle: 'Você não tem acesso',
+    accessDeniedMessage: 'Sua conta não possui permissão para acessar esta área. Entre em contato com um administrador.',
   },
   roles: {
     title: 'Gerenciamento de Papéis',
     manage: 'Gerenciar papéis',
     empty: 'Nenhum papel associado ainda.',
+    permissions: 'Permissões',
+    noPermissions: 'Nenhuma permissão disponível.',
   },
   common: {
+    error: 'Ocorreu um erro inesperado.',
+    goBackHome: 'Voltar para o painel',
     stepIndicator: 'Etapa {current} de {total}',
     actions: {
       back: 'Voltar',

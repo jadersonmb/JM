@@ -1,5 +1,6 @@
-package com.jm.dto;
+package com.jm.auth.dto;
 
+import com.jm.dto.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

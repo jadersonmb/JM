@@ -153,6 +153,7 @@ public class UserService {
         Users user = repository.findById(userId).orElseThrow(this::userNotFound);
         Set<Role> roles = resolveRoles(roleIds);
         user.setRoles(roles);
+        ensureDefaultRole(user);
         Users saved = repository.save(user);
         UserDTO dto = mapper.toDTO(saved);
         dto.setPassword(null);
@@ -241,6 +242,9 @@ public class UserService {
     }
 
     private Set<Role> resolveRoles(Set<UUID> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return new HashSet<>();
+        }
         Set<Role> roles = new HashSet<>();
         for (UUID id : roleIds) {
             Role role = roleRepository.findById(id)

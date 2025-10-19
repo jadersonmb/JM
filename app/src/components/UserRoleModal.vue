@@ -36,6 +36,18 @@
             <div>
               <p class="font-medium text-slate-900">{{ role.name }}</p>
               <p class="text-xs text-slate-500">{{ role.description }}</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span
+                  v-for="permission in role.permissions"
+                  :key="permission.id"
+                  class="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600"
+                >
+                  {{ permission.code }}
+                </span>
+                <span v-if="!role.permissions?.length" class="text-xs text-slate-400">
+                  {{ $t('roles.noPermissions') }}
+                </span>
+              </div>
             </div>
           </label>
         </div>

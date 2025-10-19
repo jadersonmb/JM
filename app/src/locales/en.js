@@ -26,6 +26,7 @@ export default {
     referenceEducationLevels: 'Education levels',
     referenceMeals: 'Meal types',
     referenceProfessions: 'Professions',
+    unauthorized: 'Access denied',
   },
   pricing: {
     title: 'Choose your plan',
@@ -805,13 +806,19 @@ export default {
   auth: {
     invalid: 'Invalid credentials.',
     expired: 'Session expired. Please log in again.',
+    accessDeniedTitle: 'You do not have access',
+    accessDeniedMessage: 'Your account lacks the permission required to open this area. Please contact an administrator.',
   },
   roles: {
     title: 'Role Management',
     manage: 'Manage roles',
     empty: 'No roles assigned yet.',
+    permissions: 'Permissions',
+    noPermissions: 'No permissions available.',
   },
   common: {
+    error: 'An unexpected error occurred.',
+    goBackHome: 'Back to dashboard',
     stepIndicator: 'Step {current} of {total}',
     actions: {
       back: 'Back',

@@ -1,6 +1,6 @@
-package com.jm.configuration.security;
+package com.jm.auth.filter;
 
-import com.jm.services.security.JwtService;
+import com.jm.auth.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,12 +36,17 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        token = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(token);
+        try {
+            token = authHeader.substring(7);
+            userEmail = jwtService.extractUsername(token);
+        } catch (RuntimeException ex) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            if (jwtService.isTokenValid(token, userDetails)) {
+            if (jwtService.isTokenValid(token, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

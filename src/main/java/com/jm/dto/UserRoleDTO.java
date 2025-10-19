@@ -1,6 +1,5 @@
 package com.jm.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,13 +12,9 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RoleDTO {
+public class UserRoleDTO {
 
-    private UUID id;
-
-    @NotBlank
-    private String name;
-
-    private String description;
-    private Set<PermissionDTO> permissions;
+    private UUID userId;
+    private Set<RoleDTO> roles;
+    private Set<String> permissions;
 }

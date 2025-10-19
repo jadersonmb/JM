@@ -6,6 +6,7 @@ import com.jm.dto.UserRolesUpdateRequest;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.UserService;
+import com.jm.security.annotation.PermissionRequired;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -15,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -34,13 +34,13 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_USERS_CREATE")
     public ResponseEntity<?> createUser(@RequestBody UserDTO userDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userDTO));
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_USERS_READ")
     public ResponseEntity<?> listAll(Pageable pageable, UserDTO filter) {
         logger.debug("REST request to get all users");
 
@@ -49,14 +49,14 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','NUTRITIONIST','CLIENT')")
+    @PermissionRequired("ROLE_USERS_READ")
     public ResponseEntity<UserDTO> findById(@PathVariable UUID id) throws JMException {
         logger.debug("REST request to get user {}", id);
         return ResponseEntity.ok(userService.findById(id));
     }
 
     @PutMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_USERS_UPDATE")
     public ResponseEntity<UserDTO> update(@RequestBody UserDTO userDTO) {
         logger.debug("REST request to update User : {}", userDTO);
 
@@ -70,7 +70,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_USERS_DELETE")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete User : {}", id);
         userService.delete(id);
@@ -78,13 +78,13 @@ public class UserController {
     }
 
     @GetMapping("/with-roles")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_USERS_READ")
     public ResponseEntity<?> listWithRoles() {
         return ResponseEntity.ok(userService.findAllWithRoles());
     }
 
     @PutMapping("/{id}/roles")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
     public ResponseEntity<UserDTO> updateRoles(@PathVariable UUID id,
             @Valid @RequestBody UserRolesUpdateRequest request) {
         return ResponseEntity.ok(userService.updateUserRoles(id, request.getRoleIds()));

@@ -30,6 +30,7 @@
             <p class="text-sm text-slate-500">{{ user.email }}</p>
           </div>
           <button
+            v-if="can('ROLE_ADMIN_MANAGE_ROLES')"
             class="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 md:mt-0"
             @click="openRoleModal(user)"
           >
@@ -45,6 +46,21 @@
             {{ role.name }}
           </span>
           <span v-if="!user.roles?.length" class="text-sm text-slate-500">{{ $t('roles.empty') }}</span>
+        </div>
+        <div class="mt-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $t('roles.permissions') }}</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <span
+              v-for="permission in user.permissions"
+              :key="permission"
+              class="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+            >
+              {{ permission }}
+            </span>
+            <span v-if="!user.permissions?.length" class="text-sm text-slate-500">
+              {{ $t('roles.noPermissions') }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -62,6 +78,7 @@
 import { onMounted, ref } from 'vue';
 import UserRoleModal from '@/components/UserRoleModal.vue';
 import { getUsersWithRoles } from '@/services/users';
+import { can } from '@/utils/permissions';
 
 const users = ref([]);
 const loading = ref(false);

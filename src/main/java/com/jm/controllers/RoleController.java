@@ -4,12 +4,12 @@ import com.jm.dto.RoleDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.RoleService;
+import com.jm.security.annotation.PermissionRequired;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,26 +32,26 @@ public class RoleController {
     private final RoleService roleService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
     public ResponseEntity<List<RoleDTO>> listRoles() {
         return ResponseEntity.ok(roleService.findAll());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
     public ResponseEntity<RoleDTO> createRole(@Valid @RequestBody RoleDTO dto) {
         RoleDTO created = roleService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
     public ResponseEntity<RoleDTO> updateRole(@PathVariable UUID id, @Valid @RequestBody RoleDTO dto) {
         return ResponseEntity.ok(roleService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
     public ResponseEntity<Void> deleteRole(@PathVariable UUID id) {
         roleService.delete(id);
         return ResponseEntity.noContent().build();
