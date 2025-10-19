@@ -91,11 +91,15 @@ function isFormValid() {
   return form.name && form.email && form.phoneNumber;
 }
 
+function normalizePhone(value) {
+  return (value || '').replace(/[^+\d]/g, '');
+}
+
 function buildUserPayload() {
   return {
     name: form.name,
     email: form.email,
-    phoneNumber: form.phoneNumber.replace(/[^+\d]/g, ''),
+    phoneNumber: normalizePhone(form.phoneNumber),
     type: 'CLIENT',
     locale: locale.value === 'pt' ? 'pt-BR' : 'en-US',
   };
@@ -105,7 +109,10 @@ async function createOrFetchUser() {
   const payload = buildUserPayload();
   try {
     const { data } = await axios.post('/api/v1/users', payload);
-    customer.value = data;
+    customer.value = {
+      ...data,
+      phoneNumber: data.phoneNumber ?? payload.phoneNumber,
+    };
     return data;
   } catch (error) {
     const status = error.response?.status;
@@ -116,7 +123,10 @@ async function createOrFetchUser() {
         });
         const existing = data?.content?.[0];
         if (existing) {
-          customer.value = existing;
+          customer.value = {
+            ...existing,
+            phoneNumber: existing.phoneNumber ?? payload.phoneNumber,
+          };
           return existing;
         }
       } catch (fetchError) {
@@ -178,7 +188,7 @@ async function handleRecurringCreate(payload) {
   try {
     const user = await ensureCustomer({ silent: true });
     if (!user?.id) {
-      throw new Error('Missing user identifier');
+      throw new Error(t('register.missingUserError'));
     }
 
     await createSubscription({
@@ -190,7 +200,7 @@ async function handleRecurringCreate(payload) {
       metadata: payload.metadata,
     });
 
-    await axios.post('/api/v1/whatsapp/register', { userId: user.id });
+    await sendWelcomeMessage(user);
 
     notifications.push({
       type: 'success',
@@ -210,6 +220,23 @@ async function handleRecurringCreate(payload) {
     });
   } finally {
     loading.value = false;
+  }
+}
+
+async function sendWelcomeMessage(user) {
+  const phone = normalizePhone(user?.phoneNumber ?? form.phoneNumber);
+  if (!phone) {
+    return;
+  }
+
+  try {
+    await axios.post('/public/api/v1/whatsapp/send', {
+      phoneNumber: phone,
+      message: t('register.welcomeMessage', { name: user?.name || form.name }),
+      userId: user?.id,
+    });
+  } catch (error) {
+    console.error('Failed to send WhatsApp welcome message', error);
   }
 }
 </script>

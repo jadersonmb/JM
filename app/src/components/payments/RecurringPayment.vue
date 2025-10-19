@@ -363,6 +363,13 @@ const managedCards = computed(() => (props.cards?.length ? props.cards : interna
 const canManageCards = computed(() => typeof props.ensureCustomer === 'function');
 const hasCards = computed(() => managedCards.value.length > 0);
 
+const brandLabels = computed(() => ({
+  visa: t('payments.cardBrands.visa'),
+  mastercard: t('payments.cardBrands.mastercard'),
+  americanexpress: t('payments.cardBrands.amex'),
+  amex: t('payments.cardBrands.amex'),
+}));
+
 const selectedPlan = computed(() => plans.value.find((plan) => plan.id === form.paymentPlanId) || null);
 const showCardSelector = computed(() => form.paymentMethod === 'CREDIT_CARD');
 
@@ -434,33 +441,19 @@ async function loadPlans() {
 
 function brandMeta(brand) {
   const key = (brand || '').toLowerCase();
-  const map = {
-    visa: {
-      label: 'Visa',
-      initial: 'V',
-      class: 'border-emerald-200 bg-emerald-100 text-emerald-600',
-    },
-    mastercard: {
-      label: 'Mastercard',
-      initial: 'M',
-      class: 'border-orange-200 bg-orange-100 text-orange-600',
-    },
-    americanexpress: {
-      label: 'American Express',
-      initial: 'A',
-      class: 'border-teal-200 bg-teal-100 text-teal-600',
-    },
-    amex: {
-      label: 'American Express',
-      initial: 'A',
-      class: 'border-teal-200 bg-teal-100 text-teal-600',
-    },
+  const classes = {
+    visa: 'border-emerald-200 bg-emerald-100 text-emerald-600',
+    mastercard: 'border-orange-200 bg-orange-100 text-orange-600',
+    americanexpress: 'border-teal-200 bg-teal-100 text-teal-600',
+    amex: 'border-teal-200 bg-teal-100 text-teal-600',
   };
-  const fallbackLabel = brand || t('payments.cardForm.brandFallback');
-  return map[key] || {
-    label: fallbackLabel,
-    initial: (fallbackLabel || 'C').charAt(0).toUpperCase(),
-    class: 'border-slate-200 bg-slate-100 text-slate-600',
+  const fallbackLabel = brand || t('payments.cardBrands.generic');
+  const label = brandLabels.value[key] || fallbackLabel;
+  const className = classes[key] || 'border-slate-200 bg-slate-100 text-slate-600';
+  return {
+    label,
+    initial: (label || 'C').charAt(0).toUpperCase(),
+    class: className,
   };
 }
 
@@ -533,9 +526,10 @@ async function toggleCardForm() {
     resetCardForm();
     return;
   }
+
+  showCardForm.value = true;
   try {
     await loadCards({ silent: false });
-    showCardForm.value = true;
   } catch (error) {
     if (error?.message === 'form-invalid') {
       cardsError.value = t('payments.recurring.cards.ensureCustomer');

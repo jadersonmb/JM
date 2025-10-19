@@ -81,7 +81,7 @@ public class AuthSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/public/**", "/api/auth/**", "/oauth2/token", "/oauth2/jwks",
                                 "/api/v1/plans", "/api/v1/plans/**", "/v1/api/payment-plans",
-                                "/api/v1/users", "/api/v1/users/**", "/api/v1/whatsapp/**",
+                                "/api/v1/users", "/api/v1/users/**",
                                 "/v1/api/payments/subscription", "/v1/api/payments/subscription/**").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -39,10 +39,13 @@ export default {
     phone: 'WhatsApp number',
     validationError: 'Please fill in all mandatory fields before continuing.',
     planRequired: 'Select a subscription plan to continue.',
+    missingUserError: 'We could not confirm your account. Please refresh and try again.',
     successTitle: 'Subscription ready',
     successMessage: 'Your subscription has been activated successfully.',
     errorTitle: 'Unable to continue',
     errorMessage: 'We could not finish your subscription. Try again.',
+    welcomeMessage:
+      '👋 Hello {name}! Welcome to NutriVision AI 🥗 You can now send your meal photos here for instant nutritional insights.',
   },
   firstAccess: {
     title: 'Set your new password',
@@ -968,6 +971,13 @@ export default {
           description: 'Create recurring charges that bill automatically.',
         },
       },
+    },
+    cardBrands: {
+      visa: 'Visa',
+      mastercard: 'Mastercard',
+      amex: 'American Express',
+      americanexpress: 'American Express',
+      generic: 'Card',
     },
     cardForm: {
       selectPlanTitle: 'Select a plan',

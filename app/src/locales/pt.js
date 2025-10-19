@@ -39,10 +39,13 @@
     phone: 'Número do WhatsApp',
     validationError: 'Preencha todos os campos obrigatórios antes de continuar.',
     planRequired: 'Selecione um plano de assinatura para continuar.',
+    missingUserError: 'Não conseguimos confirmar sua conta. Atualize a página e tente novamente.',
     successTitle: 'Assinatura pronta',
     successMessage: 'Sua assinatura foi ativada com sucesso.',
     errorTitle: 'Não foi possível continuar',
     errorMessage: 'Não conseguimos concluir sua assinatura. Tente novamente.',
+    welcomeMessage:
+      '👋 Olá {name}! Seja bem-vindo(a) ao NutriVision AI 🍃 Agora você pode enviar fotos das suas refeições aqui para análise instantânea.',
   },
   firstAccess: {
     title: 'Defina sua nova senha',
@@ -967,6 +970,13 @@
           description: 'Crie cobranças recorrentes automáticas.',
         },
       },
+    },
+    cardBrands: {
+      visa: 'Visa',
+      mastercard: 'Mastercard',
+      amex: 'American Express',
+      americanexpress: 'American Express',
+      generic: 'Cartão',
     },
     cardForm: {
       selectPlanTitle: 'Selecione um plano',

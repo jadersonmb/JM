@@ -12,7 +12,6 @@ public enum ProblemType {
     INVALID_TOKEN("/invalid-token", "Invalid token", "token.invalid"),
     EXPIRED_TOKEN("/expired-token", "Expired token", "token.expired"),
     INVALID_PASSWORD("/invalid-password", "Invalid password", "invalid_password"),
-    PAYMENT_REQUIRED("/payment-required", "Payment required", "payment.required"),
 
     USER_NOT_FOUND("/user-not-found", "User not found", "account_not_found"),
     IMAGE_NOT_FOUND("/image-not-found", "Image not found", "image_not_found"),
@@ -58,8 +57,6 @@ public enum ProblemType {
     ANALYTICS_USER_NOT_FOUND("/analytics-user-not-found", "Analytics user not found", "analytics.user.not-found"),
     WHATSAPP_MESSAGE_NOT_FOUND("/whatsapp-message-not-found", "WhatsApp message not found",
             "whatsapp.message.not-found"),
-    WHATSAPP_API_ERROR("/whatsapp-api-error", "WhatsApp API error", "whatsapp.api.error"),
-    WHATSAPP_PHONE_REQUIRED("/whatsapp-phone-required", "WhatsApp phone required", "whatsapp.phone.required"),
     WHATSAPP_FORBIDDEN("/whatsapp-forbidden", "WhatsApp nutrition forbidden", "whatsapp.nutrition.forbidden"),
     REMINDER_NOT_FOUND("/reminder-not-found", "Reminder not found", "reminder.not-found"),
     REMINDER_FORBIDDEN("/reminder-forbidden", "Reminder forbidden", "reminder.forbidden"),
