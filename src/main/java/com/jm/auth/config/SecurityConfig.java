@@ -1,6 +1,7 @@
 package com.jm.auth.config;
 
 import com.jm.auth.filter.JwtAuthFilter;
+import com.jm.auth.model.AuthenticatedUser;
 import com.jm.entity.Role;
 import com.jm.entity.Users;
 import com.jm.repository.UserRepository;
@@ -17,7 +18,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -94,7 +94,7 @@ public class SecurityConfig {
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
-            return new User(user.getEmail(), user.getPassword(), authorities);
+            return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPassword(), authorities);
         };
     }
 
