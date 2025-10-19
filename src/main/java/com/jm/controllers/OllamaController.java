@@ -6,6 +6,7 @@ import com.jm.dto.OllamaResponseDTO;
 import com.jm.entity.Ollama;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.OllamaService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -26,18 +27,21 @@ public class OllamaController {
     private static final Logger logger = LoggerFactory.getLogger(OllamaController.class);
     private final OllamaService service;
 
+    @PermissionRequired("ROLE_OLLAMA_EXECUTE")
     @PostMapping(value = "/generate", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> generate(@RequestBody OllamaRequestDTO request) {
         OllamaResponseDTO response = service.generate(request);
         return ResponseEntity.ok(response);
     }
 
+    @PermissionRequired("ROLE_OLLAMA_EXECUTE")
     @PostMapping("/process")
     public ResponseEntity<?> process(@RequestBody OllamaRequestDTO dto) {
         service.createAndDispatchRequest(dto);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
+    @PermissionRequired("ROLE_OLLAMA_EXECUTE")
     @PostMapping(value = "/generate-with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> generateWithImage(
             @RequestPart("model") String model,

@@ -10,8 +10,7 @@
           <p class="text-sm uppercase tracking-[0.4em] text-primary-200">Revolutionize Your Nutrition</p>
           <h1 class="mt-6 text-4xl font-semibold leading-tight">NutriVision AI</h1>
           <p class="mt-4 max-w-md text-base text-slate-200 text-justify">
-            Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis
-            directly to your WhatsApp! With NutriVision AI, this reality is within reach on your phone.</p>
+            Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis directly to your WhatsApp! With NutriVision AI, this reality is within reach on your phone.</p>
           <div class="mt-8 flex items-center gap-2 ml-20">
             <!--<img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
               class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" /> -->
@@ -125,12 +124,14 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter, RouterLink, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import FirstAccessModal from '@/components/FirstAccessModal.vue';
 
 const auth = useAuthStore();
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const showFirstAccessModal = ref(false);
 const userId = ref('');
@@ -159,21 +160,22 @@ const handleSubmit = async () => {
   try {
     const data = await auth.login({ email: form.email, password: form.password });
     const redirect = route.query.redirect ?? '/app/dashboard/nutrition';
-    if (data?.user?.firstAccess) {
-      userId.value = data.user.id;
+    const loggedUser = data?.user ?? auth.user;
+    if (loggedUser?.firstAccess) {
+      userId.value = loggedUser.id;
       pendingRedirect.value = redirect;
       showFirstAccessModal.value = true;
       return;
     }
     router.push(redirect);
   } catch (error) {
-    const response = error.response;
-    if (response?.data?.message) {
-      errors.form = response.data.message;
-    } else if (response?.data?.details) {
+    const response = error?.response;
+    if (response?.data?.details) {
       errors.form = response.data.details;
+    } else if (response?.data?.message) {
+      errors.form = response.data.message;
     } else {
-      errors.form = 'Unable to sign in. Check your credentials.';
+      errors.form = t('auth.invalid');
     }
   }
 };

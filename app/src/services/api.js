@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '@/plugins/i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
 
@@ -20,24 +21,92 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let isRefreshing = false;
+const failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue.length = 0;
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const notification = useNotificationStore();
-    if (error.response) {
-      const { status, data } = error.response;
-      const message = data?.message || 'An unexpected error occurred.';
+    const auth = useAuthStore();
+    const { response, config } = error;
 
-      if (status === 401) {
-        notification.push({ type: 'warning', title: 'Session expired', message });
-        const auth = useAuthStore();
+    if (response?.status === 401 && !config._retry) {
+      if (auth.refreshToken) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({
+              resolve: (token) => {
+                config.headers.Authorization = `Bearer ${token}`;
+                resolve(api(config));
+              },
+              reject,
+            });
+          });
+        }
+
+        config._retry = true;
+        isRefreshing = true;
+        try {
+          const { accessToken } = await auth.refresh();
+          processQueue(null, accessToken);
+          config.headers.Authorization = `Bearer ${accessToken}`;
+          return api(config);
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          auth.reset();
+          notification.push({
+            type: 'warning',
+            title: i18n.global.t('auth.expired'),
+            message: i18n.global.t('auth.invalid'),
+          });
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        notification.push({
+          type: 'warning',
+          title: i18n.global.t('auth.expired'),
+          message: i18n.global.t('auth.invalid'),
+        });
         auth.reset();
         if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
-      } else {
-        notification.push({ type: 'error', title: 'Request failed', message });
+        return Promise.reject(error);
       }
+    }
+
+    if (response?.status === 403) {
+      notification.push({
+        type: 'warning',
+        title: i18n.global.t('auth.accessDeniedTitle'),
+        message: i18n.global.t('auth.accessDeniedMessage'),
+      });
+      if (!window.location.pathname.includes('/unauthorized')) {
+        window.location.href = '/unauthorized';
+      }
+      return Promise.reject(error);
+    }
+
+    if (response) {
+      const message = response.data?.message || response.data?.details || i18n.global.t('common.error');
+      notification.push({ type: 'error', title: 'Request failed', message });
     } else {
       notification.push({
         type: 'error',

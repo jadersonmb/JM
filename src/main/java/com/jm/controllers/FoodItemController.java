@@ -2,6 +2,7 @@ package com.jm.controllers;
 
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.FoodItemService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -23,11 +24,13 @@ public class FoodItemController {
 
     private final FoodItemService service;
 
+    @PermissionRequired("ROLE_FOODS_READ")
     @GetMapping
     public ResponseEntity<?> list(@RequestParam(required = false) Boolean active) {
         return ResponseEntity.ok(service.findAll(active));
     }
 
+    @PermissionRequired("ROLE_FOODS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(service.findById(id));

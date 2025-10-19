@@ -2,6 +2,7 @@ package com.jm.services;
 
 import com.jm.configuration.config.EmailProperties;
 import com.jm.dto.ChangePasswordDTO;
+import com.jm.dto.RoleDTO;
 import com.jm.dto.UserDTO;
 import com.jm.services.email.EmailNotificationService;
 import com.jm.entity.Users;
@@ -13,6 +14,8 @@ import com.jm.repository.CountryRepository;
 import com.jm.repository.EducationLevelRepository;
 import com.jm.repository.ProfessionRepository;
 import com.jm.repository.UserRepository;
+import com.jm.repository.RoleRepository;
+import com.jm.entity.Role;
 import com.jm.speciation.UserSpeciation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -37,6 +46,7 @@ public class UserService {
     private static final int PASSWORD_LENGTH = 12;
     private static final int PASSWORD_RECOVERY_EXPIRATION_MINUTES = 30;
     private final UserRepository repository;
+    private final RoleRepository roleRepository;
     private final UserMapper mapper;
     private final MessageSource messageSource;
     private final PasswordEncoder passwordEncoder;
@@ -50,7 +60,7 @@ public class UserService {
     public UserService(UserRepository repository, UserMapper mapper, MessageSource messageSource,
             PasswordEncoder passwordEncoder, CountryRepository countriesRepository, CityRepository cityRepository,
             EducationLevelRepository educationLevelRepository, ProfessionRepository professionRepository,
-            EmailNotificationService emailNotificationService, EmailProperties emailProperties) {
+            EmailNotificationService emailNotificationService, EmailProperties emailProperties, RoleRepository roleRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.messageSource = messageSource;
@@ -61,6 +71,7 @@ public class UserService {
         this.professionRepository = professionRepository;
         this.emailNotificationService = emailNotificationService;
         this.emailProperties = emailProperties;
+        this.roleRepository = roleRepository;
     }
 
     public Page<UserDTO> findAll(Pageable pageable, UserDTO filter) throws JMException {
@@ -72,6 +83,7 @@ public class UserService {
         if (isNew && user.getFirstAccess() == null) {
             user.setFirstAccess(Boolean.TRUE);
         }
+        ensureDefaultRole(user);
         Users saved = repository.save(user);
         if (isNew) {
             emailNotificationService.sendUserConfirmation(saved);
@@ -103,6 +115,8 @@ public class UserService {
             entity.setType(Users.Type.CLIENT);
         }
 
+        applyRoles(entity, dto.getRoles());
+        ensureDefaultRole(entity);
         Users saved = repository.save(entity);
 
         if (isNewUser) {
@@ -129,6 +143,21 @@ public class UserService {
 
     public Users findEntityById(UUID id) throws JMException {
         return repository.findById(id).orElseThrow(this::userNotFound);
+    }
+
+    public List<UserDTO> findAllWithRoles() {
+        return repository.findAll().stream().map(mapper::toDTO).collect(Collectors.toList());
+    }
+
+    public UserDTO updateUserRoles(UUID userId, Set<UUID> roleIds) {
+        Users user = repository.findById(userId).orElseThrow(this::userNotFound);
+        Set<Role> roles = resolveRoles(roleIds);
+        user.setRoles(roles);
+        ensureDefaultRole(user);
+        Users saved = repository.save(user);
+        UserDTO dto = mapper.toDTO(saved);
+        dto.setPassword(null);
+        return dto;
     }
 
     public UserDTO updateUser(UserDTO dto) {
@@ -197,6 +226,42 @@ public class UserService {
 
     public Users getUserFromLabel(int hasCode) {
         return repository.findByHashCode(hasCode);
+    }
+
+    private void applyRoles(Users entity, Collection<RoleDTO> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return;
+        }
+        Set<UUID> ids = roles.stream()
+                .map(RoleDTO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (!ids.isEmpty()) {
+            entity.setRoles(resolveRoles(ids));
+        }
+    }
+
+    private Set<Role> resolveRoles(Set<UUID> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return new HashSet<>();
+        }
+        Set<Role> roles = new HashSet<>();
+        for (UUID id : roleIds) {
+            Role role = roleRepository.findById(id)
+                    .orElseThrow(() -> new JMException(HttpStatus.NOT_FOUND.value(),
+                            ProblemType.INVALID_DATA.getUri(),
+                            ProblemType.INVALID_DATA.getTitle(),
+                            messageSource.getMessage("roles.not-found", new Object[] { id }, LocaleContextHolder.getLocale())));
+            roles.add(role);
+        }
+        return roles;
+    }
+
+    private void ensureDefaultRole(Users user) {
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            return;
+        }
+        roleRepository.findByNameIgnoreCase("CLIENT").ifPresent(role -> user.getRoles().add(role));
     }
 
     private JMException userNotFound() {

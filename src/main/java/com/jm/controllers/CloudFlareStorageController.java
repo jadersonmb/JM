@@ -2,6 +2,7 @@ package com.jm.controllers;
 
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.CloudflareR2Service;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class CloudFlareStorageController {
 
     private final CloudflareR2Service r2Service;
 
+    @PermissionRequired("ROLE_CLOUD_STORAGE_CREATE")
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -29,6 +31,7 @@ public class CloudFlareStorageController {
         return ResponseEntity.ok(r2Service.uploadFile(file, userId));
     }
 
+    @PermissionRequired("ROLE_CLOUD_STORAGE_READ")
     @GetMapping("/download/{userId}/{fileName}")
     public ResponseEntity<byte[]> downloadFile(@PathVariable UUID userId, @PathVariable String fileName) {
         return ResponseEntity.ok()
@@ -38,6 +41,7 @@ public class CloudFlareStorageController {
                 .body(r2Service.downloadFile(userId, fileName));
     }
 
+    @PermissionRequired("ROLE_CLOUD_STORAGE_READ")
     @GetMapping("/view/{userId}/{fileName}")
     public ResponseEntity<byte[]> viewImage(@PathVariable UUID userId, @PathVariable String fileName) {
             byte[] imageData = r2Service.downloadFile(userId, fileName);
@@ -48,11 +52,13 @@ public class CloudFlareStorageController {
                     .body(imageData);
     }
 
+    @PermissionRequired("ROLE_CLOUD_STORAGE_READ")
     @GetMapping
     public ResponseEntity<?> listFiles() {
         return ResponseEntity.ok().body(r2Service.listFiles());
     }
 
+    @PermissionRequired("ROLE_CLOUD_STORAGE_DELETE")
     @DeleteMapping("/{userId}/{fileName}")
     public ResponseEntity<?> deleteFile(@PathVariable UUID userId, @PathVariable String fileName) {
         r2Service.deleteFile(userId, fileName);

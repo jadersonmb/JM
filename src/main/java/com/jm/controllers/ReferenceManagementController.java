@@ -8,6 +8,7 @@ import com.jm.dto.ExerciseReferenceDTO;
 import com.jm.dto.MealDTO;
 import com.jm.dto.ProfessionDTO;
 import com.jm.enums.AiProvider;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
 import com.jm.services.EducationLevelService;
@@ -22,10 +23,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,191 +47,192 @@ public class ReferenceManagementController {
     private final MealService mealService;
     private final ExerciseReferenceService exerciseReferenceService;
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/countries")
     public ResponseEntity<Page<CountryDTO>> listCountries(Pageable pageable,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String language) {
-        ensureAdmin();
         return ResponseEntity.ok(countryService.search(pageable, name, code, language));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/countries")
     public ResponseEntity<CountryDTO> createCountry(@RequestBody CountryDTO dto) {
-        ensureAdmin();
         CountryDTO created = countryService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/countries/{id}")
     public ResponseEntity<CountryDTO> updateCountry(@PathVariable UUID id, @RequestBody CountryDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(countryService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/countries/{id}")
     public ResponseEntity<Void> deleteCountry(@PathVariable UUID id) {
-        ensureAdmin();
         countryService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/cities")
     public ResponseEntity<Page<CityDTO>> listCities(Pageable pageable,
             @RequestParam(required = false) UUID countryId,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String stateCode,
             @RequestParam(required = false) String language) {
-        ensureAdmin();
         return ResponseEntity.ok(cityService.search(pageable, countryId, name, stateCode, language));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/cities")
     public ResponseEntity<CityDTO> createCity(@RequestBody CityDTO dto) {
-        ensureAdmin();
         CityDTO created = cityService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/cities/{id}")
     public ResponseEntity<CityDTO> updateCity(@PathVariable UUID id, @RequestBody CityDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(cityService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/cities/{id}")
     public ResponseEntity<Void> deleteCity(@PathVariable UUID id) {
-        ensureAdmin();
         cityService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/education-levels")
     public ResponseEntity<Page<EducationLevelDTO>> listEducationLevels(Pageable pageable,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String language) {
-        ensureAdmin();
         return ResponseEntity.ok(educationLevelService.search(pageable, name, code, language));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/education-levels")
     public ResponseEntity<EducationLevelDTO> createEducationLevel(@RequestBody EducationLevelDTO dto) {
-        ensureAdmin();
         EducationLevelDTO created = educationLevelService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/education-levels/{id}")
     public ResponseEntity<EducationLevelDTO> updateEducationLevel(@PathVariable UUID id,
             @RequestBody EducationLevelDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(educationLevelService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/education-levels/{id}")
     public ResponseEntity<Void> deleteEducationLevel(@PathVariable UUID id) {
-        ensureAdmin();
         educationLevelService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/professions")
     public ResponseEntity<Page<ProfessionDTO>> listProfessions(Pageable pageable,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String language) {
-        ensureAdmin();
         return ResponseEntity.ok(professionService.search(pageable, name, code, language));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/professions")
     public ResponseEntity<ProfessionDTO> createProfession(@RequestBody ProfessionDTO dto) {
-        ensureAdmin();
         ProfessionDTO created = professionService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/professions/{id}")
     public ResponseEntity<ProfessionDTO> updateProfession(@PathVariable UUID id, @RequestBody ProfessionDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(professionService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/professions/{id}")
     public ResponseEntity<Void> deleteProfession(@PathVariable UUID id) {
-        ensureAdmin();
         professionService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/meals")
     public ResponseEntity<Page<MealDTO>> listMeals(Pageable pageable,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String language) {
-        ensureAdmin();
         return ResponseEntity.ok(mealService.search(pageable, name, code, language));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/meals")
     public ResponseEntity<MealDTO> createMeal(@RequestBody MealDTO dto) {
-        ensureAdmin();
         MealDTO created = mealService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/meals/{id}")
     public ResponseEntity<MealDTO> updateMeal(@PathVariable UUID id, @RequestBody MealDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(mealService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/meals/{id}")
     public ResponseEntity<Void> deleteMeal(@PathVariable UUID id) {
-        ensureAdmin();
         mealService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/exercise-references")
     public ResponseEntity<Page<ExerciseReferenceDTO>> listExerciseReferences(Pageable pageable,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String language,
             @RequestParam(required = false) String muscleGroup,
             @RequestParam(required = false) String equipment) {
-        ensureAdmin();
         return ResponseEntity.ok(
                 exerciseReferenceService.search(pageable, search, language, muscleGroup, equipment));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/exercise-references")
     public ResponseEntity<ExerciseReferenceDTO> createExerciseReference(@RequestBody ExerciseReferenceDTO dto) {
-        ensureAdmin();
         ExerciseReferenceDTO created = exerciseReferenceService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/exercise-references/{id}")
     public ResponseEntity<ExerciseReferenceDTO> updateExerciseReference(@PathVariable UUID id,
             @RequestBody ExerciseReferenceDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(exerciseReferenceService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/exercise-references/{id}")
     public ResponseEntity<Void> deleteExerciseReference(@PathVariable UUID id) {
-        ensureAdmin();
         exerciseReferenceService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_READ")
     @GetMapping("/ai-prompts")
     public ResponseEntity<Page<AiPromptReferenceDTO>> listAiPrompts(Pageable pageable,
             @RequestParam(required = false) String code,
@@ -243,54 +241,28 @@ public class ReferenceManagementController {
             @RequestParam(required = false) AiProvider provider,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String owner) {
-        ensureAdmin();
         return ResponseEntity.ok(aiPromptReferenceService.search(pageable, code, name, model, provider, active, owner));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_CREATE")
     @PostMapping("/ai-prompts")
     public ResponseEntity<AiPromptReferenceDTO> createAiPrompt(@RequestBody AiPromptReferenceDTO dto) {
-        ensureAdmin();
         AiPromptReferenceDTO created = aiPromptReferenceService.save(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_UPDATE")
     @PutMapping("/ai-prompts/{id}")
     public ResponseEntity<AiPromptReferenceDTO> updateAiPrompt(@PathVariable UUID id,
             @RequestBody AiPromptReferenceDTO dto) {
-        ensureAdmin();
         dto.setId(id);
         return ResponseEntity.ok(aiPromptReferenceService.save(dto));
     }
 
+    @PermissionRequired("ROLE_REFERENCE_MANAGEMENT_DELETE")
     @DeleteMapping("/ai-prompts/{id}")
     public ResponseEntity<Void> deleteAiPrompt(@PathVariable UUID id) {
-        ensureAdmin();
         aiPromptReferenceService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private void ensureAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            throw new AccessDeniedException("Access denied");
-        }
-
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(authority -> {
-                    String role = authority.getAuthority();
-                    return "ROLE_ADMIN".equalsIgnoreCase(role) || "ADMIN".equalsIgnoreCase(role);
-                });
-
-        if (!isAdmin) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof Jwt jwt) {
-                String roleClaim = jwt.getClaimAsString("role");
-                isAdmin = "ADMIN".equalsIgnoreCase(roleClaim);
-            }
-        }
-
-        if (!isAdmin) {
-            throw new AccessDeniedException("Access denied");
-        }
     }
 }

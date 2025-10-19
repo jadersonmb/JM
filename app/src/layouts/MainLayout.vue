@@ -215,6 +215,7 @@ import { useI18n } from 'vue-i18n';
 import { usePreferencesStore } from '@/stores/preferences';
 import BR from '@/assets/bandeira-do-brasil.png';
 import EUA from '@/assets/estados-unidos-da-america.png';
+import { can } from '@/utils/permissions';
 
 const auth = useAuthStore();
 const router = useRouter();
@@ -246,8 +247,6 @@ const MdiTargetIcon = (props, { attrs }) =>
     ]
   );
 
-const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
-
 const languageOptions = computed(() => [
   { code: 'pt', label: t('preferences.language.portuguese'), flag: 'BR', url: BR },
   { code: 'en', label: t('preferences.language.english'), flag: 'US', url: EUA },
@@ -274,82 +273,82 @@ const navigation = computed(() => {
       label: t('routes.nutritionDashboard'),
       to: { name: 'dashboard-nutrition' },
       icon: ChartBarSquareIcon,
-      adminOnly: false,
+      permission: 'ROLE_ANALYTICS_READ',
     },
     {
       name: 'users',
       label: t('routes.users'),
       to: { name: 'users' },
       icon: UserGroupIcon,
-      adminOnly: true,
+      permission: 'ROLE_USERS_READ',
     },
     {
       name: 'exercises',
       label: t('routes.exercises'),
       to: { name: 'exercises' },
       icon: BoltIcon,
-      adminOnly: false,
+      permission: 'ROLE_EXERCISES_READ',
     },
     {
       name: 'anamnesis',
       label: t('menu.anamnesis'),
       to: { name: 'anamnesis' },
       icon: ClipboardDocumentListIcon,
-      adminOnly: false,
+      permission: 'ROLE_ANAMNESIS_READ',
     },
     {
       name: 'diet',
       label: t('menu.diet'),
       to: { name: 'diet' },
       icon: CakeIcon,
-      adminOnly: false,
+      permission: 'ROLE_DIETS_READ',
     },
     {
       name: 'goals',
       label: t('menu.goals'),
       to: { name: 'goals' },
       icon: MdiTargetIcon,
-      adminOnly: false,
+      permission: 'ROLE_GOALS_READ',
     },
     {
       name: 'photo-evolution',
       label: t('routes.photoEvolution'),
       to: { name: 'photo-evolution' },
       icon: PhotoIcon,
-      adminOnly: false,
+      permission: 'ROLE_PHOTO_EVOLUTION_READ',
     },
     {
       name: 'whatsapp-nutrition',
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
       icon: ChatBubbleLeftRightIcon,
-      adminOnly: false,
+      permission: 'ROLE_WHATSAPP_MANAGEMENT_READ',
     },
     {
       name: 'reminders',
       label: t('routes.reminders'),
       to: { name: 'reminders' },
       icon: BellAlertIcon,
-      adminOnly: false,
+      permission: 'ROLE_REMINDERS_READ',
     },
     {
       name: 'payments',
       label: t('routes.payments'),
       to: { name: 'payments' },
       icon: CreditCardIcon,
-      adminOnly: false,
+      permission: 'ROLE_PAYMENTS_READ',
     },
     {
       name: 'settings',
       label: t('routes.settings'),
       to: { name: 'settings' },
       icon: RectangleStackIcon,
-      adminOnly: false,
+      permission: 'ROLE_USER_SETTINGS_READ',
     },
   ];
 
   const filtered = baseItems
-    .filter((item) => !item.adminOnly || isAdmin.value)
+    .filter((item) => !item.permission || can(item.permission))
     .map((item) => {
       const related = {
         diet: ['diet', 'diet-new', 'diet-edit'],
@@ -362,7 +361,7 @@ const navigation = computed(() => {
       };
     });
 
-  if (isAdmin.value) {
+  if (can('ROLE_REFERENCE_MANAGEMENT_READ')) {
     const referenceChildren = [
       { name: 'reference-countries', label: t('routes.referenceCountries') },
       { name: 'reference-ai-prompts', label: t('routes.referenceAiPrompts') },
@@ -383,6 +382,7 @@ const navigation = computed(() => {
       icon: GlobeAltIcon,
       children: referenceChildren,
       active: referenceChildren.some((child) => child.active),
+      permission: 'ROLE_REFERENCE_MANAGEMENT_READ',
     };
 
     const anamnesisIndex = filtered.findIndex((item) => item.name === 'anamnesis');

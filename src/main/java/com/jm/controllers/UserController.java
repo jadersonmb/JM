@@ -2,9 +2,11 @@ package com.jm.controllers;
 
 import com.jm.dto.ChangePasswordDTO;
 import com.jm.dto.UserDTO;
+import com.jm.dto.UserRolesUpdateRequest;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.UserService;
+import com.jm.security.annotation.PermissionRequired;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -15,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -49,6 +53,7 @@ public class UserController {
     }
 
     @PutMapping
+    @PermissionRequired("ROLE_USERS_UPDATE")
     public ResponseEntity<UserDTO> update(@RequestBody UserDTO userDTO) {
         logger.debug("REST request to update User : {}", userDTO);
 
@@ -62,10 +67,24 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PermissionRequired("ROLE_USERS_DELETE")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete User : {}", id);
         userService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/with-roles")
+    @PermissionRequired("ROLE_USERS_READ")
+    public ResponseEntity<?> listWithRoles() {
+        return ResponseEntity.ok(userService.findAllWithRoles());
+    }
+
+    @PutMapping("/{id}/roles")
+    @PermissionRequired("ROLE_ADMIN_MANAGE_ROLES")
+    public ResponseEntity<UserDTO> updateRoles(@PathVariable UUID id,
+            @Valid @RequestBody UserRolesUpdateRequest request) {
+        return ResponseEntity.ok(userService.updateUserRoles(id, request.getRoleIds()));
     }
 
     @PostMapping("/recovery-password")

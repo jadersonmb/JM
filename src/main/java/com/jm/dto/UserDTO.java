@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -44,4 +45,6 @@ public class UserDTO {
     private Integer age;
     private String consultationGoal;
     private Boolean firstAccess;
+    private Set<RoleDTO> roles;
+    private Set<String> permissions;
 }

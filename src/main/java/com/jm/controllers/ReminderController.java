@@ -5,6 +5,7 @@ import com.jm.dto.ReminderFilter;
 import com.jm.dto.ReminderTargetDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.ReminderService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -39,18 +40,21 @@ public class ReminderController {
 
     private final ReminderService service;
 
+    @PermissionRequired("ROLE_REMINDERS_READ")
     @GetMapping
     public ResponseEntity<Page<ReminderDTO>> list(Pageable pageable, ReminderFilter filter) {
         logger.debug("REST request to list reminders");
         return ResponseEntity.ok(service.findAll(pageable, filter));
     }
 
+    @PermissionRequired("ROLE_REMINDERS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<ReminderDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get reminder {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_REMINDERS_CREATE")
     @PostMapping
     public ResponseEntity<ReminderDTO> create(@RequestBody ReminderDTO dto) {
         logger.debug("REST request to create reminder");
@@ -58,12 +62,14 @@ public class ReminderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_REMINDERS_UPDATE")
     @PutMapping("/{id}")
     public ResponseEntity<ReminderDTO> update(@PathVariable UUID id, @RequestBody ReminderDTO dto) {
         logger.debug("REST request to update reminder {}", id);
         return ResponseEntity.ok(service.update(id, dto));
     }
 
+    @PermissionRequired("ROLE_REMINDERS_UPDATE")
     @PostMapping("/{id}/test")
     public ResponseEntity<Void> triggerTest(@PathVariable UUID id) {
         logger.debug("REST request to trigger reminder test {}", id);
@@ -71,6 +77,7 @@ public class ReminderController {
         return ResponseEntity.accepted().build();
     }
 
+    @PermissionRequired("ROLE_REMINDERS_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete reminder {}", id);
@@ -78,18 +85,21 @@ public class ReminderController {
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_REMINDERS_UPDATE")
     @PatchMapping("/{id}/active")
     public ResponseEntity<ReminderDTO> toggleActive(@PathVariable UUID id, @RequestParam boolean active) {
         logger.debug("REST request to toggle reminder {} active={} ", id, active);
         return ResponseEntity.ok(service.toggleActive(id, active));
     }
 
+    @PermissionRequired("ROLE_REMINDERS_UPDATE")
     @PatchMapping("/{id}/completed")
     public ResponseEntity<ReminderDTO> toggleCompleted(@PathVariable UUID id, @RequestParam boolean completed) {
         logger.debug("REST request to toggle reminder {} completed={} ", id, completed);
         return ResponseEntity.ok(service.toggleCompleted(id, completed));
     }
 
+    @PermissionRequired("ROLE_REMINDERS_READ")
     @GetMapping("/targets")
     public ResponseEntity<List<ReminderTargetDTO>> listTargets(@RequestParam(required = false) String query) {
         logger.debug("REST request to list reminder targets");

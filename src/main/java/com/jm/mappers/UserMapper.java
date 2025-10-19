@@ -10,7 +10,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", uses = { CountryMapper.class }, unmappedTargetPolicy = ReportingPolicy.IGNORE,
+@Mapper(componentModel = "spring", uses = { CountryMapper.class, RoleMapper.class }, unmappedTargetPolicy = ReportingPolicy.IGNORE,
         builder = @Builder(disableBuilder = true))
 public interface UserMapper {
 
@@ -22,6 +22,7 @@ public interface UserMapper {
     @Mapping(target = "educationLevelName", source = "educationLevel.name")
     @Mapping(target = "professionId", source = "profession.id")
     @Mapping(target = "professionName", source = "profession.name")
+    @Mapping(target = "permissions", expression = "java(mapPermissions(entity))")
     UserDTO toDTO(Users entity);
 
     @Mapping(target = "city", ignore = true)
@@ -31,6 +32,7 @@ public interface UserMapper {
     @Mapping(target = "firstAccess", ignore = true)
     @Mapping(target = "imagens", ignore = true)
     @Mapping(target = "anamneses", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     Users toEntity(UserDTO dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -42,5 +44,17 @@ public interface UserMapper {
     @Mapping(target = "firstAccess", ignore = true)
     @Mapping(target = "imagens", ignore = true)
     @Mapping(target = "anamneses", ignore = true)
+    @Mapping(target = "roles", ignore = true)
     void updateEntityFromDto(UserDTO dto, @MappingTarget Users entity);
+
+    default java.util.Set<String> mapPermissions(Users entity) {
+        if (entity == null || entity.getRoles() == null) {
+            return java.util.Set.of();
+        }
+        return entity.getRoles().stream()
+                .filter(role -> role.getPermissions() != null)
+                .flatMap(role -> role.getPermissions().stream())
+                .map(permission -> permission.getCode())
+                .collect(java.util.stream.Collectors.toSet());
+    }
 }

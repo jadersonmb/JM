@@ -2,6 +2,7 @@ package com.jm.controllers;
 
 import com.jm.dto.payment.CardRequest;
 import com.jm.dto.payment.PaymentMethodResponse;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.payment.PaymentService;
 import com.stripe.exception.StripeException;
 
@@ -30,16 +31,19 @@ public class PaymentMethodController {
 
     private final PaymentService paymentService;
 
+    @PermissionRequired("ROLE_PAYMENT_METHODS_CREATE")
     @PostMapping("/card")
     public ResponseEntity<PaymentMethodResponse> addCard(@Valid @RequestBody CardRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.addCard(request));
     }
 
+    @PermissionRequired("ROLE_PAYMENT_METHODS_READ")
     @GetMapping
     public ResponseEntity<List<PaymentMethodResponse>> listCards(@RequestParam UUID customerId) throws StripeException {
         return ResponseEntity.ok(paymentService.listCards(customerId));
     }
 
+    @PermissionRequired("ROLE_PAYMENT_METHODS_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCard(@PathVariable UUID id, @RequestParam UUID customerId) {
         paymentService.deleteCard(id, customerId);

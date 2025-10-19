@@ -4,6 +4,7 @@ import com.jm.dto.DietOwnerDTO;
 import com.jm.dto.DietPlanDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.DietPlanService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -37,11 +38,13 @@ public class DietPlanController {
 
     private final DietPlanService service;
 
+    @PermissionRequired("ROLE_DIETS_CREATE")
     @PostMapping
     public ResponseEntity<?> create(@RequestBody DietPlanDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
 
+    @PermissionRequired("ROLE_DIETS_READ")
     @GetMapping
     public ResponseEntity<?> listAll(Pageable pageable, DietPlanDTO filter) {
         logger.debug("REST request to get all diets");
@@ -49,23 +52,27 @@ public class DietPlanController {
         return ResponseEntity.ok().body(page);
     }
 
+    @PermissionRequired("ROLE_DIETS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<?> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_DIETS_UPDATE")
     @PutMapping
     public ResponseEntity<?> update(@RequestBody DietPlanDTO dto) {
         logger.debug("REST request to update Diet : {}", dto);
         return ResponseEntity.ok(service.create(dto));
     }
 
+    @PermissionRequired("ROLE_DIETS_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.ok().build();
     }
 
+    @PermissionRequired("ROLE_DIETS_READ")
     @GetMapping("/owners")
     public ResponseEntity<List<DietOwnerDTO>> listOwners(@RequestParam(required = false, name = "query") String query) {
         return ResponseEntity.ok(service.listOwners(query));

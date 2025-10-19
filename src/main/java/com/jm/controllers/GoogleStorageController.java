@@ -1,8 +1,9 @@
 package com.jm.controllers;
 
-import com.jm.services.GoogleStorageService;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
+import com.jm.services.GoogleStorageService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ public class GoogleStorageController {
      * @param userId
      * @return
      */
+    @PermissionRequired("ROLE_GOOGLE_STORAGE_CREATE")
     @PostMapping("/upload")
     public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file,
                                         @RequestParam("userId") UUID userId) {
@@ -43,6 +45,7 @@ public class GoogleStorageController {
      * @param fileName
      * @return
      */
+    @PermissionRequired("ROLE_GOOGLE_STORAGE_READ")
     @GetMapping("/download/{profileId}/{fileName}")
     public ResponseEntity<?> downloadFile(@PathVariable UUID profileId, @PathVariable String fileName) {
         HttpHeaders headers = new HttpHeaders();

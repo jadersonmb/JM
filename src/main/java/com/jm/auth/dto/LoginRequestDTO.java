@@ -1,11 +1,11 @@
-package com.jm.dto;
+package com.jm.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-public class LoginRequest {
+public class LoginRequestDTO {
 
     @Email
     @NotBlank
@@ -13,5 +13,4 @@ public class LoginRequest {
 
     @NotBlank
     private String password;
-
 }

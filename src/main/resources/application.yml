@@ -75,35 +75,13 @@ ollama:
   api:
     url: http://localhost:11434
 
-security:
-  oauth2:
-    client:
-      registration:
-        JM:
-          provider: JM
-          client-id: JM
-          client-secret: 4ICvE=Qejwort0LcRBQPC)Xna
-          authorization-grant-type: client_credentials
-          redirect-uri: https://oidcdebugger.com/debug
-          scope: posts:write
-      provider:
-        JM:
-          authorization-uri: http://localhost:8080/oauth2/authorize
-          token-uri: http://localhost:8080/oauth2/token
-          user-info-uri: http://localhost:8080/userinfo
-          user-name-attribute: sub
-
 opencv:
   haarcascades-path: classpath:opencv/haarcascades/haarcascade_frontalface_alt.xml
   show-video: true
-aw:
-  auth:
-    provider-uri: "http://localhost:8080"
-    jks:
-      keypass: administrator
-      storepass: administrator
-      alias: JM
-      path: keystore/JM.jks
+
+jwt:
+  secret: ${JWT_SECRET:ykqk15jCWOFXO2NfCdGdZ/L1D0TbjBKgvZyPDGT/Yfw=}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 logging:
   level:

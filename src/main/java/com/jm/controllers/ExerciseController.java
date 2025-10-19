@@ -4,6 +4,7 @@ import com.jm.dto.ExerciseDTO;
 import com.jm.dto.ExerciseFilter;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.ExerciseService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -35,18 +36,21 @@ public class ExerciseController {
 
     private final ExerciseService exerciseService;
 
+    @PermissionRequired("ROLE_EXERCISES_READ")
     @GetMapping
     public ResponseEntity<Page<ExerciseDTO>> list(Pageable pageable, ExerciseFilter filter) {
         logger.debug("REST request to get all exercises");
         return ResponseEntity.ok(exerciseService.findAll(pageable, filter));
     }
 
+    @PermissionRequired("ROLE_EXERCISES_READ")
     @GetMapping("/{id}")
     public ResponseEntity<ExerciseDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get exercise {}", id);
         return ResponseEntity.ok(exerciseService.findById(id));
     }
 
+    @PermissionRequired("ROLE_EXERCISES_CREATE")
     @PostMapping
     public ResponseEntity<ExerciseDTO> create(@RequestBody ExerciseDTO exerciseDTO) {
         logger.debug("REST request to create exercise");
@@ -54,6 +58,7 @@ public class ExerciseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
+    @PermissionRequired("ROLE_EXERCISES_UPDATE")
     @PutMapping
     public ResponseEntity<ExerciseDTO> update(@RequestBody ExerciseDTO exerciseDTO) {
         logger.debug("REST request to update exercise {}", exerciseDTO.getId());
@@ -61,6 +66,7 @@ public class ExerciseController {
         return ResponseEntity.ok(saved);
     }
 
+    @PermissionRequired("ROLE_EXERCISES_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete exercise {}", id);
