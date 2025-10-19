@@ -5,6 +5,7 @@ import com.jm.auth.model.AuthenticatedUser;
 import com.jm.entity.Role;
 import com.jm.entity.Users;
 import com.jm.repository.UserRepository;
+import com.jm.security.entity.Permission;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,10 +30,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -85,14 +86,29 @@ public class SecurityConfig {
             Users user = userRepository.findByEmail(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-            Set<String> roleNames = user.getRoles().stream()
-                    .map(Role::getName)
-                    .collect(Collectors.toSet());
+            Set<GrantedAuthority> authorities = new HashSet<>();
 
-            List<GrantedAuthority> authorities = roleNames.stream()
-                    .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role.toUpperCase(Locale.ROOT))
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            user.getRoles().stream()
+                    .filter(Objects::nonNull)
+                    .forEach(role -> {
+                        String roleName = role.getName();
+                        if (roleName != null && !roleName.isBlank()) {
+                            String normalizedRole = roleName.startsWith("ROLE_")
+                                    ? roleName.toUpperCase(Locale.ROOT)
+                                    : "ROLE_" + roleName.toUpperCase(Locale.ROOT);
+                            authorities.add(new SimpleGrantedAuthority(normalizedRole));
+                        }
+
+                        if (role.getPermissions() != null) {
+                            role.getPermissions().stream()
+                                    .filter(Objects::nonNull)
+                                    .map(Permission::getCode)
+                                    .filter(code -> code != null && !code.isBlank())
+                                    .map(code -> code.toUpperCase(Locale.ROOT))
+                                    .map(SimpleGrantedAuthority::new)
+                                    .forEach(authorities::add);
+                        }
+                    });
 
             return new AuthenticatedUser(user.getId(), user.getEmail(), user.getPassword(), authorities);
         };
