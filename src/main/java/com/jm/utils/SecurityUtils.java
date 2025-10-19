@@ -30,8 +30,13 @@ public final class SecurityUtils {
             if (fromSubject.isPresent()) {
                 return fromSubject;
             }
-            String userIdClaim = token.getClaimAsString("userID");
+            String userIdClaim = token.getClaimAsString("userId");
             Optional<UUID> fromClaim = parseUuid(userIdClaim);
+            if (fromClaim.isPresent()) {
+                return fromClaim;
+            }
+            userIdClaim = token.getClaimAsString("userID");
+            fromClaim = parseUuid(userIdClaim);
             if (fromClaim.isPresent()) {
                 return fromClaim;
             }
@@ -42,6 +47,10 @@ public final class SecurityUtils {
             Optional<UUID> fromSubject = parseUuid(jwt.getSubject());
             if (fromSubject.isPresent()) {
                 return fromSubject;
+            }
+            Optional<UUID> fromUserId = parseUuid(jwt.getClaimAsString("userId"));
+            if (fromUserId.isPresent()) {
+                return fromUserId;
             }
             return parseUuid(jwt.getClaimAsString("userID"));
         }
@@ -76,21 +85,32 @@ public final class SecurityUtils {
 
         Object principal = authentication.getPrincipal();
         if (principal instanceof Jwt jwt) {
+            if (hasRoleClaim(jwt.getClaim("roles"), expected)) {
+                return true;
+            }
+
+            if (hasRoleClaim(jwt.getClaim("authorities"), expected)) {
+                return true;
+            }
+
             String singleRole = jwt.getClaimAsString("role");
             if (StringUtils.hasText(singleRole) && singleRole.toUpperCase(Locale.ROOT).equals(expected)) {
                 return true;
             }
+        }
 
-            Object authoritiesClaim = jwt.getClaims().get("authorities");
-            if (authoritiesClaim instanceof Collection<?> collection) {
-                for (Object entry : collection) {
-                    if (entry != null && entry.toString().replace("ROLE_", "").equalsIgnoreCase(expected)) {
-                        return true;
-                    }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean hasRoleClaim(Object claim, String expected) {
+        if (claim instanceof Collection<?> collection) {
+            for (Object entry : collection) {
+                if (entry != null && entry.toString().replace("ROLE_", "").equalsIgnoreCase(expected)) {
+                    return true;
                 }
             }
         }
-
         return false;
     }
 

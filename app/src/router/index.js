@@ -51,6 +51,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.users' },
         },
         {
+          path: 'users/roles',
+          name: 'user-roles',
+          component: () => import('@/views/users/UserRolesView.vue'),
+          meta: { titleKey: 'routes.userRoles', requiresAdmin: true },
+        },
+        {
           path: 'exercises',
           name: 'exercises',
           component: () => import('@/views/exercises/ExercisesListView.vue'),
@@ -220,7 +226,7 @@ router.beforeEach(async (to) => {
   }
 
   if (to.matched.some((record) => record.meta.requiresAdmin)) {
-    const isAdmin = (auth.user?.type ?? '').toUpperCase() === 'ADMIN';
+    const isAdmin = auth.roles.includes('ADMIN');
     if (!isAdmin) {
       return { name: 'dashboard' };
     }

@@ -1,84 +1,85 @@
 package com.jm.services;
 
-import com.jm.dto.LoginRequest;
-import com.jm.dto.LoginResponse;
+import com.jm.dto.LoginRequestDTO;
 import com.jm.dto.RecoverPasswordRequest;
+import com.jm.dto.TokenRefreshRequestDTO;
+import com.jm.dto.TokenResponseDTO;
 import com.jm.dto.UserDTO;
 import com.jm.entity.Users;
 import com.jm.execption.JMException;
+import com.jm.execption.ProblemType;
 import com.jm.mappers.UserMapper;
 import com.jm.repository.UserRepository;
+import com.jm.services.security.JwtService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Locale;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
         private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
         private final AuthenticationManager authenticationManager;
-        private final JwtEncoder jwtEncoder;
+        private final JwtService jwtService;
         private final UserRepository userRepository;
         private final UserService userService;
         private final UserMapper userMapper;
+        private final MessageSource messageSource;
 
-        public AuthService(AuthenticationManager authenticationManager, JwtEncoder jwtEncoder,
-                        UserRepository userRepository, UserService userService, UserMapper userMapper) {
-                this.authenticationManager = authenticationManager;
-                this.jwtEncoder = jwtEncoder;
-                this.userRepository = userRepository;
-                this.userService = userService;
-                this.userMapper = userMapper;
+        public TokenResponseDTO authenticate(LoginRequestDTO request) {
+                try {
+                        logger.debug("Authenticating user {}", request.getEmail());
+                        authenticationManager.authenticate(
+                                        new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+
+                        Users user = userRepository.findByEmail(request.getEmail())
+                                        .orElseThrow(this::userNotFoundException);
+
+                        String accessToken = jwtService.generateToken(user);
+                        String refreshToken = jwtService.generateRefreshToken(user);
+
+                        UserDTO userDTO = userMapper.toDTO(user);
+                        if (userDTO != null) {
+                                userDTO.setPassword(null);
+                        }
+
+                        return new TokenResponseDTO(accessToken, refreshToken, jwtService.getExpirationTime(), userDTO);
+                } catch (BadCredentialsException ex) {
+                        throw invalidCredentials();
+                }
         }
 
-        public LoginResponse login(LoginRequest request) {
-                logger.debug("Authenticating user {}", request.getEmail());
-                Authentication authentication = authenticationManager.authenticate(
-                                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-
-                Users user = userRepository.findByEmail(request.getEmail())
-                                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-                Instant now = Instant.now();
-                Instant expiresAt = now.plus(1, ChronoUnit.HOURS);
-
-                Set<String> authorities = authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority)
-                                .collect(Collectors.toSet());
-
-                JwtClaimsSet claims = JwtClaimsSet.builder()
-                                .issuer("jm-api")
-                                .issuedAt(now)
-                                .expiresAt(expiresAt)
-                                .subject(user.getId().toString())
-                                .claim("email", user.getEmail())
-                                .claim("name", user.getName())
-                                .claim("role", user.getType() != null ? user.getType().name()
-                                                : Users.Type.CLIENT.name())
-                                .claim("authorities", authorities)
-                                .build();
-
-                String tokenValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
-                UserDTO userDTO = userMapper.toDTO(user);
-
-                return new LoginResponse(tokenValue, "Bearer", ChronoUnit.SECONDS.between(now, expiresAt), userDTO);
+        public TokenResponseDTO refreshToken(TokenRefreshRequestDTO request) {
+                return jwtService.refreshToken(request.getRefreshToken());
         }
 
         public UserDTO recoverPassword(RecoverPasswordRequest request) throws JMException {
                 logger.info("Recovering password for {}", request.getEmail());
                 return userService.updatePasswordByEmail(request.getEmail(), request.getNewPassword());
+        }
+
+        private JMException userNotFoundException() {
+                Locale locale = LocaleContextHolder.getLocale();
+                String message = messageSource.getMessage(ProblemType.USER_NOT_FOUND.getMessageSource(), null, locale);
+                return new JMException(HttpStatus.NOT_FOUND.value(), ProblemType.USER_NOT_FOUND.getUri(),
+                                ProblemType.USER_NOT_FOUND.getTitle(), message);
+        }
+
+        private JMException invalidCredentials() {
+                Locale locale = LocaleContextHolder.getLocale();
+                String message = messageSource.getMessage("auth.invalid.credentials", null, locale);
+                return new JMException(HttpStatus.UNAUTHORIZED.value(), ProblemType.INVALID_CREDENTIALS.getUri(),
+                                ProblemType.INVALID_CREDENTIALS.getTitle(), message);
         }
 }

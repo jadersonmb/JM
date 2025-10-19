@@ -3,6 +3,7 @@ export default {
     dashboard: 'Dashboard',
     nutritionDashboard: 'Nutrition analytics',
     users: 'Patients',
+    userRoles: 'Role management',
     exercises: 'Exercises',
     anamnesis: 'Nutritional Anamnesis',
     diet: 'Diet Plans',
@@ -801,6 +802,15 @@ export default {
       },
     },
   },
+  auth: {
+    invalid: 'Invalid credentials.',
+    expired: 'Session expired. Please log in again.',
+  },
+  roles: {
+    title: 'Role Management',
+    manage: 'Manage roles',
+    empty: 'No roles assigned yet.',
+  },
   common: {
     stepIndicator: 'Step {current} of {total}',
     actions: {
@@ -808,6 +818,8 @@ export default {
       next: 'Next',
       save: 'Save',
       saving: 'Saving...',
+      refresh: 'Refresh',
+      loading: 'Loading...',
       create: 'Create',
       update: 'Update',
       search: 'Search',

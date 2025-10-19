@@ -3,6 +3,7 @@
     dashboard: 'Painel',
     nutritionDashboard: 'Análise nutricional',
     users: 'Pacientes',
+    userRoles: 'Gerenciar papéis',
     exercises: 'Exercícios',
     anamnesis: 'Anamnese Nutricional',
     diet: 'Planos Alimentares',
@@ -691,6 +692,15 @@
       UNKNOWN: 'Parte do corpo não informada',
     },
   },
+  auth: {
+    invalid: 'Credenciais inválidas.',
+    expired: 'Sessão expirada. Faça login novamente.',
+  },
+  roles: {
+    title: 'Gerenciamento de Papéis',
+    manage: 'Gerenciar papéis',
+    empty: 'Nenhum papel associado ainda.',
+  },
   common: {
     stepIndicator: 'Etapa {current} de {total}',
     actions: {
@@ -698,6 +708,8 @@
       next: 'Avançar',
       save: 'Salvar',
       saving: 'Salvando...',
+      refresh: 'Atualizar',
+      loading: 'Carregando...',
       create: 'Criar',
       update: 'Atualizar',
       search: 'Buscar',
