@@ -6,7 +6,7 @@
         class="absolute right-4 top-4 text-gray-500 transition hover:text-gray-700"
         @click="emit('close')"
       >
-        ✕
+        <XCircleIcon class="h-7 w-7" />
       </button>
 
       <div class="max-h-[calc(100vh-4rem)] overflow-y-auto p-8">
@@ -63,7 +63,7 @@ import axios from '@/services/api';
 import { createSubscription } from '@/services/payments';
 import { useNotificationStore } from '@/stores/notifications';
 import RecurringPayment from '@/components/payments/RecurringPayment.vue';
-
+import { XCircleIcon } from '@heroicons/vue/24/outline';
 const props = defineProps({
   selectedPlan: {
     type: Object,
