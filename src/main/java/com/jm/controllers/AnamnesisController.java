@@ -3,6 +3,7 @@ package com.jm.controllers;
 import com.jm.dto.AnamnesisDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.AnamnesisService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -34,12 +35,14 @@ public class AnamnesisController {
 
     private final AnamnesisService service;
 
+    @PermissionRequired("ROLE_ANAMNESIS_CREATE")
     @PostMapping
     public ResponseEntity<AnamnesisDTO> create(@RequestBody AnamnesisDTO dto) {
         logger.debug("REST request to create Anamnesis : {}", dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
 
+    @PermissionRequired("ROLE_ANAMNESIS_READ")
     @GetMapping
     public ResponseEntity<Page<AnamnesisDTO>> listAll(Pageable pageable, AnamnesisDTO filter) {
         logger.debug("REST request to get all Anamneses");
@@ -47,18 +50,21 @@ public class AnamnesisController {
         return ResponseEntity.ok(anamnesisPage);
     }
 
+    @PermissionRequired("ROLE_ANAMNESIS_UPDATE")
     @PutMapping
     public ResponseEntity<AnamnesisDTO> update(@RequestBody AnamnesisDTO dto) {
         logger.debug("REST request to update Anamnesis : {}", dto);
         return ResponseEntity.ok(service.update(dto));
     }
 
+    @PermissionRequired("ROLE_ANAMNESIS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<AnamnesisDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get Anamnesis : {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_ANAMNESIS_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete Anamnesis : {}", id);

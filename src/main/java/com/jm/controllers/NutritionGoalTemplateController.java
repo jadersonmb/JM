@@ -3,6 +3,7 @@ package com.jm.controllers;
 import com.jm.dto.NutritionGoalTemplateDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.NutritionGoalTemplateService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -34,30 +35,35 @@ public class NutritionGoalTemplateController {
 
     private final NutritionGoalTemplateService service;
 
+    @PermissionRequired("ROLE_GOAL_TEMPLATES_CREATE")
     @PostMapping
     public ResponseEntity<NutritionGoalTemplateDTO> create(@RequestBody NutritionGoalTemplateDTO dto) {
         logger.debug("REST request to create NutritionGoalTemplate");
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
 
+    @PermissionRequired("ROLE_GOAL_TEMPLATES_READ")
     @GetMapping
     public ResponseEntity<Page<NutritionGoalTemplateDTO>> list(Pageable pageable, NutritionGoalTemplateDTO filter) {
         logger.debug("REST request to get all nutrition goal templates");
         return ResponseEntity.ok(service.findAll(pageable, filter));
     }
 
+    @PermissionRequired("ROLE_GOAL_TEMPLATES_READ")
     @GetMapping("/{id}")
     public ResponseEntity<NutritionGoalTemplateDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get nutrition goal template {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_GOAL_TEMPLATES_UPDATE")
     @PutMapping
     public ResponseEntity<NutritionGoalTemplateDTO> update(@RequestBody NutritionGoalTemplateDTO dto) {
         logger.debug("REST request to update NutritionGoalTemplate : {}", dto);
         return ResponseEntity.ok(service.update(dto));
     }
 
+    @PermissionRequired("ROLE_GOAL_TEMPLATES_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete NutritionGoalTemplate : {}", id);

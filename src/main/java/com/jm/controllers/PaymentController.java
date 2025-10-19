@@ -10,6 +10,7 @@ import com.jm.dto.payment.PixPaymentResponse;
 import com.jm.dto.payment.PaymentRecurringRequest;
 import com.jm.dto.payment.PaymentRecurringResponse;
 import com.jm.dto.payment.RefundRequest;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.payment.PaymentService;
 import com.stripe.exception.StripeException;
 
@@ -42,48 +43,57 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    @PermissionRequired("ROLE_PAYMENTS_CREATE")
     @PostMapping("/create-intent")
     public ResponseEntity<PaymentIntentResponse> createPaymentIntent(@Valid @RequestBody PaymentIntentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPaymentIntent(request));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_UPDATE")
     @PostMapping("/confirm")
     public ResponseEntity<PaymentIntentResponse> confirmPayment(@Valid @RequestBody ConfirmPaymentRequest request) {
         return ResponseEntity.ok(paymentService.confirmPayment(request));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_CREATE")
     @PostMapping("/pix")
     public ResponseEntity<PixPaymentResponse> createPixPayment(@Valid @RequestBody PixPaymentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPixPayment(request));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_CREATE")
     @PostMapping("/subscription")
     public ResponseEntity<PaymentRecurringResponse> createSubscription(
             @Valid @RequestBody PaymentRecurringRequest request) throws StripeException {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createSubscription(request));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_READ")
     @GetMapping("/subscription")
     public ResponseEntity<List<PaymentRecurringResponse>> listSubscriptions(@RequestParam UUID customerId) {
         return ResponseEntity.ok(paymentService.listSubscriptions(customerId));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_DELETE")
     @DeleteMapping("/subscription/{id}")
     public ResponseEntity<Void> cancelSubscription(@PathVariable UUID id) {
         paymentService.cancelSubscription(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_READ")
     @GetMapping
     public Page<PaymentResponse> listPayments(@ModelAttribute PaymentFilterRequest filter, Pageable pageable) {
         return paymentService.searchPayments(pageable, filter);
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<PaymentResponse> getPayment(@PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.getPayment(id));
     }
 
+    @PermissionRequired("ROLE_PAYMENTS_UPDATE")
     @PostMapping("/{id}/refund")
     public ResponseEntity<PaymentResponse> refundPayment(@PathVariable UUID id,
             @Valid @RequestBody RefundRequest request) {

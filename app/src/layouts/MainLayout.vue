@@ -273,6 +273,7 @@ const navigation = computed(() => {
       label: t('routes.nutritionDashboard'),
       to: { name: 'dashboard-nutrition' },
       icon: ChartBarSquareIcon,
+      permission: 'ROLE_ANALYTICS_READ',
     },
     {
       name: 'users',
@@ -286,54 +287,63 @@ const navigation = computed(() => {
       label: t('routes.exercises'),
       to: { name: 'exercises' },
       icon: BoltIcon,
+      permission: 'ROLE_EXERCISES_READ',
     },
     {
       name: 'anamnesis',
       label: t('menu.anamnesis'),
       to: { name: 'anamnesis' },
       icon: ClipboardDocumentListIcon,
+      permission: 'ROLE_ANAMNESIS_READ',
     },
     {
       name: 'diet',
       label: t('menu.diet'),
       to: { name: 'diet' },
       icon: CakeIcon,
+      permission: 'ROLE_DIETS_READ',
     },
     {
       name: 'goals',
       label: t('menu.goals'),
       to: { name: 'goals' },
       icon: MdiTargetIcon,
+      permission: 'ROLE_GOALS_READ',
     },
     {
       name: 'photo-evolution',
       label: t('routes.photoEvolution'),
       to: { name: 'photo-evolution' },
       icon: PhotoIcon,
+      permission: 'ROLE_PHOTO_EVOLUTION_READ',
     },
     {
       name: 'whatsapp-nutrition',
       label: t('routes.whatsappNutrition'),
       to: { name: 'whatsapp-nutrition' },
       icon: ChatBubbleLeftRightIcon,
+      permission: 'ROLE_WHATSAPP_MANAGEMENT_READ',
     },
     {
       name: 'reminders',
       label: t('routes.reminders'),
       to: { name: 'reminders' },
       icon: BellAlertIcon,
+      permission: 'ROLE_REMINDERS_READ',
     },
     {
       name: 'payments',
       label: t('routes.payments'),
       to: { name: 'payments' },
       icon: CreditCardIcon,
+      permission: 'ROLE_PAYMENTS_READ',
     },
     {
       name: 'settings',
       label: t('routes.settings'),
       to: { name: 'settings' },
       icon: RectangleStackIcon,
+      permission: 'ROLE_USER_SETTINGS_READ',
     },
   ];
 
@@ -351,7 +361,7 @@ const navigation = computed(() => {
       };
     });
 
-  if (can('ROLE_ADMIN_MANAGE_ROLES')) {
+  if (can('ROLE_REFERENCE_MANAGEMENT_READ')) {
     const referenceChildren = [
       { name: 'reference-countries', label: t('routes.referenceCountries') },
       { name: 'reference-ai-prompts', label: t('routes.referenceAiPrompts') },
@@ -372,7 +382,7 @@ const navigation = computed(() => {
       icon: GlobeAltIcon,
       children: referenceChildren,
       active: referenceChildren.some((child) => child.active),
-      permission: 'ROLE_ADMIN_MANAGE_ROLES',
+      permission: 'ROLE_REFERENCE_MANAGEMENT_READ',
     };
 
     const anamnesisIndex = filtered.findIndex((item) => item.name === 'anamnesis');

@@ -11,6 +11,7 @@ import com.jm.dto.MealDTO;
 import com.jm.dto.MeasurementUnitDTO;
 import com.jm.dto.PathologyDTO;
 import com.jm.dto.ProfessionDTO;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.BiochemicalExamService;
 import com.jm.services.CityService;
 import com.jm.services.CountryService;
@@ -38,6 +39,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/reference")
 @Tag(name = "Reference data", description = "Lookup tables for nutrition and profile data")
 @RequiredArgsConstructor
+@PermissionRequired("ROLE_REFERENCE_DATA_READ")
 public class ReferenceDataController {
 
     private final CountryService countryService;

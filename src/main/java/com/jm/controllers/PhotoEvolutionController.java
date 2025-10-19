@@ -8,6 +8,7 @@ import com.jm.dto.PhotoEvolutionUpdateRequest;
 import com.jm.enums.BodyPart;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.PhotoEvolutionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class PhotoEvolutionController {
 
     private final PhotoEvolutionService service;
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_CREATE")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<List<PhotoEvolutionDTO>> create(
             @RequestPart("entries") List<PhotoEvolutionCreateRequest> requests,
@@ -50,6 +52,7 @@ public class PhotoEvolutionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_UPDATE")
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PhotoEvolutionDTO> update(@PathVariable UUID id,
                                                     @RequestPart("payload") PhotoEvolutionUpdateRequest request,
@@ -58,6 +61,7 @@ public class PhotoEvolutionController {
         return ResponseEntity.ok(service.update(id, request, image));
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_READ")
     @GetMapping
     public ResponseEntity<List<PhotoEvolutionDTO>> list(@RequestParam(required = false) UUID userId,
                                                         @RequestParam(required = false) BodyPart bodyPart) {
@@ -65,18 +69,21 @@ public class PhotoEvolutionController {
         return ResponseEntity.ok(service.list(userId, bodyPart));
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_READ")
     @GetMapping("/prefill")
     public ResponseEntity<PhotoEvolutionPrefillDTO> prefill(@RequestParam(required = false) UUID userId) {
         logger.debug("REST request to prefill photo evolution metrics for user {}", userId);
         return ResponseEntity.ok(service.prefill(userId));
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_READ")
     @GetMapping("/{id}")
     public ResponseEntity<PhotoEvolutionDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get photo evolution entry {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete photo evolution entry {}", id);
@@ -84,6 +91,7 @@ public class PhotoEvolutionController {
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_PHOTO_EVOLUTION_READ")
     @GetMapping("/owners")
     public ResponseEntity<List<PhotoEvolutionOwnerDTO>> listOwners(@RequestParam(required = false) String query) {
         logger.debug("REST request to list photo evolution owners");

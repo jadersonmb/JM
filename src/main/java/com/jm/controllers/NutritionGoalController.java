@@ -4,6 +4,7 @@ import com.jm.dto.NutritionGoalDTO;
 import com.jm.dto.NutritionGoalOwnerDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.NutritionGoalService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -37,12 +38,14 @@ public class NutritionGoalController {
 
     private final NutritionGoalService service;
 
+    @PermissionRequired("ROLE_GOALS_CREATE")
     @PostMapping
     public ResponseEntity<NutritionGoalDTO> create(@RequestBody NutritionGoalDTO dto) {
         logger.debug("REST request to create NutritionGoal");
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
 
+    @PermissionRequired("ROLE_GOALS_READ")
     @GetMapping
     public ResponseEntity<Page<NutritionGoalDTO>> list(Pageable pageable, NutritionGoalDTO filter) {
         logger.debug("REST request to get all nutrition goals");
@@ -50,18 +53,21 @@ public class NutritionGoalController {
         return ResponseEntity.ok(page);
     }
 
+    @PermissionRequired("ROLE_GOALS_READ")
     @GetMapping("/{id}")
     public ResponseEntity<NutritionGoalDTO> findById(@PathVariable UUID id) {
         logger.debug("REST request to get nutrition goal {}", id);
         return ResponseEntity.ok(service.findById(id));
     }
 
+    @PermissionRequired("ROLE_GOALS_UPDATE")
     @PutMapping
     public ResponseEntity<NutritionGoalDTO> update(@RequestBody NutritionGoalDTO dto) {
         logger.debug("REST request to update NutritionGoal : {}", dto);
         return ResponseEntity.ok(service.update(dto));
     }
 
+    @PermissionRequired("ROLE_GOALS_DELETE")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         logger.debug("REST request to delete NutritionGoal : {}", id);
@@ -69,6 +75,7 @@ public class NutritionGoalController {
         return ResponseEntity.noContent().build();
     }
 
+    @PermissionRequired("ROLE_GOALS_READ")
     @GetMapping("/owners")
     public ResponseEntity<List<NutritionGoalOwnerDTO>> listOwners(@RequestParam(required = false) String query) {
         logger.debug("REST request to list goal owners");

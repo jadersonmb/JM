@@ -5,6 +5,7 @@ import com.jm.dto.ChatRequest;
 import com.jm.dto.ChatResponse;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.DeepSeekService;
 import com.jm.services.GeminiService;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ public class IAController {
     private final DeepSeekService deepSeekService;
     private final GeminiService geminiService;
 
+    @PermissionRequired("ROLE_AI_OPERATIONS_EXECUTE")
     @PostMapping("/deepseek/chat")
     public ResponseEntity<ChatResponse> chat(@Valid @RequestBody ChatRequest chatRequest) {
         ChatResponse response = deepSeekService.sendMessage(chatRequest.getMessage());
@@ -38,6 +40,7 @@ public class IAController {
         }
     }
 
+    @PermissionRequired("ROLE_AI_OPERATIONS_EXECUTE")
     @PostMapping("/gemini/chat")
     public Mono<ResponseEntity<String>> chatGemini(@Valid @RequestBody ChatRequest chatRequest) {
         return geminiService.generateTextFromPrompt(chatRequest.getMessage())
@@ -45,6 +48,7 @@ public class IAController {
                 .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao processar texto: " + e.getMessage())));
     }
 
+    @PermissionRequired("ROLE_AI_OPERATIONS_EXECUTE")
     @PostMapping("/gemini/image")
     public Mono<ResponseEntity<String>> processImageGemini(@RequestParam("prompt") String prompt,
                                                      @RequestParam("file") MultipartFile file) {

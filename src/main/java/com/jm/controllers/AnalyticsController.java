@@ -5,6 +5,7 @@ import com.jm.dto.analytics.GoalAdherenceResponseDTO;
 import com.jm.dto.analytics.HydrationResponseDTO;
 import com.jm.dto.analytics.MacroDistributionResponseDTO;
 import com.jm.dto.analytics.TopFoodsResponseDTO;
+import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.AnalyticsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ public class AnalyticsController {
         this.analyticsService = analyticsService;
     }
 
+    @PermissionRequired("ROLE_ANALYTICS_READ")
     @GetMapping("/goals/adherence")
     public ResponseEntity<GoalAdherenceResponseDTO> getGoalsAdherence(
             @RequestParam(name = "range", required = false) Integer range,
@@ -33,6 +35,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getGoalsAdherence(range, groupBy, userId));
     }
 
+    @PermissionRequired("ROLE_ANALYTICS_READ")
     @GetMapping("/macros/distribution")
     public ResponseEntity<MacroDistributionResponseDTO> getMacroDistribution(
             @RequestParam(name = "range", required = false) Integer range,
@@ -42,6 +45,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getMacroDistribution(range, groupBy, userId));
     }
 
+    @PermissionRequired("ROLE_ANALYTICS_READ")
     @GetMapping("/hydration")
     public ResponseEntity<HydrationResponseDTO> getHydration(
             @RequestParam(name = "range", required = false) Integer range,
@@ -51,6 +55,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getHydration(range, groupBy, userId));
     }
 
+    @PermissionRequired("ROLE_ANALYTICS_READ")
     @GetMapping("/foods/top")
     public ResponseEntity<TopFoodsResponseDTO> getTopFoods(
             @RequestParam(name = "range", required = false) Integer range,
@@ -60,6 +65,7 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getTopFoods(range, groupBy, userId));
     }
 
+    @PermissionRequired("ROLE_ANALYTICS_READ")
     @GetMapping("/body/biometrics")
     public ResponseEntity<BodyCompositionResponseDTO> getBodyComposition(
             @RequestParam(name = "range", required = false) Integer range,
