@@ -34,13 +34,11 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    @PermissionRequired("ROLE_USERS_CREATE")
     public ResponseEntity<?> createUser(@RequestBody UserDTO userDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(userDTO));
     }
 
     @GetMapping
-    @PermissionRequired("ROLE_USERS_READ")
     public ResponseEntity<?> listAll(Pageable pageable, UserDTO filter) {
         logger.debug("REST request to get all users");
 
@@ -49,7 +47,6 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PermissionRequired("ROLE_USERS_READ")
     public ResponseEntity<UserDTO> findById(@PathVariable UUID id) throws JMException {
         logger.debug("REST request to get user {}", id);
         return ResponseEntity.ok(userService.findById(id));

@@ -61,14 +61,12 @@ public class PaymentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPixPayment(request));
     }
 
-    @PermissionRequired("ROLE_PAYMENTS_CREATE")
     @PostMapping("/subscription")
     public ResponseEntity<PaymentRecurringResponse> createSubscription(
             @Valid @RequestBody PaymentRecurringRequest request) throws StripeException {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createSubscription(request));
     }
 
-    @PermissionRequired("ROLE_PAYMENTS_READ")
     @GetMapping("/subscription")
     public ResponseEntity<List<PaymentRecurringResponse>> listSubscriptions(@RequestParam UUID customerId) {
         return ResponseEntity.ok(paymentService.listSubscriptions(customerId));

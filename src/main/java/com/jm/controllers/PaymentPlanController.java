@@ -1,7 +1,6 @@
 package com.jm.controllers;
 
 import com.jm.dto.payment.PaymentPlanResponse;
-import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.payment.PaymentPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,6 @@ import java.util.List;
 @RequestMapping({"/v1/api/payment-plans", "/api/v1/plans"})
 @RequiredArgsConstructor
 @Validated
-@PermissionRequired("ROLE_PAYMENT_PLANS_READ")
 public class PaymentPlanController {
 
     private final PaymentPlanService paymentPlanService;
