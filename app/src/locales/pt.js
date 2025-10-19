@@ -4,6 +4,7 @@
     nutritionDashboard: 'Análise nutricional',
     users: 'Pacientes',
     userRoles: 'Gerenciar papéis',
+    accessControl: 'Controle de acesso',
     exercises: 'Exercícios',
     anamnesis: 'Anamnese Nutricional',
     diet: 'Planos Alimentares',
@@ -705,6 +706,150 @@
     empty: 'Nenhum papel associado ainda.',
     permissions: 'Permissões',
     noPermissions: 'Nenhuma permissão disponível.',
+  },
+  accessControl: {
+    title: 'Controle de acesso',
+    subtitle: 'Gerencie ações, objetos, permissões e papéis utilizados na plataforma.',
+    links: {
+      manageUserRoles: 'Associar papéis aos usuários',
+    },
+    notifications: {
+      error: { title: 'Não foi possível concluir a solicitação' },
+      actions: {
+        created: { title: 'Ação criada', message: 'A ação {name} foi salva com sucesso.' },
+        updated: { title: 'Ação atualizada', message: 'A ação {name} foi atualizada com sucesso.' },
+        deleted: { title: 'Ação removida', message: 'A ação {name} foi removida.' },
+      },
+      objects: {
+        created: { title: 'Objeto criado', message: 'O objeto {name} foi salvo com sucesso.' },
+        updated: { title: 'Objeto atualizado', message: 'O objeto {name} foi atualizado com sucesso.' },
+        deleted: { title: 'Objeto removido', message: 'O objeto {name} foi removido.' },
+      },
+      permissions: {
+        created: { title: 'Permissão criada', message: 'A permissão {code} foi salva com sucesso.' },
+        updated: { title: 'Permissão atualizada', message: 'A permissão {code} foi atualizada com sucesso.' },
+        deleted: { title: 'Permissão removida', message: 'A permissão {code} foi removida.' },
+      },
+      roles: {
+        created: { title: 'Papel criado', message: 'O papel {name} foi salvo com sucesso.' },
+        updated: { title: 'Papel atualizado', message: 'O papel {name} foi atualizado com sucesso.' },
+        deleted: { title: 'Papel removido', message: 'O papel {name} foi removido.' },
+      },
+    },
+    sections: {
+      actions: {
+        title: 'Ações',
+        description: 'Defina as ações que podem ser combinadas com cada módulo.',
+        empty: 'Nenhuma ação cadastrada.',
+        columns: {
+          name: 'Ação',
+          actions: 'Ações',
+        },
+        validation: {
+          name: 'Informe o nome da ação.',
+        },
+        confirmDelete: {
+          title: 'Remover ação',
+          message: 'Excluir a ação {name}? Essa operação não pode ser desfeita.',
+        },
+        modal: {
+          createTitle: 'Nova ação',
+          editTitle: 'Editar ação',
+          description: 'Os nomes das ações são armazenados em letras maiúsculas para compor os códigos de permissão.',
+          fields: {
+            name: 'Nome',
+            placeholder: 'Exemplo: CONSULTAR',
+          },
+        },
+      },
+      objects: {
+        title: 'Objetos',
+        description: 'Cadastre os módulos ou telas que compõem uma permissão.',
+        empty: 'Nenhum objeto cadastrado.',
+        columns: {
+          name: 'Objeto',
+          description: 'Descrição',
+          actions: 'Ações',
+        },
+        validation: {
+          name: 'Informe o nome do objeto.',
+        },
+        confirmDelete: {
+          title: 'Remover objeto',
+          message: 'Excluir o objeto {name}? Essa operação não pode ser desfeita.',
+        },
+        modal: {
+          createTitle: 'Novo objeto',
+          editTitle: 'Editar objeto',
+          description: 'Nomeie os objetos com identificadores em maiúsculas alinhados à sua estratégia de permissões.',
+          fields: {
+            name: 'Nome',
+            placeholder: 'Exemplo: USERS',
+            description: 'Descrição',
+            descriptionPlaceholder: 'Descrição opcional para este objeto',
+          },
+        },
+      },
+      permissions: {
+        title: 'Permissões',
+        description: 'Combine uma ação com um objeto para criar permissões reutilizáveis.',
+        empty: 'Nenhuma permissão cadastrada.',
+        columns: {
+          code: 'Código',
+          object: 'Objeto',
+          action: 'Ação',
+          description: 'Descrição',
+          actions: 'Ações',
+        },
+        validation: {
+          required: 'Informe o código, a ação e o objeto da permissão.',
+        },
+        confirmDelete: {
+          title: 'Remover permissão',
+          message: 'Excluir a permissão {name}? Essa operação não pode ser desfeita.',
+        },
+        modal: {
+          createTitle: 'Nova permissão',
+          editTitle: 'Editar permissão',
+          description: 'Utilize códigos em maiúsculas, como ROLE_USERS_READ, para alinhar com o backend.',
+          fields: {
+            code: 'Código',
+            codePlaceholder: 'Exemplo: ROLE_USERS_READ',
+            action: 'Ação',
+            object: 'Objeto',
+            description: 'Descrição',
+            descriptionPlaceholder: 'Descrição opcional para esta permissão',
+          },
+        },
+      },
+      roles: {
+        title: 'Papéis',
+        description: 'Agrupe permissões em papéis e associe-os aos usuários.',
+        empty: 'Nenhum papel cadastrado.',
+        noPermissions: 'Nenhuma permissão associada.',
+        validation: {
+          name: 'Informe o nome do papel.',
+        },
+        confirmDelete: {
+          title: 'Remover papel',
+          message: 'Excluir o papel {name}? Essa operação não pode ser desfeita.',
+        },
+        modal: {
+          createTitle: 'Novo papel',
+          editTitle: 'Editar papel',
+          description: 'Selecione as permissões que farão parte deste papel.',
+          fields: {
+            name: 'Nome',
+            namePlaceholder: 'Exemplo: ADMIN',
+            description: 'Descrição',
+            descriptionPlaceholder: 'Descrição opcional para este papel',
+            permissions: 'Permissões',
+            permissionFallback: 'Nenhuma descrição informada.',
+            ungrouped: 'Outros',
+          },
+        },
+      },
+    },
   },
   common: {
     error: 'Ocorreu um erro inesperado.',

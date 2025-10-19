@@ -206,6 +206,7 @@ import {
   UserGroupIcon,
   UserCircleIcon,
   CreditCardIcon,
+  ShieldCheckIcon,
   XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import AppLogo from '@/components/AppLogo.vue';
@@ -281,6 +282,13 @@ const navigation = computed(() => {
       to: { name: 'users' },
       icon: UserGroupIcon,
       permission: 'ROLE_USERS_READ',
+    },
+    {
+      name: 'access-control',
+      label: t('routes.accessControl'),
+      to: { name: 'access-control' },
+      icon: ShieldCheckIcon,
+      permission: 'ROLE_ADMIN_MANAGE_ROLES',
     },
     {
       name: 'exercises',

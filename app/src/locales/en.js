@@ -4,6 +4,7 @@ export default {
     nutritionDashboard: 'Nutrition analytics',
     users: 'Patients',
     userRoles: 'Role management',
+    accessControl: 'Access control',
     exercises: 'Exercises',
     anamnesis: 'Nutritional Anamnesis',
     diet: 'Diet Plans',
@@ -815,6 +816,150 @@ export default {
     empty: 'No roles assigned yet.',
     permissions: 'Permissions',
     noPermissions: 'No permissions available.',
+  },
+  accessControl: {
+    title: 'Access control',
+    subtitle: 'Manage actions, objects, permissions, and roles available in the platform.',
+    links: {
+      manageUserRoles: 'Assign roles to users',
+    },
+    notifications: {
+      error: { title: 'Unable to complete request' },
+      actions: {
+        created: { title: 'Action created', message: 'The action {name} was saved successfully.' },
+        updated: { title: 'Action updated', message: 'The action {name} was updated successfully.' },
+        deleted: { title: 'Action removed', message: 'The action {name} was removed.' },
+      },
+      objects: {
+        created: { title: 'Object created', message: 'The object {name} was saved successfully.' },
+        updated: { title: 'Object updated', message: 'The object {name} was updated successfully.' },
+        deleted: { title: 'Object removed', message: 'The object {name} was removed.' },
+      },
+      permissions: {
+        created: { title: 'Permission created', message: 'The permission {code} was saved successfully.' },
+        updated: { title: 'Permission updated', message: 'The permission {code} was updated successfully.' },
+        deleted: { title: 'Permission removed', message: 'The permission {code} was removed.' },
+      },
+      roles: {
+        created: { title: 'Role created', message: 'The role {name} was saved successfully.' },
+        updated: { title: 'Role updated', message: 'The role {name} was updated successfully.' },
+        deleted: { title: 'Role removed', message: 'The role {name} was removed.' },
+      },
+    },
+    sections: {
+      actions: {
+        title: 'Actions',
+        description: 'Define the actions that can be combined with each module.',
+        empty: 'No actions registered yet.',
+        columns: {
+          name: 'Action',
+          actions: 'Actions',
+        },
+        validation: {
+          name: 'Inform the action name.',
+        },
+        confirmDelete: {
+          title: 'Remove action',
+          message: 'Delete the action {name}? This operation cannot be undone.',
+        },
+        modal: {
+          createTitle: 'New action',
+          editTitle: 'Edit action',
+          description: 'Action names are stored in uppercase to build permission codes.',
+          fields: {
+            name: 'Name',
+            placeholder: 'Example: CONSULTAR',
+          },
+        },
+      },
+      objects: {
+        title: 'Objects',
+        description: 'Register the modules or screens that compose a permission.',
+        empty: 'No objects registered yet.',
+        columns: {
+          name: 'Object',
+          description: 'Description',
+          actions: 'Actions',
+        },
+        validation: {
+          name: 'Inform the object name.',
+        },
+        confirmDelete: {
+          title: 'Remove object',
+          message: 'Delete the object {name}? This operation cannot be undone.',
+        },
+        modal: {
+          createTitle: 'New object',
+          editTitle: 'Edit object',
+          description: 'Name objects with uppercase identifiers that match your permission strategy.',
+          fields: {
+            name: 'Name',
+            placeholder: 'Example: USERS',
+            description: 'Description',
+            descriptionPlaceholder: 'Optional description for this object',
+          },
+        },
+      },
+      permissions: {
+        title: 'Permissions',
+        description: 'Combine an action with an object to create reusable permissions.',
+        empty: 'No permissions registered yet.',
+        columns: {
+          code: 'Code',
+          object: 'Object',
+          action: 'Action',
+          description: 'Description',
+          actions: 'Actions',
+        },
+        validation: {
+          required: 'Fill in the permission code, action, and object.',
+        },
+        confirmDelete: {
+          title: 'Remove permission',
+          message: 'Delete the permission {name}? This operation cannot be undone.',
+        },
+        modal: {
+          createTitle: 'New permission',
+          editTitle: 'Edit permission',
+          description: 'Use uppercase codes such as ROLE_USERS_READ to align with the backend.',
+          fields: {
+            code: 'Code',
+            codePlaceholder: 'Example: ROLE_USERS_READ',
+            action: 'Action',
+            object: 'Object',
+            description: 'Description',
+            descriptionPlaceholder: 'Optional description for this permission',
+          },
+        },
+      },
+      roles: {
+        title: 'Roles',
+        description: 'Group permissions into roles and assign them to users.',
+        empty: 'No roles registered yet.',
+        noPermissions: 'No permissions associated.',
+        validation: {
+          name: 'Inform the role name.',
+        },
+        confirmDelete: {
+          title: 'Remove role',
+          message: 'Delete the role {name}? This operation cannot be undone.',
+        },
+        modal: {
+          createTitle: 'New role',
+          editTitle: 'Edit role',
+          description: 'Select the permissions that should belong to this role.',
+          fields: {
+            name: 'Name',
+            namePlaceholder: 'Example: ADMIN',
+            description: 'Description',
+            descriptionPlaceholder: 'Optional description for this role',
+            permissions: 'Permissions',
+            permissionFallback: 'No description provided.',
+            ungrouped: 'Other',
+          },
+        },
+      },
+    },
   },
   common: {
     error: 'An unexpected error occurred.',

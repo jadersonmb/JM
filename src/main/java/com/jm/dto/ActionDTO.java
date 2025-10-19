@@ -11,11 +11,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PermissionDTO {
+public class ActionDTO {
 
     private UUID id;
-    private String code;
-    private String description;
-    private ActionDTO action;
-    private ObjectDTO object;
+    private String name;
 }

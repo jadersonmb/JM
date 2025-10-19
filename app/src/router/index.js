@@ -58,6 +58,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.userRoles', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
         },
         {
+          path: 'access-control',
+          name: 'access-control',
+          component: () => import('@/views/security/AccessControlView.vue'),
+          meta: { titleKey: 'routes.accessControl', permission: 'ROLE_ADMIN_MANAGE_ROLES' },
+        },
+        {
           path: 'exercises',
           name: 'exercises',
           component: () => import('@/views/exercises/ExercisesListView.vue'),

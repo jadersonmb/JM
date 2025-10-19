@@ -9,4 +9,10 @@ import java.util.UUID;
 public interface PermissionRepository extends JpaRepository<Permission, UUID> {
 
     Optional<Permission> findByCode(String code);
+
+    Optional<Permission> findByCodeIgnoreCase(String code);
+
+    boolean existsByActionId(UUID actionId);
+
+    boolean existsByObjectId(UUID objectId);
 }
