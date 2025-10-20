@@ -24,4 +24,7 @@ export default {
   prefill(params) {
     return api.get('/api/v1/photo-evolutions/prefill', { params });
   },
+  comparison(userId) {
+    return api.get(`/api/v1/photo-evolution/${userId}/comparison`);
+  },
 };

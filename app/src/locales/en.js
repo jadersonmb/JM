@@ -2,6 +2,7 @@ export default {
   routes: {
     dashboard: 'Dashboard',
     nutritionDashboard: 'Nutrition analytics',
+    dashboardBodyEvolution: 'Body evolution',
     users: 'Patients',
     userRoles: 'Role management',
     accessControl: 'Access control',
@@ -28,6 +29,37 @@ export default {
     referenceMeals: 'Meal types',
     referenceProfessions: 'Professions',
     unauthorized: 'Access denied',
+  },
+  dashboard: {
+    bodyEvolution: {
+      title: 'Body Evolution Analysis',
+      subtitle: 'Visualize and compare your physical evolution by body part.',
+      compareHint: 'Slide to compare before and after.',
+      empty: 'No body evolution data available yet.',
+      error: 'Unable to load body evolution data.',
+      filters: {
+        all: 'All',
+        abdomen: 'Abdomen',
+        arms: 'Arms',
+        legs: 'Legs',
+        back: 'Back',
+        user: 'Patient',
+        userPlaceholder: 'Select a patient',
+        loadingUsers: 'Loading patients...'
+      },
+      sort: {
+        label: 'Sort by',
+        date: 'Most recent',
+        variation: 'Variation',
+      },
+      metrics: {
+        initial: 'Initial',
+        current: 'Current',
+      },
+      prompts: {
+        selectUser: 'Select a patient to view the body evolution comparison.',
+      },
+    },
   },
   pricing: {
     title: 'Choose your plan',
@@ -507,6 +539,9 @@ export default {
   photoEvolution: {
     title: 'Photographic Evolution',
     subtitle: 'Track physical progress over time with photos, notes, and comparisons.',
+    part: 'Body part',
+    measurement: 'Measurement',
+    variation: 'Variation',
     uploadHelper: 'Select one or more photos. Additional files will generate new entries automatically.',
     actions: {
       refresh: 'Reload',

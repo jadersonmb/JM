@@ -2,6 +2,7 @@
   routes: {
     dashboard: 'Painel',
     nutritionDashboard: 'Análise nutricional',
+    dashboardBodyEvolution: 'Evolução corporal',
     users: 'Pacientes',
     userRoles: 'Gerenciar papéis',
     accessControl: 'Controle de acesso',
@@ -28,6 +29,37 @@
     referenceMeals: 'Tipos de refeição',
     referenceProfessions: 'Profissões',
     unauthorized: 'Acesso negado',
+  },
+  dashboard: {
+    bodyEvolution: {
+      title: 'Análise da Evolução Corporal',
+      subtitle: 'Visualize e compare sua evolução física por parte do corpo.',
+      compareHint: 'Deslize para comparar antes e depois.',
+      empty: 'Nenhum dado de evolução corporal disponível.',
+      error: 'Não foi possível carregar os dados de evolução corporal.',
+      filters: {
+        all: 'Todos',
+        abdomen: 'Abdômen',
+        arms: 'Braços',
+        legs: 'Pernas',
+        back: 'Costas',
+        user: 'Paciente',
+        userPlaceholder: 'Selecione um paciente',
+        loadingUsers: 'Carregando pacientes...'
+      },
+      sort: {
+        label: 'Ordenar por',
+        date: 'Mais recentes',
+        variation: 'Variação',
+      },
+      metrics: {
+        initial: 'Inicial',
+        current: 'Atual',
+      },
+      prompts: {
+        selectUser: 'Selecione um paciente para visualizar a comparação corporal.',
+      },
+    },
   },
   pricing: {
     title: 'Escolha seu plano',
@@ -508,6 +540,9 @@
   photoEvolution: {
     title: 'Evolução Fotográfica',
     subtitle: 'Acompanhe a evolução corporal com fotos, notas e comparações completas.',
+    part: 'Parte do corpo',
+    measurement: 'Medida',
+    variation: 'Variação',
     actions: {
       refresh: 'Atualizar',
       clearFilters: 'Limpar filtros',

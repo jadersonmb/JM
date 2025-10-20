@@ -1,7 +1,10 @@
 package com.jm.services;
 
+import com.jm.dto.PhotoEvolutionBodyPartComparisonDTO;
+import com.jm.dto.PhotoEvolutionComparisonDTO;
 import com.jm.dto.PhotoEvolutionCreateRequest;
 import com.jm.dto.PhotoEvolutionDTO;
+import com.jm.dto.PhotoEvolutionEvolutionPointDTO;
 import com.jm.dto.PhotoEvolutionOwnerDTO;
 import com.jm.dto.PhotoEvolutionPrefillDTO;
 import com.jm.dto.PhotoEvolutionUpdateRequest;
@@ -12,6 +15,7 @@ import com.jm.enums.BodyPart;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.mappers.ImageMapper;
+import com.jm.mappers.PhotoEvolutionComparisonMapper;
 import com.jm.mappers.PhotoEvolutionMapper;
 import com.jm.repository.AnamnesisRepository;
 import com.jm.repository.PhotoEvolutionRepository;
@@ -27,11 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -43,6 +51,7 @@ public class PhotoEvolutionService {
 
     private final PhotoEvolutionRepository repository;
     private final PhotoEvolutionMapper mapper;
+    private final PhotoEvolutionComparisonMapper comparisonMapper;
     private final UserRepository userRepository;
     private final CloudflareR2Service cloudflareR2Service;
     private final AnamnesisRepository anamnesisRepository;
@@ -50,11 +59,13 @@ public class PhotoEvolutionService {
     private final ImageMapper imageMapper;
 
     public PhotoEvolutionService(PhotoEvolutionRepository repository, PhotoEvolutionMapper mapper,
+            PhotoEvolutionComparisonMapper comparisonMapper,
             UserRepository userRepository,
             CloudflareR2Service cloudflareR2Service, AnamnesisRepository anamnesisRepository,
             MessageSource messageSource, ImageMapper imageMapper) {
         this.repository = repository;
         this.mapper = mapper;
+        this.comparisonMapper = comparisonMapper;
         this.userRepository = userRepository;
         this.cloudflareR2Service = cloudflareR2Service;
         this.anamnesisRepository = anamnesisRepository;
@@ -180,6 +191,123 @@ public class PhotoEvolutionService {
                 .orElseGet(() -> PhotoEvolutionPrefillDTO.builder().build());
     }
 
+    @Transactional(readOnly = true)
+    public PhotoEvolutionComparisonDTO getComparisonByUser(UUID userId) {
+        UUID targetUserId = resolveUserForQuery(userId);
+        if (targetUserId == null) {
+            targetUserId = SecurityUtils.getCurrentUserId().orElseThrow(this::photoEvolutionForbidden);
+        }
+
+        List<PhotoEvolution> entries = repository.findByUser_IdOrderByCapturedAtDesc(targetUserId);
+        if (entries.isEmpty()) {
+            return PhotoEvolutionComparisonDTO.builder()
+                    .userId(targetUserId)
+                    .parts(new ArrayList<>())
+                    .build();
+        }
+
+        Map<BodyPart, List<PhotoEvolution>> grouped = entries.stream()
+                .filter(entry -> entry.getBodyPart() != null)
+                .collect(Collectors.groupingBy(PhotoEvolution::getBodyPart));
+
+        if (grouped.isEmpty()) {
+            throw photoEvolutionComparisonNotFound();
+        }
+
+        Comparator<PhotoEvolution> byCaptureDate = Comparator
+                .comparing(PhotoEvolution::getCapturedAt, Comparator.nullsLast(LocalDate::compareTo))
+                .thenComparing(PhotoEvolution::getCreatedAt, Comparator.nullsLast(LocalDateTime::compareTo));
+
+        List<PhotoEvolutionBodyPartComparisonDTO> parts = grouped.entrySet().stream()
+                .map(entry -> buildComparison(entry.getKey(), entry.getValue(), byCaptureDate))
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparing(PhotoEvolutionBodyPartComparisonDTO::getBodyPart))
+                .collect(Collectors.toList());
+
+        if (parts.isEmpty()) {
+            throw photoEvolutionComparisonNotFound();
+        }
+
+        return PhotoEvolutionComparisonDTO.builder()
+                .userId(targetUserId)
+                .parts(parts)
+                .build();
+    }
+
+    private PhotoEvolutionBodyPartComparisonDTO buildComparison(BodyPart bodyPart, List<PhotoEvolution> items,
+            Comparator<PhotoEvolution> comparator) {
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+
+        List<PhotoEvolution> ordered = new ArrayList<>(items);
+        ordered.sort(comparator);
+
+        List<PhotoEvolutionEvolutionPointDTO> evolution = comparisonMapper.toPoints(ordered);
+
+        Double initialMeasurement = evolution.stream()
+                .map(PhotoEvolutionEvolutionPointDTO::getMeasurement)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+
+        Double currentMeasurement = null;
+        for (int i = evolution.size() - 1; i >= 0; i--) {
+            Double candidate = evolution.get(i).getMeasurement();
+            if (candidate != null) {
+                currentMeasurement = candidate;
+                break;
+            }
+        }
+
+        Double variation = calculateVariation(initialMeasurement, currentMeasurement);
+
+        Comparator<PhotoEvolution> reversedComparator = comparator.reversed();
+        String latestImage = ordered.stream()
+                .sorted(reversedComparator)
+                .map(PhotoEvolution::getImage)
+                .filter(Objects::nonNull)
+                .map(Image::getUrl)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
+
+        return PhotoEvolutionBodyPartComparisonDTO.builder()
+                .bodyPartCode(bodyPart.name())
+                .bodyPart(formatBodyPart(bodyPart))
+                .latestImage(latestImage)
+                .initialMeasurement(initialMeasurement)
+                .currentMeasurement(currentMeasurement)
+                .variation(variation)
+                .evolution(evolution)
+                .build();
+    }
+
+    private Double calculateVariation(Double initialMeasurement, Double currentMeasurement) {
+        if (initialMeasurement == null || currentMeasurement == null) {
+            return 0.0;
+        }
+        if (Math.abs(initialMeasurement) < 1e-6) {
+            return 0.0;
+        }
+        return ((currentMeasurement - initialMeasurement) / initialMeasurement) * 100.0;
+    }
+
+    private String formatBodyPart(BodyPart bodyPart) {
+        String name = bodyPart.name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        String[] parts = name.split(" ");
+        StringBuilder builder = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                if (builder.length() > 0) {
+                    builder.append(' ');
+                }
+                builder.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+            }
+        }
+        return builder.toString();
+    }
+
     @Transactional
     public void delete(UUID id) {
         if (id == null) {
@@ -295,6 +423,13 @@ public class PhotoEvolutionService {
         Locale locale = LocaleContextHolder.getLocale();
         String message = messageSource.getMessage(type.getMessageSource(), new Object[] { "" }, locale);
         return new JMException(HttpStatus.FORBIDDEN.value(), type.getTitle(), type.getUri(), message);
+    }
+
+    private JMException photoEvolutionComparisonNotFound() {
+        ProblemType type = ProblemType.PHOTO_EVOLUTION_NOT_FOUND;
+        Locale locale = LocaleContextHolder.getLocale();
+        String message = messageSource.getMessage("photoevolution.data.notfound", null, locale);
+        return new JMException(HttpStatus.NOT_FOUND.value(), type.getTitle(), type.getUri(), message);
     }
 
     private JMException userNotFound() {

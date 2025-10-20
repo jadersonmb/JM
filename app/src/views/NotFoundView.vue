@@ -6,7 +6,7 @@
     <p class="mt-2 max-w-md text-sm text-slate-500">
       The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
     </p>
-    <RouterLink :to="{ name: 'dashboard' }" class="btn-primary mt-8">Return to dashboard</RouterLink>
+    <RouterLink :to="{ name: 'dashboard-nutrition' }" class="btn-primary mt-8">Return to dashboard</RouterLink>
   </div>
 </template>
 
