@@ -217,6 +217,7 @@ const replaceItem = (suggestion, alternative) => {
     mealIndex: suggestion.mealIndex,
     itemIndex: suggestion.itemIndex,
     foodId: alternative.id,
+    foodName: alternative.name,
   });
 };
 </script>

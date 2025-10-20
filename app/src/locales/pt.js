@@ -983,6 +983,7 @@
         calorieLabel: '{value} kcal',
         emptyState: 'Adicione alimentos às refeições para receber sugestões automáticas.',
         emptyFiltered: 'Nenhuma sugestão corresponde ao filtro de nutriente selecionado.',
+        loadError: 'Não foi possível carregar as substituições alimentares.',
         filters: {
           label: 'Filtrar por nutriente',
           helper: 'Foque no macronutriente que deseja priorizar.',
