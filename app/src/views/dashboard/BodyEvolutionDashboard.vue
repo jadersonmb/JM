@@ -9,100 +9,110 @@
       </p>
     </header>
 
-    <section class="space-y-3">
+    <section class="card">
       <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-green-50 p-3 rounded-2xl shadow-sm"
+        class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
       >
-        <!-- Left: Body Part Filter -->
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="option in bodyPartOptions"
-            :key="option.value"
-            type="button"
-            @click="selectedPart = option.value"
-            :class="[
-              'px-4 py-1.5 rounded-full font-medium transition-all duration-200 text-sm',
-              selectedPart === option.value
-                ? 'bg-emerald-200 text-emerald-800 shadow-sm'
-                : 'bg-white hover:bg-emerald-100 text-gray-800 border border-transparent hover:border-emerald-300'
-            ]"
-          >
-            {{ option.label }}
-          </button>
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:gap-8">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.bodyPart') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="option in bodyPartOptions"
+                :key="option.value"
+                type="button"
+                @click="selectedPart = option.value"
+                :class="[
+                  'px-4 py-1.5 rounded-full font-medium transition-all duration-200 text-sm',
+                  selectedPart === option.value
+                    ? 'bg-emerald-200 text-emerald-800 shadow-sm'
+                    : 'bg-white hover:bg-emerald-100 text-gray-800 border border-transparent hover:border-emerald-300'
+                ]"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.period') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="range in dateRanges"
+                :key="range.value"
+                type="button"
+                @click="selectedRange = range.value"
+                :class="[
+                  'px-3 py-1.5 rounded-full font-medium text-sm transition-all duration-200',
+                  selectedRange === range.value
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                ]"
+              >
+                {{ range.label }}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Right: Filters Button -->
-        <div class="flex w-full items-center gap-2 lg:w-auto">
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:gap-4">
+          <div v-if="isAdmin" class="w-full md:w-64">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.user') }}
+            </label>
+            <select
+              v-model="selectedUserId"
+              class="input mt-2"
+              :disabled="usersLoading"
+            >
+              <option value="">
+                {{ usersLoading ? t('dashboard.bodyEvolution.filters.loadingUsers') : t('dashboard.bodyEvolution.filters.userPlaceholder') }}
+              </option>
+              <option
+                v-for="option in userOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="w-full md:w-48">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.sort.label') }}
+            </label>
+            <select
+              v-model="sortBy"
+              class="input mt-2"
+            >
+              <option
+                v-for="option in sortOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-700 lg:w-auto"
+            class="btn-secondary self-start md:self-auto"
             @click="toggleFilters"
           >
             <i class="ri-filter-3-line text-lg"></i>
-            {{ t('filters.label') }}
+            <span>{{ t('filters.label') }}</span>
           </button>
         </div>
       </div>
-
-      <!-- Period Filter -->
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="range in dateRanges"
-          :key="range.value"
-          type="button"
-          @click="selectedRange = range.value"
-          :class="[
-            'px-3 py-1.5 rounded-full font-medium text-sm transition-all duration-200',
-            selectedRange === range.value
-              ? 'bg-emerald-100 text-emerald-800'
-              : 'bg-white text-gray-600 hover:bg-gray-100'
-          ]"
-        >
-          {{ range.label }}
-        </button>
-      </div>
     </section>
 
-    <section class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-      <div v-if="isAdmin" class="flex flex-col text-sm text-slate-500">
-          <label class="font-semibold uppercase tracking-wide">
-            {{ t('dashboard.bodyEvolution.filters.user') }}
-          </label>
-          <select
-            v-model="selectedUserId"
-            class="input mt-2 w-60"
-            :disabled="usersLoading"
-          >
-            <option value="">
-              {{ usersLoading ? t('dashboard.bodyEvolution.filters.loadingUsers') : t('dashboard.bodyEvolution.filters.userPlaceholder') }}
-            </option>
-            <option
-              v-for="option in userOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-        <div class="flex flex-col text-sm text-slate-500">
-          <label class="font-semibold uppercase tracking-wide">
-            {{ t('dashboard.bodyEvolution.sort.label') }}
-          </label>
-          <select
-            v-model="sortBy"
-            class="input mt-2 w-48"
-          >
-            <option
-              v-for="option in sortOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-    </section>
+
 
     <section v-if="loading" class="flex h-64 items-center justify-center rounded-3xl bg-white shadow-sm">
       <ArrowPathIcon class="h-8 w-8 animate-spin text-primary-500" />

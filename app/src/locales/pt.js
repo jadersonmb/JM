@@ -54,6 +54,8 @@
       empty: 'Nenhum dado de evolução corporal disponível.',
       error: 'Não foi possível carregar os dados de evolução corporal.',
       filters: {
+        bodyPart: 'Região corporal',
+        period: 'Período',
         all: 'Todos',
         abdomen: 'Abdômen',
         arms: 'Braços',

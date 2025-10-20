@@ -54,6 +54,8 @@ export default {
       empty: 'No body evolution data available yet.',
       error: 'Unable to load body evolution data.',
       filters: {
+        bodyPart: 'Body part',
+        period: 'Period',
         all: 'All',
         abdomen: 'Abdomen',
         arms: 'Arms',
