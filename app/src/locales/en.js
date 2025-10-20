@@ -1058,6 +1058,10 @@ export default {
           title: 'Meal items',
           description: 'Add foods, units, and quantities to each meal.',
         },
+        substitutions: {
+          title: 'Smart substitutions',
+          description: 'Discover AI-suggested swaps with similar nutrition.',
+        },
         notes: {
           title: 'Notes & review',
           description: 'Write notes and review the full plan before saving.',
@@ -1080,6 +1084,32 @@ export default {
         unitLabel: 'Unit',
         quantityLabel: 'Quantity',
         notesLabel: 'Notes',
+      },
+      substitutions: {
+        title: 'Smart Food Substitutions',
+        description: 'Based on your selected foods, here are similar nutritional options.',
+        originalLabel: 'Original food',
+        replace: 'Replace',
+        portionLabel: '{portion}',
+        calorieLabel: '{value} kcal',
+        emptyState: 'Add foods to your meals to see AI-generated substitutions.',
+        emptyFiltered: 'No substitutions match the selected nutrient filter yet.',
+        loadError: 'Unable to load food substitutions.',
+        filters: {
+          label: 'Filter by nutrient',
+          helper: 'Focus on the macronutrient you want to prioritize.',
+          all: 'All',
+          protein: 'Protein',
+          carbs: 'Carbs',
+          fat: 'Fat',
+          fiber: 'Fiber',
+        },
+        macros: {
+          protein: 'Protein',
+          carbs: 'Carbs',
+          fat: 'Fat',
+          fiber: 'Fiber',
+        },
       },
       review: {
         title: 'Plan summary',

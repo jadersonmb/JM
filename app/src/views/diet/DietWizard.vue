@@ -142,6 +142,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import StepMealSchedule from '@/components/diet/StepMealSchedule.vue';
 import StepMealItems from '@/components/diet/StepMealItems.vue';
+import StepFoodSubstitutions from '@/components/diet/StepFoodSubstitutions.vue';
 import StepNotesReview from '@/components/diet/StepNotesReview.vue';
 import DietService from '@/services/DietService';
 import { useNotificationStore } from '@/stores/notifications';
@@ -177,6 +178,11 @@ const defaultSchedule = [
   { mealType: 'DINNER', scheduledTime: '20:00' },
 ];
 
+const substitutionSuggestions = ref([]);
+const substitutionLoading = ref(false);
+let substitutionRefreshHandle = null;
+let substitutionRequestToken = 0;
+
 const currentStepIndex = ref(0);
 const steps = computed(() => [
   {
@@ -190,6 +196,12 @@ const steps = computed(() => [
     title: t('diet.wizard.steps.items.title'),
     description: t('diet.wizard.steps.items.description'),
     component: StepMealItems,
+  },
+  {
+    id: 'substitutions',
+    title: t('diet.wizard.steps.substitutions.title'),
+    description: t('diet.wizard.steps.substitutions.description'),
+    component: StepFoodSubstitutions,
   },
   {
     id: 'notes',
@@ -269,6 +281,174 @@ const submitLabel = computed(() => t('diet.save'));
 
 const currentStep = computed(() => steps.value[currentStepIndex.value]);
 
+const unitMap = computed(() => {
+  const map = new Map();
+  (units.value ?? []).forEach((unit) => {
+    if (unit?.id) {
+      map.set(unit.id, unit.displayName ?? unit.description ?? '');
+    }
+  });
+  return map;
+});
+
+const substitutionCategories = computed(() => [
+  { value: 'ALL', label: t('diet.wizard.substitutions.filters.all') },
+  { value: 'PROTEIN', label: t('diet.wizard.substitutions.filters.protein') },
+  { value: 'CARBS', label: t('diet.wizard.substitutions.filters.carbs') },
+  { value: 'FAT', label: t('diet.wizard.substitutions.filters.fat') },
+  { value: 'FIBER', label: t('diet.wizard.substitutions.filters.fiber') },
+]);
+
+const mealItemReferences = computed(() => {
+  const references = [];
+  form.meals.forEach((meal, mealIndex) => {
+    (meal.items ?? []).forEach((item, itemIndex) => {
+      if (!item?.foodItemId) return;
+      references.push({
+        reference: `${mealIndex}-${itemIndex}`,
+        mealIndex,
+        itemIndex,
+        foodId: item.foodItemId,
+      });
+    });
+  });
+  return references;
+});
+
+const buildSubstitutionPayload = () => {
+  const items = mealItemReferences.value
+    .map((entry) => {
+      const rawId = entry.foodId;
+      if (!rawId) return null;
+      const normalizedId = typeof rawId === 'string' ? rawId.trim() : rawId;
+      if (!normalizedId) return null;
+      return {
+        reference: entry.reference,
+        foodId: normalizedId,
+        limit: 3,
+      };
+    })
+    .filter((value) => value != null);
+  return { items };
+};
+
+const mapSubstitutionSuggestion = (suggestion) => {
+  if (!suggestion?.reference) {
+    return null;
+  }
+  const [mealIndexRaw, itemIndexRaw] = String(suggestion.reference).split('-');
+  const mealIndex = Number.parseInt(mealIndexRaw, 10);
+  const itemIndex = Number.parseInt(itemIndexRaw, 10);
+  if (Number.isNaN(mealIndex) || Number.isNaN(itemIndex)) {
+    return null;
+  }
+  const meal = form.meals[mealIndex];
+  const item = meal?.items?.[itemIndex];
+  if (!meal || !item) {
+    return null;
+  }
+  const original = suggestion.original ?? {};
+  const portionLabel = computeItemPortionLabel(item) || original.portionLabel || '';
+  return {
+    id: suggestion.reference,
+    mealIndex,
+    itemIndex,
+    mealName: translateMealLabel(meal.mealType),
+    mealTime: meal.scheduledTime,
+    category: original.primary || suggestion.category || 'ALL',
+    original: {
+      ...original,
+      portionLabel,
+    },
+    alternatives: (suggestion.alternatives ?? []).map((alternative) => ({
+      ...alternative,
+    })),
+  };
+};
+
+const refreshSubstitutions = async () => {
+  if (!mealItemReferences.value.length) {
+    substitutionSuggestions.value = [];
+    substitutionLoading.value = false;
+    return;
+  }
+  const payload = buildSubstitutionPayload();
+  if (!payload.items.length) {
+    substitutionSuggestions.value = [];
+    substitutionLoading.value = false;
+    return;
+  }
+  const token = ++substitutionRequestToken;
+  substitutionLoading.value = true;
+  try {
+    const { data } = await DietService.fetchSubstitutions(payload);
+    if (token !== substitutionRequestToken) {
+      return;
+    }
+    const suggestions = (data?.suggestions ?? [])
+      .map((item) => mapSubstitutionSuggestion(item))
+      .filter((value) => value && (value.alternatives ?? []).length);
+    substitutionSuggestions.value = suggestions;
+  } catch (error) {
+    if (token === substitutionRequestToken) {
+      substitutionSuggestions.value = [];
+      notifications.push({
+        type: 'error',
+        title: t('notifications.validationTitle'),
+        message: error.response?.data?.details ?? t('diet.wizard.substitutions.loadError'),
+      });
+    }
+  } finally {
+    if (token === substitutionRequestToken) {
+      substitutionLoading.value = false;
+    }
+  }
+};
+
+const scheduleSubstitutionRefresh = () => {
+  if (substitutionRefreshHandle) {
+    clearTimeout(substitutionRefreshHandle);
+  }
+  substitutionRefreshHandle = setTimeout(() => {
+    refreshSubstitutions();
+  }, 300);
+};
+
+const syncSuggestionContext = () => {
+  substitutionSuggestions.value = substitutionSuggestions.value.map((suggestion) => {
+    const meal = form.meals[suggestion.mealIndex];
+    const item = meal?.items?.[suggestion.itemIndex];
+    if (!meal || !item) {
+      return suggestion;
+    }
+    return {
+      ...suggestion,
+      mealName: translateMealLabel(meal.mealType),
+      mealTime: meal.scheduledTime,
+      original: {
+        ...suggestion.original,
+        portionLabel: computeItemPortionLabel(item) || suggestion.original?.portionLabel || '',
+      },
+    };
+  });
+};
+
+const translateMealLabel = (type) => t(`diet.meal.${String(type || '').toLowerCase()}`);
+
+const computeItemPortionLabel = (item = {}) => {
+  const quantity = item.quantity != null ? Number(item.quantity) : null;
+  const unitName = item.unitDisplayName || unitMap.value.get(item.unitId) || '';
+  if (quantity == null || Number.isNaN(quantity) || quantity <= 0) {
+    return unitName;
+  }
+  const hasDecimals = Math.abs(quantity % 1) > 0;
+  const formattedQuantity = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: hasDecimals ? 1 : 0,
+    maximumFractionDigits: hasDecimals ? 1 : 0,
+  }).format(quantity);
+  return unitName ? `${formattedQuantity} ${unitName}` : formattedQuantity;
+};
+
 const currentStepProps = computed(() => {
   if (currentStep.value?.id === 'schedule') {
     return {
@@ -290,6 +470,15 @@ const currentStepProps = computed(() => {
       'onUpdate:meals': (value) => {
         form.meals = value;
       },
+    };
+  }
+  if (currentStep.value?.id === 'substitutions') {
+    return {
+      suggestions: substitutionSuggestions.value,
+      categories: substitutionCategories.value,
+      loading: substitutionLoading.value,
+      disabled: isReadOnly.value,
+      onReplace: replaceMealItem,
     };
   }
   return {
@@ -320,6 +509,26 @@ const previousStep = () => {
 
 const goToStep = (index) => {
   currentStepIndex.value = index;
+};
+
+const replaceMealItem = ({ mealIndex, itemIndex, foodId, foodName }) => {
+  if (isReadOnly.value || mealIndex == null || itemIndex == null || !foodId) {
+    return;
+  }
+  const replacement = foods.value.find((food) => food.id === foodId);
+  const updatedMeals = form.meals.map((meal, currentMealIndex) => {
+    if (currentMealIndex !== mealIndex) return meal;
+    const nextItems = (meal.items ?? []).map((item, currentItemIndex) => {
+      if (currentItemIndex !== itemIndex) return item;
+      return {
+        ...item,
+        foodItemId: replacement?.id ?? foodId,
+        foodItemName: replacement?.name ?? foodName ?? item.foodItemName ?? '',
+      };
+    });
+    return { ...meal, items: nextItems };
+  });
+  form.meals = updatedMeals;
 };
 
 const startEditing = () => {
@@ -447,6 +656,7 @@ const loadDiet = async (id) => {
       data.createdByName ?? '',
       data.createdByEmail ?? ''
     );
+    scheduleSubstitutionRefresh();
   } catch (error) {
     notifications.push({
       type: 'error',
@@ -488,6 +698,7 @@ const restoreDraft = () => {
     if (!raw) {
       if (!form.meals.length) {
         form.meals = defaultSchedule.map((item) => ({ ...item, id: crypto.randomUUID ? crypto.randomUUID() : Date.now(), items: [] }));
+        scheduleSubstitutionRefresh();
       }
       return;
     }
@@ -502,6 +713,7 @@ const restoreDraft = () => {
     });
     ensureOwnerOption(form.createdByUserId);
     setDefaultOwner();
+    scheduleSubstitutionRefresh();
     notifications.push({
       type: 'info',
       title: t('diet.wizard.toast.draftTitle'),
@@ -532,6 +744,22 @@ watch(
   (mode) => {
     viewMode.value = mode === 'view' ? 'view' : 'edit';
   },
+);
+
+watch(
+  mealItemReferences,
+  () => {
+    scheduleSubstitutionRefresh();
+  },
+  { immediate: true },
+);
+
+watch(
+  () => form.meals,
+  () => {
+    syncSuggestionContext();
+  },
+  { deep: true },
 );
 
 watch(form, () => {

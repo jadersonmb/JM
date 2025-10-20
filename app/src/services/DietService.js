@@ -22,6 +22,9 @@ export default {
   listFoods(params) {
     return api.get('/api/v1/foods', { params });
   },
+  fetchSubstitutions(data) {
+    return api.post('/api/v1/foods/substitutions', data);
+  },
   listOwners(params) {
     return api.get('/api/v1/diets/owners', { params });
   },
