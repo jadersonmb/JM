@@ -99,15 +99,6 @@
               </option>
             </select>
           </div>
-
-          <button
-            type="button"
-            class="btn-secondary self-start md:self-auto"
-            @click="toggleFilters"
-          >
-            <i class="ri-filter-3-line text-lg"></i>
-            <span>{{ t('filters.label') }}</span>
-          </button>
         </div>
       </div>
     </section>
