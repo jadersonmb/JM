@@ -24,22 +24,45 @@
           {{ option.label }}
         </button>
       </div>
-      <div class="flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center">
-        <label class="font-semibold uppercase tracking-wide">
-          {{ t('dashboard.bodyEvolution.sort.label') }}
-        </label>
-        <select
-          v-model="sortBy"
-          class="input w-48"
-        >
-          <option
-            v-for="option in sortOptions"
-            :key="option.value"
-            :value="option.value"
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+        <div v-if="isAdmin" class="flex flex-col text-sm text-slate-500">
+          <label class="font-semibold uppercase tracking-wide">
+            {{ t('dashboard.bodyEvolution.filters.user') }}
+          </label>
+          <select
+            v-model="selectedUserId"
+            class="input mt-2 w-60"
+            :disabled="usersLoading"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <option value="">
+              {{ usersLoading ? t('dashboard.bodyEvolution.filters.loadingUsers') : t('dashboard.bodyEvolution.filters.userPlaceholder') }}
+            </option>
+            <option
+              v-for="option in userOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        <div class="flex flex-col text-sm text-slate-500">
+          <label class="font-semibold uppercase tracking-wide">
+            {{ t('dashboard.bodyEvolution.sort.label') }}
+          </label>
+          <select
+            v-model="sortBy"
+            class="input mt-2 w-48"
+          >
+            <option
+              v-for="option in sortOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
       </div>
     </section>
 
@@ -48,7 +71,16 @@
     </section>
 
     <template v-else>
-      <section v-if="!hasData" class="rounded-3xl bg-white p-12 text-center shadow-sm">
+      <section
+        v-if="shouldPromptSelection"
+        class="rounded-3xl bg-white p-12 text-center shadow-sm"
+      >
+        <p class="text-base font-semibold text-slate-700">
+          {{ t('dashboard.bodyEvolution.prompts.selectUser') }}
+        </p>
+      </section>
+
+      <section v-else-if="!hasData" class="rounded-3xl bg-white p-12 text-center shadow-sm">
         <p class="text-base font-semibold text-slate-700">
           {{ t('dashboard.bodyEvolution.empty') }}
         </p>
@@ -172,23 +204,30 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ArrowPathIcon, PhotoIcon } from '@heroicons/vue/24/outline';
 import EvolutionChart from '@/components/charts/EvolutionChart.vue';
 import photoEvolutionService from '@/services/photoEvolution';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationStore } from '@/stores/notifications';
+import { getUsers } from '@/services/users';
 
 const auth = useAuthStore();
 const notifications = useNotificationStore();
 const { t, locale } = useI18n();
 
 const loading = ref(false);
+const usersLoading = ref(false);
+const userOptions = ref([]);
+const selectedUserId = ref('');
 const allParts = ref([]);
 const selectedFilter = ref('ALL');
 const selectedPart = ref('');
 const sortBy = ref('date');
+const activeRequestToken = ref(null);
+
+const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
 const filterOptions = computed(() => [
   { value: 'ALL', label: t('dashboard.bodyEvolution.filters.all') },
@@ -207,6 +246,15 @@ const numberFormatter = computed(() => new Intl.NumberFormat(locale.value, {
   maximumFractionDigits: 2,
   minimumFractionDigits: 0,
 }));
+
+const targetUserId = computed(() => {
+  if (isAdmin.value) {
+    return selectedUserId.value || null;
+  }
+  return auth.user?.id ?? null;
+});
+
+const shouldPromptSelection = computed(() => isAdmin.value && !targetUserId.value && !usersLoading.value);
 
 const displayedParts = computed(() => {
   let parts = Array.isArray(allParts.value) ? [...allParts.value] : [];
@@ -316,17 +364,27 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const loadData = async () => {
-  const userId = auth.user?.id;
+const loadData = async (userId) => {
   if (!userId) {
+    activeRequestToken.value = null;
+    loading.value = false;
+    allParts.value = [];
     return;
   }
   loading.value = true;
+  const token = Symbol('request');
+  activeRequestToken.value = token;
   try {
     const { data } = await photoEvolutionService.comparison(userId);
     const parts = Array.isArray(data?.parts) ? data.parts.map(normalizePart) : [];
+    if (activeRequestToken.value !== token) {
+      return;
+    }
     allParts.value = parts;
   } catch (error) {
+    if (activeRequestToken.value !== token) {
+      return;
+    }
     console.error('[BodyEvolutionDashboard]', error);
     notifications.push({
       type: 'error',
@@ -335,11 +393,86 @@ const loadData = async () => {
     });
     allParts.value = [];
   } finally {
-    loading.value = false;
+    if (activeRequestToken.value === token) {
+      loading.value = false;
+      activeRequestToken.value = null;
+    }
   }
 };
 
-onMounted(loadData);
+const extractArray = (payload) => {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.content)) return payload.content;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.results)) return payload.results;
+  return [];
+};
+
+const fetchUsers = async () => {
+  if (!isAdmin.value) return;
+  usersLoading.value = true;
+  try {
+    const { data } = await getUsers({
+      page: 0,
+      size: 50,
+      sort: 'name,asc',
+      type: 'CLIENT',
+    });
+    const rows = extractArray(data);
+    userOptions.value = rows
+      .map((item) => {
+        const value = item?.id ?? item?.userId ?? '';
+        const label = item?.name ?? item?.fullName ?? item?.email ?? (value ? `#${value}` : '');
+        return { value, label };
+      })
+      .filter((item) => item.value);
+  } catch (error) {
+    console.error('[BodyEvolutionDashboard][fetchUsers]', error);
+    userOptions.value = [];
+    notifications.push({
+      type: 'error',
+      title: t('dashboard.bodyEvolution.error'),
+      message: error?.response?.data?.details ?? error?.message ?? '',
+    });
+  } finally {
+    usersLoading.value = false;
+  }
+};
+
+watch(
+  () => auth.user,
+  (user) => {
+    if (!isAdmin.value && user?.id) {
+      selectedUserId.value = user.id;
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  targetUserId,
+  (userId) => {
+    selectedFilter.value = 'ALL';
+    selectedPart.value = '';
+    loadData(userId);
+  },
+  { immediate: true },
+);
+
+watch(
+  isAdmin,
+  (value) => {
+    if (value) {
+      selectedUserId.value = '';
+      fetchUsers();
+    } else if (auth.user?.id) {
+      selectedUserId.value = auth.user.id;
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped>

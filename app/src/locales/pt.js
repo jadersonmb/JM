@@ -43,6 +43,9 @@
         arms: 'Braços',
         legs: 'Pernas',
         back: 'Costas',
+        user: 'Paciente',
+        userPlaceholder: 'Selecione um paciente',
+        loadingUsers: 'Carregando pacientes...'
       },
       sort: {
         label: 'Ordenar por',
@@ -52,6 +55,9 @@
       metrics: {
         initial: 'Inicial',
         current: 'Atual',
+      },
+      prompts: {
+        selectUser: 'Selecione um paciente para visualizar a comparação corporal.',
       },
     },
   },

@@ -43,6 +43,9 @@ export default {
         arms: 'Arms',
         legs: 'Legs',
         back: 'Back',
+        user: 'Patient',
+        userPlaceholder: 'Select a patient',
+        loadingUsers: 'Loading patients...'
       },
       sort: {
         label: 'Sort by',
@@ -52,6 +55,9 @@ export default {
       metrics: {
         initial: 'Initial',
         current: 'Current',
+      },
+      prompts: {
+        selectUser: 'Select a patient to view the body evolution comparison.',
       },
     },
   },
