@@ -30,6 +30,22 @@ export default {
     referenceProfessions: 'Professions',
     unauthorized: 'Access denied',
   },
+  filters: {
+    label: 'Filters',
+  },
+  bodyParts: {
+    all: 'All',
+    abdomen: 'Abdomen',
+    arms: 'Arms',
+    legs: 'Legs',
+    back: 'Back',
+    chest: 'Chest',
+  },
+  periods: {
+    last30: 'Last 30 days',
+    last90: '90 days',
+    lastYear: '1 year',
+  },
   dashboard: {
     bodyEvolution: {
       title: 'Body Evolution Analysis',
@@ -38,6 +54,8 @@ export default {
       empty: 'No body evolution data available yet.',
       error: 'Unable to load body evolution data.',
       filters: {
+        bodyPart: 'Body part',
+        period: 'Period',
         all: 'All',
         abdomen: 'Abdomen',
         arms: 'Arms',

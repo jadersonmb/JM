@@ -9,62 +9,101 @@
       </p>
     </header>
 
-    <section class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="option in filterOptions"
-          :key="option.value"
-          type="button"
-          class="rounded-full px-4 py-2 text-sm font-semibold transition"
-          :class="option.value === selectedFilter
-            ? 'bg-primary-600 text-white shadow-soft'
-            : 'border border-slate-200 bg-white text-slate-600 hover:border-primary-200 hover:text-primary-600'"
-          @click="selectedFilter = option.value"
-        >
-          {{ option.label }}
-        </button>
-      </div>
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-        <div v-if="isAdmin" class="flex flex-col text-sm text-slate-500">
-          <label class="font-semibold uppercase tracking-wide">
-            {{ t('dashboard.bodyEvolution.filters.user') }}
-          </label>
-          <select
-            v-model="selectedUserId"
-            class="input mt-2 w-60"
-            :disabled="usersLoading"
-          >
-            <option value="">
-              {{ usersLoading ? t('dashboard.bodyEvolution.filters.loadingUsers') : t('dashboard.bodyEvolution.filters.userPlaceholder') }}
-            </option>
-            <option
-              v-for="option in userOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
+    <section class="card">
+      <div
+        class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
+      >
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:gap-8">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.bodyPart') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="option in bodyPartOptions"
+                :key="option.value"
+                type="button"
+                @click="selectedPart = option.value"
+                :class="[
+                  'px-4 py-1.5 rounded-full font-medium transition-all duration-200 text-sm',
+                  selectedPart === option.value
+                    ? 'bg-emerald-200 text-emerald-800 shadow-sm'
+                    : 'bg-white hover:bg-emerald-100 text-gray-800 border border-transparent hover:border-emerald-300'
+                ]"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.period') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <button
+                v-for="range in dateRanges"
+                :key="range.value"
+                type="button"
+                @click="selectedRange = range.value"
+                :class="[
+                  'px-3 py-1.5 rounded-full font-medium text-sm transition-all duration-200',
+                  selectedRange === range.value
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                ]"
+              >
+                {{ range.label }}
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="flex flex-col text-sm text-slate-500">
-          <label class="font-semibold uppercase tracking-wide">
-            {{ t('dashboard.bodyEvolution.sort.label') }}
-          </label>
-          <select
-            v-model="sortBy"
-            class="input mt-2 w-48"
-          >
-            <option
-              v-for="option in sortOptions"
-              :key="option.value"
-              :value="option.value"
+
+        <div class="flex flex-col gap-4 md:flex-row md:items-end md:gap-4">
+          <div v-if="isAdmin" class="w-full md:w-64">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.filters.user') }}
+            </label>
+            <select
+              v-model="selectedUserId"
+              class="input mt-2"
+              :disabled="usersLoading"
             >
-              {{ option.label }}
-            </option>
-          </select>
+              <option value="">
+                {{ usersLoading ? t('dashboard.bodyEvolution.filters.loadingUsers') : t('dashboard.bodyEvolution.filters.userPlaceholder') }}
+              </option>
+              <option
+                v-for="option in userOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <div class="w-full md:w-48">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {{ t('dashboard.bodyEvolution.sort.label') }}
+            </label>
+            <select
+              v-model="sortBy"
+              class="input mt-2"
+            >
+              <option
+                v-for="option in sortOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
     </section>
+
+
 
     <section v-if="loading" class="flex h-64 items-center justify-center rounded-3xl bg-white shadow-sm">
       <ArrowPathIcon class="h-8 w-8 animate-spin text-primary-500" />
@@ -92,7 +131,7 @@
             v-for="part in displayedParts"
             :key="part.bodyPartCode"
             class="cursor-pointer rounded-3xl border border-transparent bg-white p-6 shadow-sm transition hover:shadow-md"
-            :class="selectedPart === part.bodyPartCode ? 'border-primary-200 ring-2 ring-primary-200' : ''"
+            :class="activePartCode === part.bodyPartCode ? 'border-primary-200 ring-2 ring-primary-200' : ''"
             @click="selectPart(part.bodyPartCode)"
           >
             <header class="flex items-start justify-between gap-2">
@@ -222,19 +261,27 @@ const usersLoading = ref(false);
 const userOptions = ref([]);
 const selectedUserId = ref('');
 const allParts = ref([]);
-const selectedFilter = ref('ALL');
-const selectedPart = ref('');
+const selectedPart = ref('ALL');
+const selectedRange = ref(30);
+const activePartCode = ref('');
 const sortBy = ref('date');
 const activeRequestToken = ref(null);
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 
-const filterOptions = computed(() => [
-  { value: 'ALL', label: t('dashboard.bodyEvolution.filters.all') },
-  { value: 'ABDOMEN', label: t('dashboard.bodyEvolution.filters.abdomen') },
-  { value: 'ARMS', label: t('dashboard.bodyEvolution.filters.arms') },
-  { value: 'LEGS', label: t('dashboard.bodyEvolution.filters.legs') },
-  { value: 'BACK', label: t('dashboard.bodyEvolution.filters.back') },
+const bodyPartOptions = computed(() => [
+  { value: 'ALL', label: t('bodyParts.all') },
+  { value: 'ABDOMEN', label: t('bodyParts.abdomen') },
+  { value: 'ARMS', label: t('bodyParts.arms') },
+  { value: 'LEGS', label: t('bodyParts.legs') },
+  { value: 'BACK', label: t('bodyParts.back') },
+  { value: 'CHEST', label: t('bodyParts.chest') },
+]);
+
+const dateRanges = computed(() => [
+  { value: 30, label: t('periods.last30') },
+  { value: 90, label: t('periods.last90') },
+  { value: 365, label: t('periods.lastYear') },
 ]);
 
 const sortOptions = computed(() => [
@@ -258,8 +305,8 @@ const shouldPromptSelection = computed(() => isAdmin.value && !targetUserId.valu
 
 const displayedParts = computed(() => {
   let parts = Array.isArray(allParts.value) ? [...allParts.value] : [];
-  if (selectedFilter.value !== 'ALL') {
-    parts = parts.filter((item) => item.bodyPartCode === selectedFilter.value);
+  if (selectedPart.value !== 'ALL') {
+    parts = parts.filter((item) => item.bodyPartCode === selectedPart.value);
   }
   if (sortBy.value === 'variation') {
     return parts.sort((a, b) => Math.abs((b.variation ?? 0)) - Math.abs((a.variation ?? 0)));
@@ -273,22 +320,26 @@ const activePart = computed(() => {
   if (!hasData.value) {
     return null;
   }
-  const current = displayedParts.value.find((item) => item.bodyPartCode === selectedPart.value);
+  const current = displayedParts.value.find((item) => item.bodyPartCode === activePartCode.value);
   return current ?? displayedParts.value[0] ?? null;
 });
 
 watch(displayedParts, (parts) => {
   if (!parts.length) {
-    selectedPart.value = '';
+    activePartCode.value = '';
     return;
   }
-  if (!parts.some((item) => item.bodyPartCode === selectedPart.value)) {
-    selectedPart.value = parts[0].bodyPartCode;
+  if (!parts.some((item) => item.bodyPartCode === activePartCode.value)) {
+    activePartCode.value = parts[0].bodyPartCode;
   }
 });
 
 const selectPart = (code) => {
-  selectedPart.value = code;
+  activePartCode.value = code;
+};
+
+const toggleFilters = () => {
+  // abrir modal lateral de filtros avançados
 };
 
 const formatMeasurement = (value) => {
@@ -364,18 +415,29 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const loadData = async (userId) => {
+const loadEvolutionData = async (part, range) => {
+  const userId = targetUserId.value;
   if (!userId) {
     activeRequestToken.value = null;
     loading.value = false;
     allParts.value = [];
     return;
   }
+
   loading.value = true;
   const token = Symbol('request');
   activeRequestToken.value = token;
+
+  const params = {};
+  if (part && part !== 'ALL') {
+    params.bodyPart = part;
+  }
+  if (typeof range === 'number' && Number.isFinite(range)) {
+    params.range = range;
+  }
+
   try {
-    const { data } = await photoEvolutionService.comparison(userId);
+    const { data } = await photoEvolutionService.comparison(userId, params);
     const parts = Array.isArray(data?.parts) ? data.parts.map(normalizePart) : [];
     if (activeRequestToken.value !== token) {
       return;
@@ -452,11 +514,20 @@ watch(
 );
 
 watch(
+  [selectedPart, selectedRange],
+  ([part, range]) => {
+    if (!targetUserId.value) {
+      return;
+    }
+    loadEvolutionData(part, range);
+  },
+);
+
+watch(
   targetUserId,
-  (userId) => {
-    selectedFilter.value = 'ALL';
-    selectedPart.value = '';
-    loadData(userId);
+  () => {
+    activePartCode.value = '';
+    loadEvolutionData(selectedPart.value, selectedRange.value);
   },
   { immediate: true },
 );

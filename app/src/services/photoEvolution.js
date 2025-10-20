@@ -24,7 +24,11 @@ export default {
   prefill(params) {
     return api.get('/api/v1/photo-evolutions/prefill', { params });
   },
-  comparison(userId) {
-    return api.get(`/api/v1/photo-evolution/${userId}/comparison`);
+  comparison(userId, params = {}) {
+    const config = {};
+    if (params && Object.keys(params).length > 0) {
+      config.params = params;
+    }
+    return api.get(`/api/v1/photo-evolution/${userId}/comparison`, config);
   },
 };

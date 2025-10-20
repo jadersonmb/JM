@@ -30,6 +30,22 @@
     referenceProfessions: 'Profissões',
     unauthorized: 'Acesso negado',
   },
+  filters: {
+    label: 'Filtros',
+  },
+  bodyParts: {
+    all: 'Todos',
+    abdomen: 'Abdômen',
+    arms: 'Braços',
+    legs: 'Pernas',
+    back: 'Costas',
+    chest: 'Peito',
+  },
+  periods: {
+    last30: 'Últimos 30 dias',
+    last90: '90 dias',
+    lastYear: '1 ano',
+  },
   dashboard: {
     bodyEvolution: {
       title: 'Análise da Evolução Corporal',
@@ -38,6 +54,8 @@
       empty: 'Nenhum dado de evolução corporal disponível.',
       error: 'Não foi possível carregar os dados de evolução corporal.',
       filters: {
+        bodyPart: 'Região corporal',
+        period: 'Período',
         all: 'Todos',
         abdomen: 'Abdômen',
         arms: 'Braços',
