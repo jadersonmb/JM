@@ -142,6 +142,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import StepMealSchedule from '@/components/diet/StepMealSchedule.vue';
 import StepMealItems from '@/components/diet/StepMealItems.vue';
+import StepFoodSubstitutions from '@/components/diet/StepFoodSubstitutions.vue';
 import StepNotesReview from '@/components/diet/StepNotesReview.vue';
 import DietService from '@/services/DietService';
 import { useNotificationStore } from '@/stores/notifications';
@@ -177,6 +178,120 @@ const defaultSchedule = [
   { mealType: 'DINNER', scheduledTime: '20:00' },
 ];
 
+const nutrientKeys = ['protein', 'carbs', 'fat', 'fiber'];
+
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const roundToSingleDecimal = (value) => Math.round(value * 10) / 10;
+
+const deriveFiber = (food) => {
+  const directFiber = toNumber(food?.averageFiber ?? food?.fiber ?? food?.averageFiberGrams);
+  if (directFiber > 0) {
+    return roundToSingleDecimal(directFiber);
+  }
+  const carbs = toNumber(food?.averageCarbs ?? food?.carbs);
+  const category = String(food?.categoryName ?? '').toLowerCase();
+  if (!carbs) {
+    if (category.includes('legume') || category.includes('vegetable') || category.includes('fruit')) {
+      return 1;
+    }
+    return 0;
+  }
+  if (category.includes('legume')) {
+    return roundToSingleDecimal(Math.max(carbs * 0.3, 2));
+  }
+  if (category.includes('vegetable') || category.includes('fruit')) {
+    return roundToSingleDecimal(Math.max(carbs * 0.25, 1));
+  }
+  if (category.includes('grain') || category.includes('bread')) {
+    return roundToSingleDecimal(Math.max(carbs * 0.15, 1));
+  }
+  return 0;
+};
+
+const mapCategoryToNutrient = (categoryName = '') => {
+  const normalized = String(categoryName).toLowerCase();
+  if (normalized.includes('protein') || normalized.includes('dairy')) {
+    return 'PROTEIN';
+  }
+  if (normalized.includes('fat') || normalized.includes('oil') || normalized.includes('nut') || normalized.includes('seed')) {
+    return 'FAT';
+  }
+  if (normalized.includes('vegetable') || normalized.includes('fruit') || normalized.includes('legume')) {
+    return 'FIBER';
+  }
+  if (normalized.includes('grain') || normalized.includes('bread') || normalized.includes('sweet')) {
+    return 'CARBS';
+  }
+  return 'CARBS';
+};
+
+const determinePrimaryNutrient = (food, macros) => {
+  let primaryKey = 'protein';
+  let primaryValue = macros?.[primaryKey] ?? 0;
+  nutrientKeys.forEach((key) => {
+    const value = macros?.[key] ?? 0;
+    if (value > primaryValue) {
+      primaryKey = key;
+      primaryValue = value;
+    }
+  });
+  if (primaryValue > 0) {
+    return primaryKey.toUpperCase();
+  }
+  return mapCategoryToNutrient(food?.categoryName ?? '');
+};
+
+const formatPortionLabel = (portion, unitName = '') => {
+  const quantity = toNumber(portion);
+  const trimmedUnit = unitName ? String(unitName).trim() : '';
+  if (!quantity) {
+    return trimmedUnit;
+  }
+  const hasDecimals = Math.abs(quantity % 1) > 0;
+  const formattedQuantity = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: hasDecimals ? 1 : 0,
+    maximumFractionDigits: hasDecimals ? 1 : 0,
+  }).format(quantity);
+  return trimmedUnit ? `${formattedQuantity} ${trimmedUnit}` : formattedQuantity;
+};
+
+const buildNormalizedFood = (food = {}) => {
+  if (!food?.id) return null;
+  const macros = {
+    protein: toNumber(food.averageProtein ?? food.protein),
+    carbs: toNumber(food.averageCarbs ?? food.carbs),
+    fat: toNumber(food.averageFat ?? food.fat),
+    fiber: deriveFiber(food),
+  };
+  const normalized = {
+    id: food.id,
+    name: food.name ?? '',
+    calories: toNumber(food.averageCalories ?? food.calories),
+    ...macros,
+    portion: toNumber(food.commonPortion ?? food.portion),
+    portionUnit: food.commonPortionUnitName ?? food.portionUnit ?? '',
+    portionLabel: formatPortionLabel(food.commonPortion ?? food.portion, food.commonPortionUnitName ?? food.portionUnit ?? ''),
+    categoryName: food.categoryName ?? '',
+    primary: determinePrimaryNutrient(food, macros),
+    imageUrl: food.imageUrl ?? null,
+  };
+  return normalized;
+};
+
+const computeSimilarityScore = (source, candidate) => {
+  let score = 0;
+  nutrientKeys.forEach((key) => {
+    const diff = Math.abs((source?.[key] ?? 0) - (candidate?.[key] ?? 0));
+    score += diff;
+  });
+  score += Math.abs((source?.calories ?? 0) - (candidate?.calories ?? 0)) / 50;
+  return score;
+};
+
 const currentStepIndex = ref(0);
 const steps = computed(() => [
   {
@@ -190,6 +305,12 @@ const steps = computed(() => [
     title: t('diet.wizard.steps.items.title'),
     description: t('diet.wizard.steps.items.description'),
     component: StepMealItems,
+  },
+  {
+    id: 'substitutions',
+    title: t('diet.wizard.steps.substitutions.title'),
+    description: t('diet.wizard.steps.substitutions.description'),
+    component: StepFoodSubstitutions,
   },
   {
     id: 'notes',
@@ -269,6 +390,97 @@ const submitLabel = computed(() => t('diet.save'));
 
 const currentStep = computed(() => steps.value[currentStepIndex.value]);
 
+const normalizedFoods = computed(() =>
+  (foods.value ?? [])
+    .map((food) => buildNormalizedFood(food))
+    .filter((food) => food != null),
+);
+
+const normalizedFoodMap = computed(() => {
+  const map = new Map();
+  normalizedFoods.value.forEach((food) => {
+    map.set(food.id, food);
+  });
+  return map;
+});
+
+const unitMap = computed(() => {
+  const map = new Map();
+  (units.value ?? []).forEach((unit) => {
+    if (unit?.id) {
+      map.set(unit.id, unit.displayName ?? unit.description ?? '');
+    }
+  });
+  return map;
+});
+
+const substitutionCategories = computed(() => [
+  { value: 'ALL', label: t('diet.wizard.substitutions.filters.all') },
+  { value: 'PROTEIN', label: t('diet.wizard.substitutions.filters.protein') },
+  { value: 'CARBS', label: t('diet.wizard.substitutions.filters.carbs') },
+  { value: 'FAT', label: t('diet.wizard.substitutions.filters.fat') },
+  { value: 'FIBER', label: t('diet.wizard.substitutions.filters.fiber') },
+]);
+
+const translateMealLabel = (type) => t(`diet.meal.${String(type || '').toLowerCase()}`);
+
+const computeItemPortionLabel = (item = {}) => {
+  const quantity = item.quantity != null ? Number(item.quantity) : null;
+  const unitName = item.unitDisplayName || unitMap.value.get(item.unitId) || '';
+  if (quantity == null || Number.isNaN(quantity) || quantity <= 0) {
+    return unitName;
+  }
+  const hasDecimals = Math.abs(quantity % 1) > 0;
+  const formattedQuantity = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: hasDecimals ? 1 : 0,
+    maximumFractionDigits: hasDecimals ? 1 : 0,
+  }).format(quantity);
+  return unitName ? `${formattedQuantity} ${unitName}` : formattedQuantity;
+};
+
+const substitutionSuggestions = computed(() => {
+  const suggestions = [];
+  if (!form.meals?.length || !normalizedFoodMap.value.size) {
+    return suggestions;
+  }
+  form.meals.forEach((meal, mealIndex) => {
+    (meal.items ?? []).forEach((item, itemIndex) => {
+      if (!item?.foodItemId) return;
+      const baseFood = normalizedFoodMap.value.get(item.foodItemId);
+      if (!baseFood) return;
+      const alternativesWithScore = normalizedFoods.value
+        .filter((candidate) => candidate.id !== baseFood.id)
+        .map((candidate) => ({
+          ...candidate,
+          similarityScore: computeSimilarityScore(baseFood, candidate),
+        }));
+      if (!alternativesWithScore.length) return;
+      const primaryMatches = alternativesWithScore
+        .filter((candidate) => candidate.primary === baseFood.primary)
+        .sort((a, b) => a.similarityScore - b.similarityScore);
+      const fallbackMatches = alternativesWithScore
+        .filter((candidate) => candidate.primary !== baseFood.primary)
+        .sort((a, b) => a.similarityScore - b.similarityScore);
+      const selectedAlternatives = [...primaryMatches, ...fallbackMatches]
+        .slice(0, 3)
+        .map(({ similarityScore, ...rest }) => rest);
+      if (!selectedAlternatives.length) return;
+      const portionLabel = computeItemPortionLabel(item) || baseFood.portionLabel;
+      suggestions.push({
+        id: `${mealIndex}-${itemIndex}`,
+        mealIndex,
+        itemIndex,
+        mealName: translateMealLabel(meal.mealType),
+        mealTime: meal.scheduledTime,
+        category: baseFood.primary,
+        original: { ...baseFood, portionLabel },
+        alternatives: selectedAlternatives,
+      });
+    });
+  });
+  return suggestions;
+});
+
 const currentStepProps = computed(() => {
   if (currentStep.value?.id === 'schedule') {
     return {
@@ -290,6 +502,15 @@ const currentStepProps = computed(() => {
       'onUpdate:meals': (value) => {
         form.meals = value;
       },
+    };
+  }
+  if (currentStep.value?.id === 'substitutions') {
+    return {
+      suggestions: substitutionSuggestions.value,
+      categories: substitutionCategories.value,
+      loading: loading.value,
+      disabled: isReadOnly.value,
+      onReplace: replaceMealItem,
     };
   }
   return {
@@ -320,6 +541,26 @@ const previousStep = () => {
 
 const goToStep = (index) => {
   currentStepIndex.value = index;
+};
+
+const replaceMealItem = ({ mealIndex, itemIndex, foodId }) => {
+  if (isReadOnly.value || mealIndex == null || itemIndex == null || !foodId) {
+    return;
+  }
+  const replacement = foods.value.find((food) => food.id === foodId);
+  const updatedMeals = form.meals.map((meal, currentMealIndex) => {
+    if (currentMealIndex !== mealIndex) return meal;
+    const nextItems = (meal.items ?? []).map((item, currentItemIndex) => {
+      if (currentItemIndex !== itemIndex) return item;
+      return {
+        ...item,
+        foodItemId: replacement?.id ?? foodId,
+        foodItemName: replacement?.name ?? item.foodItemName ?? '',
+      };
+    });
+    return { ...meal, items: nextItems };
+  });
+  form.meals = updatedMeals;
 };
 
 const startEditing = () => {
