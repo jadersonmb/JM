@@ -30,6 +30,22 @@
     referenceProfessions: 'Profissões',
     unauthorized: 'Acesso negado',
   },
+  filters: {
+    label: 'Filtros',
+  },
+  bodyParts: {
+    all: 'Todos',
+    abdomen: 'Abdômen',
+    arms: 'Braços',
+    legs: 'Pernas',
+    back: 'Costas',
+    chest: 'Peito',
+  },
+  periods: {
+    last30: 'Últimos 30 dias',
+    last90: '90 dias',
+    lastYear: '1 ano',
+  },
   dashboard: {
     bodyEvolution: {
       title: 'Análise da Evolução Corporal',
