@@ -277,6 +277,13 @@ const navigation = computed(() => {
       permission: 'ROLE_ANALYTICS_READ',
     },
     {
+      name: 'dashboard-body-evolution',
+      label: t('routes.dashboardBodyEvolution'),
+      to: { name: 'dashboard-body-evolution' },
+      icon: PhotoIcon,
+      permission: 'ROLE_PHOTO_EVOLUTION_READ',
+    },
+    {
       name: 'users',
       label: t('routes.users'),
       to: { name: 'users' },
@@ -417,7 +424,7 @@ const currentTitle = computed(() => {
   }
   return route.meta.title ?? 'Overview';
 });
-const currentSection = computed(() => (['dashboard', 'dashboard-nutrition'].includes(route.name)
+const currentSection = computed(() => (['dashboard', 'dashboard-nutrition', 'dashboard-body-evolution'].includes(route.name)
   ? t('routes.dashboard')
   : t('menu.title')));
 

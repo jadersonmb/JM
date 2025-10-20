@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { titleKey: 'routes.nutritionDashboard', permission: 'ROLE_ANALYTICS_READ' },
         },
         {
+          path: 'dashboard/body-evolution',
+          name: 'dashboard-body-evolution',
+          component: () => import('@/views/nutrition/dashboard/BodyEvolutionDashboard.vue'),
+          meta: { titleKey: 'routes.dashboardBodyEvolution', permission: 'ROLE_PHOTO_EVOLUTION_READ' },
+        },
+        {
           path: 'users',
           name: 'users',
           component: () => import('@/views/users/UsersListView.vue'),
