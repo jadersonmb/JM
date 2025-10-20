@@ -1,8 +1,11 @@
 package com.jm.utils;
 
+import com.jm.auth.model.AuthenticatedUser;
+import com.jm.entity.Users;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.StringUtils;
@@ -43,6 +46,15 @@ public final class SecurityUtils {
         }
 
         Object principal = authentication.getPrincipal();
+        if (principal instanceof AuthenticatedUser authenticatedUser) {
+            return Optional.ofNullable(authenticatedUser.getId());
+        }
+        if (principal instanceof Users user) {
+            return Optional.ofNullable(user.getId());
+        }
+        if (principal instanceof UserDetails userDetails) {
+            return parseUuid(userDetails.getUsername());
+        }
         if (principal instanceof Jwt jwt) {
             Optional<UUID> fromSubject = parseUuid(jwt.getSubject());
             if (fromSubject.isPresent()) {
