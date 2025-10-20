@@ -4,7 +4,7 @@
       <h1 class="text-4xl font-semibold">{{ $t('auth.accessDeniedTitle') }}</h1>
       <p class="mt-4 max-w-lg text-slate-300">{{ $t('auth.accessDeniedMessage') }}</p>
       <RouterLink
-        to="/app/dashboard"
+        :to="{ name: 'dashboard-nutrition' }"
         class="mt-8 inline-flex items-center rounded-lg bg-emerald-500 px-6 py-3 font-semibold text-slate-900 hover:bg-emerald-400"
       >
         {{ $t('common.goBackHome') }}

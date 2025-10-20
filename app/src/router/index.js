@@ -48,7 +48,7 @@ const router = createRouter({
         {
           path: 'dashboard/body-evolution',
           name: 'dashboard-body-evolution',
-          component: () => import('@/views/nutrition/dashboard/BodyEvolutionDashboard.vue'),
+          component: () => import('@/views/dashboard/BodyEvolutionDashboard.vue'),
           meta: { titleKey: 'routes.dashboardBodyEvolution', permission: 'ROLE_PHOTO_EVOLUTION_READ' },
         },
         {

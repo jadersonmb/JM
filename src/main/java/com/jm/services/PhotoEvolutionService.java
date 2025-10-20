@@ -200,7 +200,10 @@ public class PhotoEvolutionService {
 
         List<PhotoEvolution> entries = repository.findByUser_IdOrderByCapturedAtDesc(targetUserId);
         if (entries.isEmpty()) {
-            throw photoEvolutionComparisonNotFound();
+            return PhotoEvolutionComparisonDTO.builder()
+                    .userId(targetUserId)
+                    .parts(new ArrayList<>())
+                    .build();
         }
 
         Map<BodyPart, List<PhotoEvolution>> grouped = entries.stream()
