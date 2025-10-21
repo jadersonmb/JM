@@ -39,7 +39,7 @@ public class WhatsAppController {
 
     private final WhatsAppService whatsAppService;
     private final WhatsAppNutritionService whatsappNutritionService;
-    @Value("whatsapp.verify.token")
+    @Value("${whatsapp.verify.token}")
     private String VERIFY_TOKEN;
 
     @PostMapping("/send")

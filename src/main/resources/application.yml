@@ -54,6 +54,8 @@ gemini:
 
 # WhatsApp API
 whatsapp:
+  verify:
+    token: ${WHATSAPP_VERIFY_TOKEN}
   hug:
     token: ${WHATSAPP_HUGGINGFACE_TOKEN}
   phone:
