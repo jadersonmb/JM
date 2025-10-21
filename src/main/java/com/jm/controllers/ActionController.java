@@ -6,6 +6,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.security.service.ActionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/actions")
 @RequiredArgsConstructor
 @Tag(name = "Actions", description = "Action management API")
+@SecurityRequirement(name = "BearerAuth")
 public class ActionController {
 
     private final ActionService actionService;

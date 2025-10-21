@@ -2,6 +2,7 @@ package com.jm.controllers;
 
 import com.jm.dto.payment.WebhookEventRequest;
 import com.jm.services.payment.PaymentWebhookService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/public/api/webhooks/payment")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Payment Webhooks", description = "Public endpoints for payment provider callbacks")
 public class WebhookController {
 
     private final PaymentWebhookService paymentWebhookService;

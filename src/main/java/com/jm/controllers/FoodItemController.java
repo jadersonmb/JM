@@ -6,6 +6,7 @@ import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.FoodItemService;
 import com.jm.services.FoodSubstitutionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/foods")
 @AllArgsConstructor
 @Tag(name = "Diet foods", description = "Food items for diet plans")
+@SecurityRequirement(name = "BearerAuth")
 public class FoodItemController {
 
     private final FoodItemService service;

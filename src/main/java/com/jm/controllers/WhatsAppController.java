@@ -6,6 +6,7 @@ import com.jm.dto.WhatsAppMessageFeedDTO;
 import com.jm.dto.WhatsAppMessageResponse;
 import com.jm.services.WhatsAppNutritionService;
 import com.jm.services.WhatsAppService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/public/api/v1/whatsapp")
 @RequiredArgsConstructor
+@Tag(name = "WhatsApp Webhook", description = "Public WhatsApp integration callbacks")
 public class WhatsAppController {
 
     private static final Logger logger = LoggerFactory.getLogger(WhatsAppController.class);

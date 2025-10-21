@@ -7,6 +7,8 @@ import com.jm.dto.analytics.MacroDistributionResponseDTO;
 import com.jm.dto.analytics.TopFoodsResponseDTO;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.AnalyticsService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +19,8 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/analytics")
+@Tag(name = "Analytics", description = "Analytics and insight dashboards")
+@SecurityRequirement(name = "BearerAuth")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;

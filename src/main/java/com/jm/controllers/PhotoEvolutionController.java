@@ -10,6 +10,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.PhotoEvolutionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -36,6 +37,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/photo-evolutions")
 @RequiredArgsConstructor
 @Tag(name = "Photo evolution", description = "Manage photographic evolution with nutrition and body metrics")
+@SecurityRequirement(name = "BearerAuth")
 public class PhotoEvolutionController {
 
     private static final Logger logger = LoggerFactory.getLogger(PhotoEvolutionController.class);

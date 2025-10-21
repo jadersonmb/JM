@@ -2,6 +2,7 @@ package com.jm.controllers;
 
 import com.jm.dto.payment.PaymentPlanResponse;
 import com.jm.services.payment.PaymentPlanService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -15,6 +16,7 @@ import java.util.List;
 @RequestMapping({"/v1/api/payment-plans", "/api/v1/plans"})
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Payment Plans", description = "Available subscription and payment plans")
 public class PaymentPlanController {
 
     private final PaymentPlanService paymentPlanService;

@@ -5,6 +5,8 @@ import com.jm.dto.WhatsAppNutritionEntryRequest;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.WhatsAppNutritionService;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +22,9 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/whatsapp")
+@SecurityRequirement(name = "BearerAuth")
 @RequiredArgsConstructor
+@Tag(name = "WhatsApp Nutrition", description = "Manual nutrition entries from WhatsApp")
 public class WhatsAppNutritionManagementController {
 
     private final WhatsAppNutritionService whatsappNutritionService;

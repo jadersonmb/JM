@@ -23,6 +23,7 @@ import com.jm.services.MealService;
 import com.jm.services.MeasurementUnitService;
 import com.jm.services.PathologyService;
 import com.jm.services.ProfessionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/reference")
 @Tag(name = "Reference data", description = "Lookup tables for nutrition and profile data")
+@SecurityRequirement(name = "BearerAuth")
 @RequiredArgsConstructor
 @PermissionRequired("ROLE_REFERENCE_DATA_READ")
 public class ReferenceDataController {

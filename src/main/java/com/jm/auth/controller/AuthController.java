@@ -8,6 +8,7 @@ import com.jm.dto.RecoverPasswordRequest;
 import com.jm.dto.UserDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @SecurityRequirement(name = "BearerAuth")
     public ResponseEntity<UserDTO> me() {
         return ResponseEntity.ok(authService.getAuthenticatedUser());
     }

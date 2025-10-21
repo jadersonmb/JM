@@ -4,6 +4,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.UnitOfMeasureService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/units")
 @AllArgsConstructor
 @Tag(name = "Diet units", description = "Units of measure for diet plans")
+@SecurityRequirement(name = "BearerAuth")
 public class UnitOfMeasureController {
 
     private final UnitOfMeasureService service;

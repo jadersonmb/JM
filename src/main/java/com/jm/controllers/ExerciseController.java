@@ -6,6 +6,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.ExerciseService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/exercises")
 @RequiredArgsConstructor
 @Tag(name = "Exercises", description = "Operations about exercises")
+@SecurityRequirement(name = "BearerAuth")
 public class ExerciseController {
 
     private static final Logger logger = LoggerFactory.getLogger(ExerciseController.class);

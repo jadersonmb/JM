@@ -4,6 +4,8 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.CloudflareR2Service;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +21,8 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @RequestMapping("/api/v1/cloudflare/storage")
+@Tag(name = "Cloudflare Storage", description = "Operations with Cloudflare R2 storage")
+@SecurityRequirement(name = "BearerAuth")
 public class CloudFlareStorageController {
 
     private final CloudflareR2Service r2Service;

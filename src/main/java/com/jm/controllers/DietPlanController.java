@@ -6,6 +6,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.DietPlanService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.util.List;
 @RequestMapping("/api/v1/diets")
 @AllArgsConstructor
 @Tag(name = "Diets", description = "Operations about diet plans")
+@SecurityRequirement(name = "BearerAuth")
 public class DietPlanController {
 
     private static final Logger logger = LoggerFactory.getLogger(DietPlanService.class);

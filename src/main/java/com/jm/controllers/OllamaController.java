@@ -8,6 +8,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.OllamaService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import java.util.List;
 @RequestMapping("/api/v1/ollama")
 @AllArgsConstructor
 @Tag(name = "Ollama", description = "Endpoints to interact with the Ollama API")
+@SecurityRequirement(name = "BearerAuth")
 public class OllamaController {
 
     private static final Logger logger = LoggerFactory.getLogger(OllamaController.class);

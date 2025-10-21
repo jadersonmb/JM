@@ -5,6 +5,8 @@ import com.jm.dto.payment.PaymentMethodResponse;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.payment.PaymentService;
 import com.stripe.exception.StripeException;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ import java.util.UUID;
 @RequestMapping("/v1/api/payment-methods")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Payment Methods", description = "Customer payment method management")
+@SecurityRequirement(name = "BearerAuth")
 public class PaymentMethodController {
 
     private final PaymentService paymentService;

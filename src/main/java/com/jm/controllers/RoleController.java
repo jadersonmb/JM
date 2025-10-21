@@ -5,6 +5,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.RoleService;
 import com.jm.security.annotation.PermissionRequired;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/roles")
 @RequiredArgsConstructor
 @Tag(name = "Roles", description = "Role management API")
+@SecurityRequirement(name = "BearerAuth")
 public class RoleController {
 
     private final RoleService roleService;

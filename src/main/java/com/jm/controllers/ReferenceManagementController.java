@@ -16,6 +16,7 @@ import com.jm.services.AiPromptReferenceService;
 import com.jm.services.ExerciseReferenceService;
 import com.jm.services.MealService;
 import com.jm.services.ProfessionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/reference-management")
 @RequiredArgsConstructor
 @Tag(name = "Reference management", description = "Administrative CRUD for reference data")
+@SecurityRequirement(name = "BearerAuth")
 public class ReferenceManagementController {
 
     private final CountryService countryService;

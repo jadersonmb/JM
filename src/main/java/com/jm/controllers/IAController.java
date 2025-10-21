@@ -8,6 +8,8 @@ import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.DeepSeekService;
 import com.jm.services.GeminiService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +25,8 @@ import java.io.IOException;
 @RequestMapping("/api/v1")
 @Data
 @AllArgsConstructor
+@Tag(name = "AI", description = "AI-powered interactions and assistants")
+@SecurityRequirement(name = "BearerAuth")
 public class IAController {
 
     private final DeepSeekService deepSeekService;

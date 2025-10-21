@@ -6,6 +6,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.NutritionGoalService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/goals")
 @AllArgsConstructor
 @Tag(name = "Nutrition Goals", description = "Operations about nutrition goals")
+@SecurityRequirement(name = "BearerAuth")
 public class NutritionGoalController {
 
     private static final Logger logger = LoggerFactory.getLogger(NutritionGoalService.class);

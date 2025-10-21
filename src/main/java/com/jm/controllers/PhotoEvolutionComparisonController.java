@@ -3,6 +3,7 @@ package com.jm.controllers;
 import com.jm.dto.PhotoEvolutionComparisonDTO;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.PhotoEvolutionService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -19,6 +20,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/photo-evolution")
 @RequiredArgsConstructor
 @Tag(name = "Photo evolution comparison", description = "Body evolution comparison dashboard")
+@SecurityRequirement(name = "BearerAuth")
 public class PhotoEvolutionComparisonController {
 
     private static final Logger logger = LoggerFactory.getLogger(PhotoEvolutionComparisonController.class);

@@ -87,6 +87,23 @@ public class JMExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }
 
+    @ExceptionHandler(JMException.class)
+    public ResponseEntity<Problem> handleJMException(JMException ex) {
+        Problem problem = Problem.builder()
+                .status(ex.getStatus())
+                .type(ex.getType())
+                .title(ex.getTitle())
+                .details(ex.getDetails())
+                .build();
+
+        HttpStatus status = HttpStatus.resolve(ex.getStatus());
+        if (status == null) {
+            status = HttpStatus.BAD_REQUEST;
+        }
+
+        return ResponseEntity.status(status).body(problem);
+    }
+
     private Problem.ProblemBuilder createProblemBuild(HttpStatusCode status, String type, String title, String detail) {
         return Problem.builder()
                 .status(status.value())

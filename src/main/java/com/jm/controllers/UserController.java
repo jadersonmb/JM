@@ -7,6 +7,7 @@ import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.services.UserService;
 import com.jm.security.annotation.PermissionRequired;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @RequestMapping("/api/v1/users")
 @AllArgsConstructor
 @Tag(name = "Users", description = "Operations about users")
+@SecurityRequirement(name = "BearerAuth")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);

@@ -13,6 +13,8 @@ import com.jm.dto.payment.RefundRequest;
 import com.jm.security.annotation.PermissionRequired;
 import com.jm.services.payment.PaymentService;
 import com.stripe.exception.StripeException;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/api/payments")
 @RequiredArgsConstructor
 @Validated
+@Tag(name = "Payments", description = "Operations for payment intents and subscriptions")
+@SecurityRequirement(name = "BearerAuth")
 public class PaymentController {
 
     private final PaymentService paymentService;
