@@ -300,7 +300,7 @@
                 <img
                   :src="step.image"
                   :alt="step.title"
-                  class="h-full w-full rounded-2xl object-cover"
+                  class="h-full w-full rounded-2xl object-cover h-60 w-60"
                   loading="lazy"
                 />
               </div>

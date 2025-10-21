@@ -13,17 +13,17 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
-  mail:
-    host: ${SPRING_MAIL_HOST:}
-    port: ${SPRING_MAIL_PORT:0}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  #mail:
+  #  host: ${SPRING_MAIL_HOST:live.smtp.mailtrap.io}
+  #  port: ${SPRING_MAIL_PORT:587}
+  #  username: ${SPRING_MAIL_USERNAME:api}
+  #  password: ${SPRING_MAIL_PASSWORD:3b1bd751b5deb93eac3c6b07484b90f3}
+  #  properties:
+  #    mail:
+  #      smtp:
+  #        auth: true
+  #        starttls:
+  #          enable: true
   sql:
     init:
       mode: always
@@ -100,7 +100,7 @@ payments:
     base-url: https://www.asaas.com/api/v3
     webhook-token: ${ASAAS_WEBHOOK_TOKEN:}
 email:
-  from: ${EMAIL_FROM:no-reply@jm.com}
+  from: ${EMAIL_FROM:no-reply@mailtrap.io}
   confirmation-base-url: ${EMAIL_CONFIRMATION_BASE_URL:https://app.jm.com/confirm-account}
   login-base-url: ${EMAIL_LOGIN_BASE_URL:https://app.nutrivision.ai}
   password-recovery-base-url: ${EMAIL_PASSWORD_RECOVERY_BASE_URL:https://app.nutrivision.ai/reset-password}
