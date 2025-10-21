@@ -9,14 +9,14 @@ FROM base AS development
 COPY . .
 ENV HOST=0.0.0.0 \
     PORT=5173 \
-    VITE_API_BASE_URL=http://localhost:8080 \
+    VITE_API_URL=http://localhost:8080 \
     CHOKIDAR_USEPOLLING=true
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "80"]
 
 FROM base AS build
 COPY . .
-ARG VITE_API_BASE_URL=/api
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL \
     NODE_ENV=production
 RUN npm run build
 

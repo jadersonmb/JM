@@ -51,6 +51,7 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: jm-backend
+    hostname: backend
     depends_on:
       ollama:
         condition: service_healthy
@@ -59,7 +60,7 @@ services:
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-jm}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-jm}
@@ -105,11 +106,14 @@ services:
       - jm-network
 
   frontend:
+    hostname: frontend
+    container_name: jm-frontend
     build:
       context: ./app
       dockerfile: Dockerfile
-      target: development
-    container_name: jm-frontend
+      target: production
+      args:
+        VITE_API_URL: /api
     restart: unless-stopped
     depends_on:
       backend:
@@ -117,9 +121,15 @@ services:
     ports:
       - "${FRONTEND_PORT:-80}:80"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8080}
+      VITE_API_URL: /api
       CHOKIDAR_USEPOLLING: "true"
-    command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 80"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s      
+    #command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 80"]
     volumes:
       - ./app:/app
       - node-modules:/app/node_modules
