@@ -48,6 +48,7 @@
             :selected-plan="props.selectedPlan"
             :loading="loading"
             :ensure-customer="ensureCustomer"
+            card-entry-only
             @create="handleRecurringCreate"
           />
         </form>
@@ -60,7 +61,7 @@
 import { reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import axios from '@/services/api';
-import { createSubscription } from '@/services/payments';
+import { addCard, createSubscription } from '@/services/payments';
 import { useNotificationStore } from '@/stores/notifications';
 import RecurringPayment from '@/components/payments/RecurringPayment.vue';
 import { XCircleIcon } from '@heroicons/vue/24/outline';
@@ -75,6 +76,8 @@ const emit = defineEmits(['close', 'success']);
 
 const { t, locale } = useI18n();
 const notifications = useNotificationStore();
+
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
 
 const form = reactive({
   name: '',
@@ -184,20 +187,72 @@ async function handleRecurringCreate(payload) {
     return;
   }
 
+  if (!payload?.card) {
+    errorMessage.value = t('register.cardValidationError');
+    return;
+  }
+
+  if (!stripePublishableKey || !window.Stripe) {
+    errorMessage.value = t('register.cardTokenizationError');
+    notifications.push({
+      type: 'error',
+      title: t('register.errorTitle'),
+      message: errorMessage.value,
+    });
+    return;
+  }
+
+  const sanitizedCardNumber = (payload.card.cardNumber || '').replace(/\s+/g, '');
+  const normalizedExpiryMonth = String(payload.card.expiryMonth || '').padStart(2, '0');
+  const rawExpiryYear = String(payload.card.expiryYear || '');
+  const normalizedExpiryYear = rawExpiryYear.length === 4 ? rawExpiryYear : `20${rawExpiryYear.padStart(2, '0')}`;
+
   loading.value = true;
   try {
+    const stripe = window.Stripe(stripePublishableKey);
+    const { token, error: stripeError } = await stripe.createToken('card', {
+      number: sanitizedCardNumber,
+      exp_month: Number(normalizedExpiryMonth),
+      exp_year: Number(normalizedExpiryYear),
+      cvc: payload.card.cvc,
+      name: payload.card.cardholder,
+    });
+
+    if (stripeError) {
+      throw new Error(stripeError.message || t('register.cardTokenizationError'));
+    }
+
+    if (!token?.id) {
+      throw new Error(t('register.cardTokenizationError'));
+    }
+
     const user = await ensureCustomer({ silent: true });
     if (!user?.id) {
       throw new Error(t('register.missingUserError'));
     }
 
+    const { data: cardResponse } = await addCard({
+      customerId: user.id,
+      cardToken: token.id,
+      brand: token.card?.brand,
+      lastFour: token.card?.last4,
+      expiryMonth: token.card?.exp_month,
+      expiryYear: token.card?.exp_year,
+      defaultCard: payload.card.setDefault,
+    });
+
+    const paymentMethodId = cardResponse?.id;
+    if (!paymentMethodId) {
+      throw new Error(t('register.cardCreationError'));
+    }
+
     await createSubscription({
       customerId: user.id,
       paymentPlanId: payload.paymentPlanId,
-      paymentMethodId: payload.paymentMethodId,
+      paymentMethodId,
       paymentMethod: payload.paymentMethod,
       immediateCharge: payload.immediateCharge,
-      metadata: payload.metadata,
+      metadata: payload.metadata ?? {},
     });
 
     await sendWelcomeMessage(user);
@@ -211,7 +266,10 @@ async function handleRecurringCreate(payload) {
     emit('success');
   } catch (error) {
     console.error('Subscription flow failed', error);
-    const responseMessage = error.response?.data?.details || error.response?.data?.message;
+    const responseMessage =
+      error.response?.data?.details ||
+      error.response?.data?.message ||
+      error.message;
     errorMessage.value = responseMessage || t('register.errorMessage');
     notifications.push({
       type: 'error',
