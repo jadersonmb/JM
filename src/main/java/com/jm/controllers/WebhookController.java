@@ -1,6 +1,5 @@
 package com.jm.controllers;
 
-import com.jm.dto.payment.WebhookEventRequest;
 import com.jm.services.payment.PaymentWebhookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

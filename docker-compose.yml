@@ -90,12 +90,14 @@ services:
       WHATSAPP_HUGGINGFACE_TOKEN: ${WHATSAPP_HUGGINGFACE_TOKEN:-}
       JWT_SECRET: ${JWT_SECRET:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
       TZ: ${TZ:-UTC}
     working_dir: /workspace
     command: ["sh", "-c", "sed -i 's/\\r$//' mvnw && chmod +x mvnw && ./mvnw spring-boot:run"]
     volumes:
       - .:/workspace
       - maven-cache:/root/.m2
+      - ./app/docker/certs:/etc/nginx/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
       interval: 30s

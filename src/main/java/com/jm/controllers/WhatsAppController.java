@@ -1,5 +1,6 @@
 package com.jm.controllers;
 
+import com.google.api.client.util.Value;
 import com.jm.dto.NutritionDashboardDTO;
 import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +39,8 @@ public class WhatsAppController {
 
     private final WhatsAppService whatsAppService;
     private final WhatsAppNutritionService whatsappNutritionService;
+    @Value("whatsapp.verify.token")
+    private final String VERIFY_TOKEN;
 
     @PostMapping("/send")
     public Mono<ResponseEntity<WhatsAppMessageResponse>> sendMessage(@RequestBody WhatsAppMessageDTO dto) {
@@ -59,6 +63,21 @@ public class WhatsAppController {
         logger.info("WhatsApp webhook received");
         whatsappNutritionService.handleWebhook(payload);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/webhook")
+    public ResponseEntity<String> verifyWebhook(
+            @RequestParam(name = "hub.mode", required = false) String mode,
+            @RequestParam(name = "hub.verify_token", required = false) String token,
+            @RequestParam(name = "hub.challenge", required = false) String challenge) {
+
+        if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
+            System.out.println("✅ Verificação bem-sucedida!");
+            return ResponseEntity.ok(challenge);
+        } else {
+            System.out.println("❌ Verificação falhou!");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @GetMapping("/messages")
