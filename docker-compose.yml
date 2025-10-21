@@ -88,6 +88,7 @@ services:
       OAUTH2_CLIENT_SECRET: ${OAUTH2_CLIENT_SECRET:-}
       WHATSAPP_HUGGINGFACE_TOKEN: ${WHATSAPP_HUGGINGFACE_TOKEN:-}
       JWT_SECRET: ${JWT_SECRET:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       TZ: ${TZ:-UTC}
     working_dir: /workspace
     command: ["sh", "-c", "sed -i 's/\\r$//' mvnw && chmod +x mvnw && ./mvnw spring-boot:run"]
@@ -95,7 +96,7 @@ services:
       - .:/workspace
       - maven-cache:/root/.m2
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -113,7 +114,7 @@ services:
       backend:
         condition: service_healthy
     ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      - "${FRONTEND_PORT:-80}:5173"
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
       CHOKIDAR_USEPOLLING: "true"
