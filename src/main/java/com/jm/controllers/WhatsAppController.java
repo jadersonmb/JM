@@ -1,6 +1,5 @@
 package com.jm.controllers;
 
-import com.google.api.client.util.Value;
 import com.jm.dto.NutritionDashboardDTO;
 import com.jm.dto.WhatsAppMessageDTO;
 import com.jm.dto.WhatsAppMessageFeedDTO;
@@ -10,6 +9,7 @@ import com.jm.services.WhatsAppService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
