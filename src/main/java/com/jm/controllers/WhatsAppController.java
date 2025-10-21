@@ -40,7 +40,7 @@ public class WhatsAppController {
     private final WhatsAppService whatsAppService;
     private final WhatsAppNutritionService whatsappNutritionService;
     @Value("whatsapp.verify.token")
-    private final String VERIFY_TOKEN;
+    private String VERIFY_TOKEN;
 
     @PostMapping("/send")
     public Mono<ResponseEntity<WhatsAppMessageResponse>> sendMessage(@RequestBody WhatsAppMessageDTO dto) {
