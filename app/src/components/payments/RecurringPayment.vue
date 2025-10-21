@@ -105,7 +105,7 @@
       <header class="flex items-center justify-between">
         <h3 class="text-lg font-semibold text-gray-800">{{ t('payments.recurring.cards.title') }}</h3>
         <button
-          v-if="canManageCards"
+          v-if="canManageCards && !props.cardEntryOnly"
           type="button"
           class="inline-flex items-center gap-2 rounded-lg border border-emerald-200 px-3 py-1 text-sm font-medium text-emerald-600 transition hover:border-emerald-300 hover:bg-emerald-50"
           @click="toggleCardForm"
@@ -117,71 +117,76 @@
         </button>
       </header>
 
-      <p v-if="cardsError" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+      <p
+        v-if="cardsError && !props.cardEntryOnly"
+        class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+      >
         {{ cardsError }}
       </p>
 
-      <div v-if="loadingCards" class="flex items-center gap-2 text-sm text-gray-500">
-        <span class="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent"></span>
-        <span>{{ t('payments.recurring.cards.loading') }}</span>
-      </div>
+      <div v-if="!props.cardEntryOnly">
+        <div v-if="loadingCards" class="flex items-center gap-2 text-sm text-gray-500">
+          <span class="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent"></span>
+          <span>{{ t('payments.recurring.cards.loading') }}</span>
+        </div>
 
-      <div v-else-if="hasCards" class="space-y-3">
-        <div
-          v-for="card in managedCards"
-          :key="card.id"
-          class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 transition hover:border-emerald-300 hover:shadow-md"
-          :class="form.paymentMethodId === card.id ? 'border-emerald-500 bg-emerald-50' : ''"
-        >
-          <label class="flex flex-1 cursor-pointer items-center gap-3" :for="`recurring-card-${card.id}`">
-            <input
-              :id="`recurring-card-${card.id}`"
-              v-model="form.paymentMethodId"
-              type="radio"
-              name="recurringCardId"
-              :value="card.id"
-              class="sr-only"
-            />
-            <div :class="['flex h-10 w-10 items-center justify-center rounded-full border font-semibold text-sm', brandMeta(card.brand).class]">
-              {{ brandMeta(card.brand).initial }}
+        <div v-else-if="hasCards" class="space-y-3">
+          <div
+            v-for="card in managedCards"
+            :key="card.id"
+            class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 transition hover:border-emerald-300 hover:shadow-md"
+            :class="form.paymentMethodId === card.id ? 'border-emerald-500 bg-emerald-50' : ''"
+          >
+            <label class="flex flex-1 cursor-pointer items-center gap-3" :for="`recurring-card-${card.id}`">
+              <input
+                :id="`recurring-card-${card.id}`"
+                v-model="form.paymentMethodId"
+                type="radio"
+                name="recurringCardId"
+                :value="card.id"
+                class="sr-only"
+              />
+              <div :class="['flex h-10 w-10 items-center justify-center rounded-full border font-semibold text-sm', brandMeta(card.brand).class]">
+                {{ brandMeta(card.brand).initial }}
+              </div>
+              <div>
+                <p class="font-medium text-gray-800">
+                  {{ brandMeta(card.brand).label }} •••• {{ card.lastFour }}
+                </p>
+                <p class="text-xs text-gray-500">
+                  {{ t('payments.recurring.cards.expires', { month: padMonth(card.expiryMonth), year: card.expiryYear }) }}
+                </p>
+              </div>
+            </label>
+            <div class="flex items-center gap-3">
+              <span
+                v-if="card.defaultCard"
+                class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"
+              >
+                {{ t('payments.recurring.cards.defaultBadge') }}
+              </span>
+              <button
+                v-if="canManageCards"
+                type="button"
+                class="rounded-full p-2 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-60"
+                :disabled="deletingCardId === card.id"
+                @click="removeCard(card)"
+              >
+                <TrashIcon class="h-5 w-5" />
+                <span class="sr-only">{{ t('payments.recurring.cards.delete') }}</span>
+              </button>
             </div>
-            <div>
-              <p class="font-medium text-gray-800">
-                {{ brandMeta(card.brand).label }} •••• {{ card.lastFour }}
-              </p>
-              <p class="text-xs text-gray-500">
-                {{ t('payments.recurring.cards.expires', { month: padMonth(card.expiryMonth), year: card.expiryYear }) }}
-              </p>
-            </div>
-          </label>
-          <div class="flex items-center gap-3">
-            <span
-              v-if="card.defaultCard"
-              class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"
-            >
-              {{ t('payments.recurring.cards.defaultBadge') }}
-            </span>
-            <button
-              v-if="canManageCards"
-              type="button"
-              class="rounded-full p-2 text-gray-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-60"
-              :disabled="deletingCardId === card.id"
-              @click="removeCard(card)"
-            >
-              <TrashIcon class="h-5 w-5" />
-              <span class="sr-only">{{ t('payments.recurring.cards.delete') }}</span>
-            </button>
           </div>
         </div>
-      </div>
 
-      <p v-else class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-        {{ t('payments.recurring.cards.empty') }}
-      </p>
+        <p v-else class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+          {{ t('payments.recurring.cards.empty') }}
+        </p>
+      </div>
 
       <transition name="fade">
         <section
-          v-if="showCardForm && canManageCards"
+          v-if="cardFormVisible"
           class="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4"
         >
           <header class="space-y-1">
@@ -240,6 +245,7 @@
               {{ t('payments.cardForm.setDefault') }}
             </label>
             <button
+              v-if="!props.cardEntryOnly"
               type="button"
               class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
               :disabled="tokenizing || !canTokenize"
@@ -314,6 +320,10 @@ const props = defineProps({
     type: Function,
     default: null,
   },
+  cardEntryOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['create']);
@@ -334,7 +344,7 @@ const internalCards = ref([]);
 const loadingCards = ref(false);
 const cardsError = ref('');
 const deletingCardId = ref(null);
-const showCardForm = ref(false);
+const showCardForm = ref(props.cardEntryOnly);
 const tokenizing = ref(false);
 
 const form = reactive({
@@ -359,8 +369,10 @@ const newCard = reactive({
 const formattedCardNumber = ref('');
 const formattedExpiry = ref('');
 
-const managedCards = computed(() => (props.cards?.length ? props.cards : internalCards.value));
-const canManageCards = computed(() => typeof props.ensureCustomer === 'function');
+const managedCards = computed(() =>
+  props.cardEntryOnly ? [] : (props.cards?.length ? props.cards : internalCards.value),
+);
+const canManageCards = computed(() => typeof props.ensureCustomer === 'function' && !props.cardEntryOnly);
 const hasCards = computed(() => managedCards.value.length > 0);
 
 const brandLabels = computed(() => ({
@@ -372,10 +384,20 @@ const brandLabels = computed(() => ({
 
 const selectedPlan = computed(() => plans.value.find((plan) => plan.id === form.paymentPlanId) || null);
 const showCardSelector = computed(() => form.paymentMethod === 'CREDIT_CARD');
+const cardFormVisible = computed(() => (props.cardEntryOnly ? true : showCardForm.value && canManageCards.value));
 
-const canSubmit = computed(
-  () => Boolean(form.paymentPlanId) && form.acceptedTerms && (!showCardSelector.value || form.paymentMethodId),
-);
+const canSubmit = computed(() => {
+  if (!form.paymentPlanId || !form.acceptedTerms) {
+    return false;
+  }
+  if (!showCardSelector.value) {
+    return true;
+  }
+  if (props.cardEntryOnly) {
+    return canTokenize.value;
+  }
+  return Boolean(form.paymentMethodId);
+});
 
 const canTokenize = computed(
   () =>
@@ -398,6 +420,9 @@ watch(
 watch(
   () => managedCards.value,
   (value) => {
+    if (props.cardEntryOnly) {
+      return;
+    }
     if (value?.length) {
       const defaultCard = value.find((card) => card.defaultCard) ?? value[0];
       form.paymentMethodId = defaultCard.id;
@@ -521,6 +546,9 @@ async function loadCards(options = {}) {
 }
 
 async function toggleCardForm() {
+  if (props.cardEntryOnly) {
+    return;
+  }
   if (showCardForm.value) {
     showCardForm.value = false;
     resetCardForm();
@@ -657,16 +685,32 @@ async function removeCard(card) {
 
 function submit() {
   if (!canSubmit.value || !selectedPlan.value) return;
-  emit('create', {
+  const payload = {
     paymentPlanId: form.paymentPlanId,
     immediateCharge: form.immediateCharge,
     paymentMethod: form.paymentMethod,
-    paymentMethodId: showCardSelector.value ? form.paymentMethodId : null,
     metadata: {
       stripeCustomerId: form.stripeCustomerId || undefined,
       asaasCustomerId: form.asaasCustomerId || undefined,
     },
-  });
+  };
+
+  if (showCardSelector.value) {
+    if (props.cardEntryOnly) {
+      payload.card = {
+        cardholder: newCard.cardholder,
+        cardNumber: newCard.cardNumber,
+        expiryMonth: newCard.expiryMonth,
+        expiryYear: newCard.expiryYear,
+        cvc: newCard.cvc,
+        setDefault: newCard.setDefault,
+      };
+    } else {
+      payload.paymentMethodId = form.paymentMethodId;
+    }
+  }
+
+  emit('create', payload);
 }
 
 onMounted(() => {
