@@ -110,15 +110,16 @@ services:
       dockerfile: Dockerfile
       target: development
     container_name: jm-frontend
+    restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     ports:
-      - "${FRONTEND_PORT:-80}:5173"
+      - "${FRONTEND_PORT:-80}:80"
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://backend:8080}
       CHOKIDAR_USEPOLLING: "true"
-    command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 5173"]
+    command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 80"]
     volumes:
       - ./app:/app
       - node-modules:/app/node_modules
