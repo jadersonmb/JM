@@ -124,7 +124,6 @@ services:
         condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-80}:80"
-      - "${FRONTEND_PORT_TLS:-443}:443"
     environment:
       VITE_API_URL: /api
       CHOKIDAR_USEPOLLING: "true"
@@ -136,9 +135,7 @@ services:
       start_period: 60s
     volumes:
       - ./app:/app
-      - ./app/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - node-modules:/app/node_modules
-      - ./app/docker/certs:/etc/nginx/certs:ro
     networks:
       - jm-network
 
@@ -153,6 +150,8 @@ services:
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
       NGROK_LOG_LEVEL: ${NGROK_LOG_LEVEL:-info}
+      NGROK_REGION: eu
+      NGROK_PORT: frontend:80
     ports:
       - "${NGROK_WEB_INSPECTOR_PORT:-4040}:4040"
     networks:
