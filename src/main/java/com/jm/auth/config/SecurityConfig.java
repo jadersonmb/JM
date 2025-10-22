@@ -42,8 +42,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AuthenticationProvider authenticationProvider,
-                                                   JwtAuthFilter jwtAuthFilter) throws Exception {
+            AuthenticationProvider authenticationProvider,
+            JwtAuthFilter jwtAuthFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
                                 "/public/**",
+                                "/public/api/v1/webhook/whatsapp/**",
                                 "/swagger",
                                 "/swagger/**",
                                 "/api-docs/**",
@@ -63,17 +64,17 @@ public class SecurityConfig {
                                 "/api/v1/users",
                                 "/api/v1/users/**",
                                 "/v1/api/payments/subscription",
-                                "/v1/api/payments/subscription/**"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/v1/api/payments/subscription/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
