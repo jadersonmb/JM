@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   ollama:
     image: ollama/ollama:latest
@@ -52,6 +54,7 @@ services:
       target: development
     container_name: jm-backend
     hostname: backend
+    restart: unless-stopped
     depends_on:
       ollama:
         condition: service_healthy
@@ -61,7 +64,7 @@ services:
       - "${BACKEND_PORT:-8080}:8080"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${DB_NAME:-jm}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-jm}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-jm}
       OLLAMA_API_URL: ${OLLAMA_API_URL:-http://ollama:11434}
@@ -82,7 +85,7 @@ services:
       WHATSAPP_PHONE_NUMBER: ${WHATSAPP_PHONE_NUMBER:-}
       WHATSAPP_API_TOKEN: ${WHATSAPP_API_TOKEN:-}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-}
-      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-0}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -97,7 +100,6 @@ services:
     volumes:
       - .:/workspace
       - maven-cache:/root/.m2
-      - ./app/docker/certs:/etc/nginx/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
       interval: 30s
@@ -108,36 +110,51 @@ services:
       - jm-network
 
   frontend:
-    hostname: frontend
-    container_name: jm-frontend
     build:
       context: ./app
       dockerfile: Dockerfile
       target: production
       args:
         VITE_API_URL: /api
+    container_name: jm-frontend
+    hostname: frontend
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-80}:80"
-      - "443:443"
+      - "${FRONTEND_PORT_TLS:-443}:443"
     environment:
       VITE_API_URL: /api
       CHOKIDAR_USEPOLLING: "true"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 60s      
-    #command: ["sh", "-c", "[ -d node_modules ] || npm ci; npm run dev -- --host 0.0.0.0 --port 80"]
+      start_period: 60s
     volumes:
       - ./app:/app
       - ./app/docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - node-modules:/app/node_modules
       - ./app/docker/certs:/etc/nginx/certs:ro
+    networks:
+      - jm-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: jm-ngrok
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_started
+    command: ["http", "frontend:80"]
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+      NGROK_LOG_LEVEL: ${NGROK_LOG_LEVEL:-info}
+    ports:
+      - "${NGROK_WEB_INSPECTOR_PORT:-4040}:4040"
     networks:
       - jm-network
 
