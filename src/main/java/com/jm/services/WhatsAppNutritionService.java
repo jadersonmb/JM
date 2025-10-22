@@ -226,7 +226,7 @@ public class WhatsAppNutritionService {
 
         WhatsAppMessage savedMessage = messageRepository.save(builder.build());
         dispatchToAssistant(savedMessage, body);
-        processCommandFromText(savedMessage, from);
+        /* processCommandFromText(savedMessage, from); */
     }
 
     private void dispatchToAssistant(WhatsAppMessage message, String body) {
@@ -356,13 +356,7 @@ public class WhatsAppNutritionService {
             savedMessage.setMediaUrl(metadata.getUrl());
             savedMessage.setMimeType(metadata.getMimeType());
 
-            Map<String, String> transcript = whatsAppService.transcribeWithWhisper(audioBytes).block(); /*
-                                                                                                         * transcribeAudio(
-                                                                                                         * audioBytes,
-                                                                                                         * metadata.
-                                                                                                         * getMimeType()
-                                                                                                         * );
-                                                                                                         */
+            Map<String, String> transcript = whatsAppService.transcribeWithWhisper(audioBytes).block();
             if (!StringUtils.hasText(transcript.get("text"))) {
                 logger.warn("Transcription returned empty for audio message {}", savedMessage.getId());
                 whatsAppService.sendTextMessage(from,
