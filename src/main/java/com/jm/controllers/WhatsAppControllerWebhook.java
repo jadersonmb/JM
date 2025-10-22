@@ -48,4 +48,9 @@ public class WhatsAppControllerWebhook {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Service is running!");
+    }
 }

@@ -46,11 +46,6 @@ public class WhatsAppController {
         return whatsAppService.sendMessage(dto).map(ResponseEntity::ok);
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<String> healthCheck() {
-        return ResponseEntity.ok("Service is running!");
-    }
-
     @PostMapping("/transcribe/{mediaId}")
     public Mono<ResponseEntity<Map<String, String>>> transcribe(@PathVariable String mediaId) {
         return whatsAppService.transcribeFromWhatsApp(mediaId)
