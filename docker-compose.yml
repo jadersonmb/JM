@@ -101,7 +101,7 @@ services:
       - .:/workspace
       - maven-cache:/root/.m2
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/whatsapp/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/public/api/v1/webhook/whatsapp/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
