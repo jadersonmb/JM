@@ -146,14 +146,12 @@ services:
     depends_on:
       frontend:
         condition: service_started
-    command: ["http", "frontend:80"]
+    command: ["http", "--pooling-enabled", "frontend:80"]
     environment:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
-      NGROK_LOG_LEVEL: ${NGROK_LOG_LEVEL:-info}
-      NGROK_REGION: eu
-      NGROK_PORT: frontend:80
+      NGROK_LOG_LEVEL: info
     ports:
-      - "${NGROK_WEB_INSPECTOR_PORT:-4040}:4040"
+      - "4040:4040"  # painel web local opcional (http://<teu-ip>:4040)
     networks:
       - jm-network
 
