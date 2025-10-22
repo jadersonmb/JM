@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/public/api/v1/whatsapp")
+@RequestMapping("/api/v1/whatsapp")
 @RequiredArgsConstructor
 public class WhatsAppController {
 
@@ -56,28 +55,6 @@ public class WhatsAppController {
     public Mono<ResponseEntity<Map<String, String>>> transcribe(@PathVariable String mediaId) {
         return whatsAppService.transcribeFromWhatsApp(mediaId)
                 .map(ResponseEntity::ok);
-    }
-
-    @PostMapping("/webhook")
-    public ResponseEntity<Void> receiveMessage(@RequestBody Map<String, Object> payload) {
-        logger.info("WhatsApp webhook received");
-        whatsappNutritionService.handleWebhook(payload);
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/webhook")
-    public ResponseEntity<String> verifyWebhook(
-            @RequestParam(name = "hub.mode", required = false) String mode,
-            @RequestParam(name = "hub.verify_token", required = false) String token,
-            @RequestParam(name = "hub.challenge", required = false) String challenge) {
-
-        if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
-            System.out.println("✅ Verificação bem-sucedida!");
-            return ResponseEntity.ok(challenge);
-        } else {
-            System.out.println("❌ Verificação falhou!");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
     }
 
     @GetMapping("/messages")
