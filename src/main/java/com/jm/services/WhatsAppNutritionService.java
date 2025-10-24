@@ -21,6 +21,7 @@ import com.jm.entity.MeasurementUnits;
 import com.jm.entity.NutritionAnalysis;
 import com.jm.entity.Users;
 import com.jm.entity.WhatsAppMessage;
+import com.jm.events.NutritionAnalysisRequestEvent;
 import com.jm.repository.FoodCategoryRepository;
 import com.jm.repository.FoodRepository;
 import com.jm.repository.MealRepository;
@@ -29,27 +30,29 @@ import com.jm.repository.NutritionAnalysisRepository;
 import com.jm.repository.WhatsAppMessageRepository;
 import com.jm.speciation.WhatsAppSpecification;
 
+import com.jm.enums.AiProvider;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
-import com.jm.utils.SecurityUtils;
-import com.jm.enums.AiProvider;
+import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
 import com.jm.services.ai.AiRequest;
 import com.jm.services.ai.AiRequestType;
 import com.jm.services.ai.AiResponse;
+import com.jm.utils.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -62,7 +65,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -192,6 +194,7 @@ public class WhatsAppNutritionService {
     private final AiClientFactory aiClientFactory;
     private final AiPromptReferenceService aiPromptReferenceService;
     private final OllamaService ollamaService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
     private AiProvider assistantProvider;
@@ -364,45 +367,55 @@ public class WhatsAppNutritionService {
             AiModelSelection analysisConfig = resolveModelSelection(analysisModel, analysisProvider,
                     AiProvider.GEMINI, DEFAULT_ANALYSIS_MODEL);
 
-            if (analysisConfig.provider() == AiProvider.OLLAMA) {
-                String visionModel = resolveOllamaVisionModel(analysisConfig.model());
-                AiRequest.AiRequestBuilder visionRequest = AiRequest.builder()
-                        .type(AiRequestType.IMAGE)
-                        .model(visionModel)
-                        .prompt(resolvePrompt(owner, AiProvider.OLLAMA, visionModel))
-                        .stream(Boolean.FALSE)
-                        .from(from)
-                        .attachments(Collections.singletonList(imageFile));
+            AiProvider provider = analysisConfig.provider();
+            eventPublisher.publishEvent(new NutritionAnalysisRequestEvent(this, savedMessage, imageBytes,
+                    metadata.getMimeType(), owner, from, provider, analysisConfig.model()));
+        } catch (Exception ex) {
+            logger.error("Failed to process WhatsApp image message", ex);
+            whatsAppService.sendTextMessage(from, "Sorry, I could not analyse this image now. Please try again later.")
+                    .subscribe();
+        }
+    }
 
-                if (owner != null) {
-                    visionRequest.userId(owner.getId());
-                }
+    public void processNutritionAnalysis(WhatsAppMessage savedMessage, byte[] imageBytes, String mimeType, Users owner,
+            String from, AiProvider provider, String model) {
+        if (savedMessage == null) {
+            return;
+        }
 
-                resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(visionRequest.build()));
-            }
+        AiProvider effectiveProvider = provider != null ? provider : AiProvider.GEMINI;
+        AiModelSelection analysisConfig = new AiModelSelection(effectiveProvider, model);
 
-            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), owner,
-                    analysisConfig);
+        try {
+            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, mimeType, owner, analysisConfig);
             if (result == null) {
-                logger.warn("Gemini returned empty result for message {}", savedMessage.getId());
+                logger.warn("Nutrition provider {} returned empty result for message {}", effectiveProvider,
+                        savedMessage.getId());
                 return;
             }
 
             if (!result.isFood()) {
                 String response = Optional.ofNullable(result.summary())
                         .orElse("I could not detect food in this image. Please try another photo.");
-                whatsAppService.sendTextMessage(from, response).subscribe();
+                if (StringUtils.hasText(from)) {
+                    whatsAppService.sendTextMessage(from, response).subscribe();
+                }
                 return;
             }
 
             saveNutritionAnalysis(savedMessage, result);
             Map<String, Object> captionVariables = buildNutritionCaptionVariables(result, owner,
                     savedMessage.getReceivedAt());
-            whatsAppService.sendCaptionMessage(from, WhatsAppCaptionTemplate.DAILY_EN, captionVariables).subscribe();
+            if (StringUtils.hasText(from)) {
+                whatsAppService.sendCaptionMessage(from, WhatsAppCaptionTemplate.DAILY_EN, captionVariables)
+                        .subscribe();
+            }
         } catch (Exception ex) {
-            logger.error("Failed to process WhatsApp image message", ex);
-            whatsAppService.sendTextMessage(from, "Sorry, I could not analyse this image now. Please try again later.")
-                    .subscribe();
+            logger.error("Failed to process nutrition analysis for message {}", savedMessage.getId(), ex);
+            if (StringUtils.hasText(from)) {
+                whatsAppService.sendTextMessage(from,
+                        "Sorry, I could not analyse this image now. Please try again later.").subscribe();
+            }
         }
     }
 
