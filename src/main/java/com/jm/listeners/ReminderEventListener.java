@@ -3,8 +3,10 @@ package com.jm.listeners;
 import com.jm.entity.Reminder;
 import com.jm.entity.Users;
 import com.jm.enums.ReminderRepeatMode;
+import com.jm.enums.ReminderType;
 import com.jm.events.ReminderDueEvent;
 import com.jm.repository.ReminderRepository;
+import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.WhatsAppService;
 import com.jm.services.support.ReminderScheduleSupport;
 
@@ -23,7 +25,9 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 @Component
 public class ReminderEventListener {
@@ -65,16 +69,39 @@ public class ReminderEventListener {
 
         Locale locale = LocaleContextHolder.getLocale();
         String formattedDate = formatDate(reminder.getScheduledAt(), locale);
-        String description = StringUtils.hasText(reminder.getDescription()) ? reminder.getDescription().trim() : null;
-        String messageKey = description != null ? "reminder.whatsapp.message.withDescription"
-                : "reminder.whatsapp.message.basic";
-        Object[] args = description != null ? new Object[] { reminder.getTitle(), description, formattedDate }
-                : new Object[] { reminder.getTitle(), formattedDate };
-        String message = messageSource.getMessage(messageKey, args, locale);
 
         try {
-            whatsAppService.sendTextMessage(target.getPhoneNumber(), message)
-                    .blockOptional(Duration.ofSeconds(30));
+            if (isWaterReminder(reminder)) {
+                Map<String, Object> variables = new HashMap<>();
+                variables.put("user_name", resolveDisplayName(target));
+                String goal = resolveWaterGoal(reminder);
+                variables.put("water_goal", goal);
+                variables.put("water_current", "0");
+                variables.put("water_remaining", goal);
+                whatsAppService
+                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.GOLS_WATER_PT, variables)
+                        .blockOptional(Duration.ofSeconds(30));
+            } else if (reminder.getType() == ReminderType.MEAL) {
+                Map<String, Object> variables = new HashMap<>();
+                variables.put("user_name", resolveDisplayName(target));
+                variables.put("meal_name", reminder.getTitle());
+                variables.put("dish_name", StringUtils.hasText(reminder.getDescription()) ? reminder.getDescription().trim()
+                        : reminder.getTitle());
+                variables.put("kcal", "");
+                variables.put("protein", "");
+                whatsAppService
+                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.MEAL_REMINDERS_EN, variables)
+                        .blockOptional(Duration.ofSeconds(30));
+            } else {
+                String description = StringUtils.hasText(reminder.getDescription()) ? reminder.getDescription().trim() : null;
+                String messageKey = description != null ? "reminder.whatsapp.message.withDescription"
+                        : "reminder.whatsapp.message.basic";
+                Object[] args = description != null ? new Object[] { reminder.getTitle(), description, formattedDate }
+                        : new Object[] { reminder.getTitle(), formattedDate };
+                String message = messageSource.getMessage(messageKey, args, locale);
+                whatsAppService.sendTextMessage(target.getPhoneNumber(), message)
+                        .blockOptional(Duration.ofSeconds(30));
+            }
             if (test) {
                 logger.info("Reminder {} test delivered to {}", reminder.getId(), target.getPhoneNumber());
                 return;
@@ -145,5 +172,48 @@ public class ReminderEventListener {
         DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
                 .withLocale(locale);
         return formatter.format(dateTime);
+    }
+
+    private boolean isWaterReminder(Reminder reminder) {
+        if (reminder == null) {
+            return false;
+        }
+        return containsKeyword(reminder.getTitle(), "water", "água", "agua")
+                || containsKeyword(reminder.getDescription(), "water", "água", "agua");
+    }
+
+    private boolean containsKeyword(String value, String... keywords) {
+        if (!StringUtils.hasText(value) || keywords == null) {
+            return false;
+        }
+        String normalized = value.toLowerCase(Locale.ROOT);
+        for (String keyword : keywords) {
+            if (keyword != null && normalized.contains(keyword.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String resolveDisplayName(Users user) {
+        if (user == null) {
+            return "";
+        }
+        if (StringUtils.hasText(user.getName())) {
+            String[] parts = user.getName().trim().split("\\s+");
+            return parts.length > 0 ? parts[0] : user.getName();
+        }
+        if (StringUtils.hasText(user.getLastName())) {
+            return user.getLastName();
+        }
+        return "";
+    }
+
+    private String resolveWaterGoal(Reminder reminder) {
+        if (reminder == null || !StringUtils.hasText(reminder.getDescription())) {
+            return "0";
+        }
+        String digits = reminder.getDescription().replaceAll("[^0-9]", "");
+        return StringUtils.hasText(digits) ? digits : "0";
     }
 }

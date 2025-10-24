@@ -57,6 +57,24 @@ public class WhatsAppService {
         return sendMessage(dto).then();
     }
 
+    public Mono<Void> sendCaptionMessage(String phoneNumber, WhatsAppCaptionTemplate template, Map<String, ?> variables) {
+        if (template == null) {
+            return Mono.empty();
+        }
+
+        Map<String, Object> payload = template.buildTemplatePayload(phoneNumber, variables);
+
+        return webClient.post()
+                .uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(payload)
+                .retrieve()
+                .bodyToMono(WhatsAppMessageResponse.class)
+                .doOnError(error -> logger.error("Failed to send WhatsApp template message", error))
+                .then();
+    }
+
     public WhatsAppMessageResponse sendImageMessage(WhatsAppMessageDTO dto) {
         return webClient.post()
                 .uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))

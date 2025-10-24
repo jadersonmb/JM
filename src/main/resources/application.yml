@@ -65,6 +65,17 @@ whatsapp:
     base-url: https://graph.facebook.com/v22.0
     url: https://graph.facebook.com/v22.0/{phoneNumberId}/messages
     token: ${WHATSAPP_API_TOKEN:}
+  nutrition:
+    ai:
+      assistant-provider: ${WHATSAPP_NUTRITION_ASSISTANT_PROVIDER:OLLAMA}
+      # Models accept optional prefixes such as GEMINI::model-name or OLLAMA::model-name to
+      # automatically select the matching provider when the environment variable changes.
+      assistant-model: ${WHATSAPP_NUTRITION_ASSISTANT_MODEL:ALIENTELLIGENCE/personalizednutrition:latest}
+      command-provider: ${WHATSAPP_NUTRITION_COMMAND_PROVIDER:GEMINI}
+      command-model: ${WHATSAPP_NUTRITION_COMMAND_MODEL:gemini-pro}
+      analysis-provider: ${WHATSAPP_NUTRITION_ANALYSIS_PROVIDER:GEMINI}
+      analysis-model: ${WHATSAPP_NUTRITION_ANALYSIS_MODEL:gemini-pro-vision}
+      ollama-vision-model: ${WHATSAPP_NUTRITION_OLLAMA_VISION_MODEL:llava:34b}
 
 # Cloudflare R2 Configuration
 cloudflare:

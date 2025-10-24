@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.ImageDTO;
 import com.jm.dto.NutritionDashboardDTO;
+import com.jm.dto.OllamaRequestDTO;
+import com.jm.dto.OllamaResponseDTO;
 import com.jm.dto.UserDTO;
 import com.jm.dto.WhatsAppMediaMetadata;
 import com.jm.dto.WhatsAppMessageDTO;
@@ -41,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -61,6 +64,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -80,35 +84,73 @@ public class WhatsAppNutritionService {
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
     private static final ZoneId DEFAULT_ZONE = ZoneId.systemDefault();
     private static final String PROMPT_CODE = "WHATSAPP_NUTRITION_ANALYSIS";
-    private static final String OLLAMA_TEXT_MODEL = "ALIENTELLIGENCE/personalizednutrition:latest";
-    private static final String OLLAMA_VISION_MODEL = "llava:34b";
-    private static final String GEMINI_VISION_MODEL = "gemini-pro-vision";
-    private static final String GEMINI_TEXT_MODEL = "gemini-pro";
+    private static final String DEFAULT_ASSISTANT_MODEL = "ALIENTELLIGENCE/personalizednutrition:latest";
+    private static final String DEFAULT_ANALYSIS_MODEL = "gemini-pro-vision";
+    private static final String DEFAULT_OLLAMA_VISION_MODEL = "llava:34b";
     private static final String OLLAMA_AUDIO_MODEL = "nuextract:latest";
     private static final String DEFAULT_IMAGE_PROMPT = """
-            You are a nutritionist and must reply using JSON only.
-            Analyse the meal in the image and respond ONLY with this JSON structure:
+            You are a nutrition vision assistant. Analyse the meal image and respond ONLY with the following JSON structure:
             {
               \"isFood\": true|false,
               \"foodName\": \"name of the meal\",
-              \"calories\": number in kcal,
+              \"dish_name\": \"short dish name in Portuguese\",
+              \"dish_emoji\": \"emoji that represents the dish\",
+              \"meal_name\": \"Breakfast|Lunch|Dinner|Snack|Supper|Other meals\",
               \"mealType\": \"BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS\",
+              \"portion\": number in grams or null,
+              \"calories\": null,
+              \"kcal\": null,
               \"macronutrients\": {
-                \"protein_g\": number in grams,
-                \"carbs_g\": number in grams,
-                \"fat_g\": number in grams
-                \"fiber_g\": number in grams
-                \"Ingested calories\": number in kcal
+                \"protein_g\": null,
+                \"carbs_g\": null,
+                \"fat_g\": null,
+                \"fiber_g\": null
               },
+              \"items\": [
+                { \"name\": \"food item\", \"confidence\": value between 0 and 1, \"portion_g\": number in grams or null }
+              ],
               \"categories\": [
                 { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
               ],
               \"summary\": \"short sentence about the meal\",
               \"confidence\": value between 0 and 1
             }
-            If the picture does not contain food, respond exactly with:
+            Focus on identifying the food items accurately. If the picture does not contain food, respond exactly with:
             {\"isFood\": false, \"summary\": \"brief explanation\"}
-            Always choose the mealType that best matches the image. Use OTHER_MEALS when unsure.
+            Keep the response compact and valid JSON.
+            """;
+    private static final String DEFAULT_PERSONALIZED_PROMPT = """
+            You are a personalised nutrition assistant. A vision model analysed a meal photo and produced the JSON below:
+            {{DETECTION_JSON}}
+            The detected items were: {{ITEM_NAMES}}.
+            Using this information and your nutrition knowledge, estimate the missing nutritional values and respond ONLY with JSON following this schema:
+            {
+              \"isFood\": true|false,
+              \"foodName\": \"name of the meal\",
+              \"dish_name\": \"short dish name in Portuguese\",
+              \"dish_emoji\": \"emoji that represents the dish\",
+              \"meal_name\": \"Breakfast|Lunch|Dinner|Snack|Supper|Other meals\",
+              \"mealType\": \"BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS\",
+              \"portion\": number in grams or null,
+              \"calories\": number in kcal or null,
+              \"kcal\": number in kcal or null,
+              \"macronutrients\": {
+                \"protein_g\": number in grams or null,
+                \"carbs_g\": number in grams or null,
+                \"fat_g\": number in grams or null,
+                \"fiber_g\": number in grams or null
+              },
+              \"items\": [
+                { \"name\": \"food item\", \"confidence\": value between 0 and 1, \"portion_g\": number in grams or null }
+              ],
+              \"categories\": [
+                { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
+              ],
+              \"summary\": \"short sentence about the meal\",
+              \"confidence\": value between 0 and 1
+            }
+            Keep the structure, item names and meal classification from the input. When you cannot estimate a value, keep it null.
+            If the analysis indicates there is no food, respond exactly with {\"isFood\": false, \"summary\": \"brief explanation\"}.
             """;
     private static final String COMMAND_EXTRACTION_PROMPT = """
             You are an assistant that extracts structured nutrition instructions from WhatsApp messages in Portuguese or English.
@@ -149,6 +191,28 @@ public class WhatsAppNutritionService {
     private final UserService userService;
     private final AiClientFactory aiClientFactory;
     private final AiPromptReferenceService aiPromptReferenceService;
+    private final OllamaService ollamaService;
+
+    @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
+    private AiProvider assistantProvider;
+
+    @Value("${whatsapp.nutrition.ai.assistant-model:ALIENTELLIGENCE/personalizednutrition:latest}")
+    private String assistantModel;
+
+    @Value("${whatsapp.nutrition.ai.command-provider:GEMINI}")
+    private AiProvider commandProvider;
+
+    @Value("${whatsapp.nutrition.ai.command-model:gemini-pro}")
+    private String commandModel;
+
+    @Value("${whatsapp.nutrition.ai.analysis-provider:GEMINI}")
+    private AiProvider analysisProvider;
+
+    @Value("${whatsapp.nutrition.ai.analysis-model:gemini-pro-vision}")
+    private String analysisModel;
+
+    @Value("${whatsapp.nutrition.ai.ollama-vision-model:llava:34b}")
+    private String ollamaVisionModel;
 
     private final Map<String, MeasurementUnits> measurementUnitByKeyword = new ConcurrentHashMap<>();
     private final Map<String, Food> foodByNormalizedName = new ConcurrentHashMap<>();
@@ -234,9 +298,14 @@ public class WhatsAppNutritionService {
             return;
         }
 
+        AiModelSelection assistantConfig = resolveModelSelection(assistantModel, assistantProvider,
+                AiProvider.OLLAMA, DEFAULT_ASSISTANT_MODEL);
+        AiProvider provider = assistantConfig.provider();
+        String model = assistantConfig.model();
+
         AiRequest.AiRequestBuilder requestBuilder = AiRequest.builder()
                 .type(AiRequestType.TEXT)
-                .model(OLLAMA_TEXT_MODEL)
+                .model(model)
                 .prompt(body)
                 .stream(Boolean.FALSE)
                 .from(message.getFromPhone());
@@ -245,7 +314,7 @@ public class WhatsAppNutritionService {
                 .map(Users::getId)
                 .ifPresent(requestBuilder::userId);
 
-        resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(requestBuilder.build()));
+        resolveClient(provider).ifPresent(client -> client.execute(requestBuilder.build()));
     }
 
     private void handleImageMessage(WhatsAppMessage.WhatsAppMessageBuilder builder, Map<String, Object> message,
@@ -292,35 +361,44 @@ public class WhatsAppNutritionService {
 
             messageRepository.save(savedMessage);
 
-            AiRequest.AiRequestBuilder visionRequest = AiRequest.builder()
-                    .type(AiRequestType.IMAGE)
-                    .model(OLLAMA_VISION_MODEL)
-                    .prompt(resolvePrompt(owner, AiProvider.OLLAMA, OLLAMA_VISION_MODEL))
-                    .stream(Boolean.FALSE)
-                    .from(from)
-                    .attachments(Collections.singletonList(imageFile));
+            AiModelSelection analysisConfig = resolveModelSelection(analysisModel, analysisProvider,
+                    AiProvider.GEMINI, DEFAULT_ANALYSIS_MODEL);
 
-            if (owner != null) {
-                visionRequest.userId(owner.getId());
+            if (analysisConfig.provider() == AiProvider.OLLAMA) {
+                String visionModel = resolveOllamaVisionModel(analysisConfig.model());
+                AiRequest.AiRequestBuilder visionRequest = AiRequest.builder()
+                        .type(AiRequestType.IMAGE)
+                        .model(visionModel)
+                        .prompt(resolvePrompt(owner, AiProvider.OLLAMA, visionModel))
+                        .stream(Boolean.FALSE)
+                        .from(from)
+                        .attachments(Collections.singletonList(imageFile));
+
+                if (owner != null) {
+                    visionRequest.userId(owner.getId());
+                }
+
+                resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(visionRequest.build()));
             }
 
-            resolveClient(AiProvider.OLLAMA).ifPresent(client -> client.execute(visionRequest.build()));
-
-            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), owner);
+            GeminiNutritionResult result = requestNutritionAnalysis(imageBytes, metadata.getMimeType(), owner,
+                    analysisConfig);
             if (result == null) {
                 logger.warn("Gemini returned empty result for message {}", savedMessage.getId());
                 return;
             }
 
-            if (!result.isFood) {
-                String response = Optional.ofNullable(result.summary)
+            if (!result.isFood()) {
+                String response = Optional.ofNullable(result.summary())
                         .orElse("I could not detect food in this image. Please try another photo.");
                 whatsAppService.sendTextMessage(from, response).subscribe();
                 return;
             }
 
             saveNutritionAnalysis(savedMessage, result);
-            whatsAppService.sendTextMessage(from, buildNutritionResponse(result)).subscribe();
+            Map<String, Object> captionVariables = buildNutritionCaptionVariables(result, owner,
+                    savedMessage.getReceivedAt());
+            whatsAppService.sendCaptionMessage(from, WhatsAppCaptionTemplate.DAILY_EN, captionVariables).subscribe();
         } catch (Exception ex) {
             logger.error("Failed to process WhatsApp image message", ex);
             whatsAppService.sendTextMessage(from, "Sorry, I could not analyse this image now. Please try again later.")
@@ -442,16 +520,21 @@ public class WhatsAppNutritionService {
     }
 
     private Optional<NutritionCommand> parseNutritionCommand(String body) {
-        Optional<AiClient> client = resolveClient(AiProvider.GEMINI);
+        AiModelSelection commandConfig = resolveModelSelection(commandModel, commandProvider, AiProvider.GEMINI,
+                "gemini-pro");
+        AiProvider provider = commandConfig.provider();
+        String model = commandConfig.model();
+
+        Optional<AiClient> client = resolveClient(provider);
         if (client.isEmpty()) {
-            logger.warn("Gemini client not configured; skipping nutrition command extraction");
+            logger.warn("{} client not configured; skipping nutrition command extraction", provider);
             return Optional.empty();
         }
 
         String prompt = COMMAND_EXTRACTION_PROMPT + "\nMensagem do usuário:\n" + body;
         AiRequest request = AiRequest.builder()
                 .type(AiRequestType.TEXT)
-                .model(GEMINI_TEXT_MODEL)
+                .model(model)
                 .prompt(prompt)
                 .timeout(DEFAULT_TIMEOUT)
                 .build();
@@ -1128,15 +1211,15 @@ public class WhatsAppNutritionService {
 
         NutritionAnalysis analysis = NutritionAnalysis.builder()
                 .message(message)
-                .foodName(result.foodName)
-                .calories(toBigDecimal(result.calories))
-                .protein(toBigDecimal(result.macronutrients != null ? result.macronutrients.protein_g : null))
-                .carbs(toBigDecimal(result.macronutrients != null ? result.macronutrients.carbs_g : null))
-                .fat(toBigDecimal(result.macronutrients != null ? result.macronutrients.fat_g : null))
-                .summary(result.summary)
-                .categoriesJson(objectMapper.writeValueAsString(result.categories))
-                .confidence(toBigDecimal(result.confidence))
-                .primaryCategory(resolvePrimaryCategory(result.categories))
+                .foodName(result.foodName())
+                .calories(toBigDecimal(result.calories()))
+                .protein(toBigDecimal(result.macronutrients() != null ? result.macronutrients().protein_g() : null))
+                .carbs(toBigDecimal(result.macronutrients() != null ? result.macronutrients().carbs_g() : null))
+                .fat(toBigDecimal(result.macronutrients() != null ? result.macronutrients().fat_g() : null))
+                .summary(result.summary())
+                .categoriesJson(objectMapper.writeValueAsString(result.categories()))
+                .confidence(toBigDecimal(result.confidence()))
+                .primaryCategory(resolvePrimaryCategory(result.categories()))
                 .caloriesUnit(caloriesUnit)
                 .proteinUnit(macroUnit)
                 .carbsUnit(macroUnit)
@@ -1153,11 +1236,11 @@ public class WhatsAppNutritionService {
             return null;
         }
         GeminiNutritionResult.Category best = categories.stream().filter(Objects::nonNull)
-                .max(Comparator.comparing(c -> Optional.ofNullable(c.confidence).orElse(0.0))).orElse(null);
-        if (best == null || best.name == null || best.name.isBlank()) {
+                .max(Comparator.comparing(c -> Optional.ofNullable(c.confidence()).orElse(0.0))).orElse(null);
+        if (best == null || best.name() == null || best.name().isBlank()) {
             return null;
         }
-        String normalizedName = normalizeCategoryName(best.name);
+        String normalizedName = normalizeCategoryName(best.name());
         return foodCategoryRepository
                 .findByNameIgnoreCase(normalizedName)
                 .orElseGet(() -> foodCategoryRepository.save(FoodCategory.builder()
@@ -1166,21 +1249,40 @@ public class WhatsAppNutritionService {
     }
 
     public GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType, Users owner) {
-        Optional<AiClient> geminiClient = resolveClient(AiProvider.GEMINI);
-        if (geminiClient.isEmpty()) {
-            logger.warn("AI provider {} not available for nutrition analysis", AiProvider.GEMINI);
+        AiModelSelection analysisConfig = resolveModelSelection(analysisModel, analysisProvider, AiProvider.GEMINI,
+                DEFAULT_ANALYSIS_MODEL);
+        return requestNutritionAnalysis(imageBytes, mimeType, owner, analysisConfig);
+    }
+
+    private GeminiNutritionResult requestNutritionAnalysis(byte[] imageBytes, String mimeType, Users owner,
+            AiModelSelection analysisConfig) {
+        AiProvider provider = analysisConfig != null && analysisConfig.provider() != null ? analysisConfig.provider()
+                : AiProvider.GEMINI;
+        String model = analysisConfig != null ? analysisConfig.model() : null;
+
+        if (provider == AiProvider.OLLAMA) {
+            return requestOllamaNutritionAnalysis(imageBytes, owner, model);
+        }
+
+        Optional<AiClient> client = resolveClient(provider);
+        if (client.isEmpty()) {
+            logger.warn("AI provider {} not available for nutrition analysis", provider);
             return null;
+        }
+
+        if (!StringUtils.hasText(model)) {
+            model = DEFAULT_ANALYSIS_MODEL;
         }
         AiRequest request = AiRequest.builder()
                 .type(AiRequestType.IMAGE)
-                .model(GEMINI_VISION_MODEL)
-                .prompt(resolvePrompt(owner, AiProvider.GEMINI, GEMINI_VISION_MODEL))
+                .model(model)
+                .prompt(resolvePrompt(owner, provider, model))
                 .imageBytes(imageBytes)
                 .mimeType(mimeType)
                 .timeout(DEFAULT_TIMEOUT)
                 .build();
 
-        AiResponse response = geminiClient.get().execute(request);
+        AiResponse response = client.get().execute(request);
         if (response == null || response.content() == null) {
             return null;
         }
@@ -1189,6 +1291,79 @@ public class WhatsAppNutritionService {
                 .map(this::sanitizeGeminiResponse)
                 .map(this::deserializeNutritionResult)
                 .orElse(null);
+    }
+
+    private GeminiNutritionResult requestOllamaNutritionAnalysis(byte[] imageBytes, Users owner, String configuredModel) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            return null;
+        }
+        String model = resolveOllamaVisionModel(configuredModel);
+        try {
+            List<String> images = List.of(Base64.getEncoder().encodeToString(imageBytes));
+            String prompt = resolvePrompt(owner, AiProvider.OLLAMA, model);
+            OllamaResponseDTO detectionResponse = ollamaService.generate(OllamaRequestDTO.builder()
+                    .model(model)
+                    .prompt(prompt)
+                    .stream(Boolean.FALSE)
+                    .images(images)
+                    .build());
+            if (detectionResponse == null || !StringUtils.hasText(detectionResponse.getResponse())) {
+                return null;
+            }
+            String detectionPayload = Optional.ofNullable(detectionResponse.getResponse())
+                    .map(this::sanitizeGeminiResponse)
+                    .orElse(null);
+            if (!StringUtils.hasText(detectionPayload)) {
+                return null;
+            }
+
+            GeminiNutritionResult detection = deserializeNutritionResult(detectionPayload);
+            if (detection == null || !detection.isFood()) {
+                return detection;
+            }
+
+            String summaryModel = StringUtils.hasText(configuredModel) ? configuredModel.trim()
+                    : DEFAULT_ASSISTANT_MODEL;
+            if (!StringUtils.hasText(summaryModel) || summaryModel.equalsIgnoreCase(model)) {
+                summaryModel = DEFAULT_ASSISTANT_MODEL;
+            }
+
+            String summaryPromptTemplate = resolvePrompt(owner, AiProvider.OLLAMA, summaryModel,
+                    DEFAULT_PERSONALIZED_PROMPT);
+            Map<String, String> promptVariables = new HashMap<>();
+            promptVariables.put("DETECTION_JSON", detectionPayload);
+            List<GeminiNutritionResult.Item> detectedItems = detection.items();
+            if (detectedItems != null && !detectedItems.isEmpty()) {
+                String names = detectedItems.stream()
+                        .filter(Objects::nonNull)
+                        .map(GeminiNutritionResult.Item::name)
+                        .filter(StringUtils::hasText)
+                        .collect(Collectors.joining(", "));
+                if (StringUtils.hasText(names)) {
+                    promptVariables.put("ITEM_NAMES", names);
+                }
+            }
+            promptVariables.putIfAbsent("ITEM_NAMES", "(no items detected)");
+            if (StringUtils.hasText(detection.summary())) {
+                promptVariables.put("SUMMARY", detection.summary());
+            }
+
+            String summaryPrompt = applyPromptTemplate(summaryPromptTemplate, promptVariables);
+            OllamaResponseDTO summaryResponse = ollamaService.generate(OllamaRequestDTO.builder()
+                    .model(summaryModel)
+                    .prompt(summaryPrompt)
+                    .stream(Boolean.FALSE)
+                    .build());
+
+            return Optional.ofNullable(summaryResponse)
+                    .map(OllamaResponseDTO::getResponse)
+                    .map(this::sanitizeGeminiResponse)
+                    .map(this::deserializeNutritionResult)
+                    .orElse(detection);
+        } catch (Exception ex) {
+            logger.error("Failed to request nutrition analysis from Ollama", ex);
+            return null;
+        }
     }
 
     public GeminiNutritionResult deserializeNutritionResult(String payload) {
@@ -1211,14 +1386,117 @@ public class WhatsAppNutritionService {
         return cleaned;
     }
 
+    private AiModelSelection resolveModelSelection(String configuredModel, AiProvider configuredProvider,
+            AiProvider defaultProvider, String defaultModel) {
+        AiProvider provider = configuredProvider != null ? configuredProvider : defaultProvider;
+        String model = StringUtils.hasText(configuredModel) ? configuredModel.trim() : null;
+
+        if (StringUtils.hasText(model)) {
+            AiModelSelection embedded = extractProviderFromSpec(model);
+            if (embedded != null) {
+                provider = embedded.provider() != null ? embedded.provider() : provider;
+                model = StringUtils.hasText(embedded.model()) ? embedded.model() : null;
+            }
+        }
+
+        if (!StringUtils.hasText(model)) {
+            model = defaultModel;
+        }
+
+        if (provider == null) {
+            provider = defaultProvider;
+        }
+
+        return new AiModelSelection(provider, model);
+    }
+
+    private AiModelSelection extractProviderFromSpec(String spec) {
+        if (!StringUtils.hasText(spec)) {
+            return null;
+        }
+
+        String trimmed = spec.trim();
+        String[][] separators = new String[][] { {"::"}, {"|"}, {"=>"} };
+        for (String[] separator : separators) {
+            String token = separator[0];
+            int idx = trimmed.indexOf(token);
+            if (idx > 0) {
+                String providerPart = trimmed.substring(0, idx).trim();
+                String modelPart = trimmed.substring(idx + token.length()).trim();
+                Optional<AiProvider> provider = parseProviderFromString(providerPart);
+                if (provider.isPresent()) {
+                    return new AiModelSelection(provider.get(), modelPart);
+                }
+            }
+        }
+
+        Optional<AiProvider> provider = parseProviderFromString(trimmed);
+        if (provider.isPresent()) {
+            return new AiModelSelection(provider.get(), null);
+        }
+
+        return null;
+    }
+
+    private Optional<AiProvider> parseProviderFromString(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return Optional.empty();
+        }
+        String normalized = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_');
+        if ("GOOGLE".equals(normalized)) {
+            normalized = "GEMINI";
+        }
+        try {
+            return Optional.of(AiProvider.valueOf(normalized));
+        } catch (IllegalArgumentException ex) {
+            return Optional.empty();
+        }
+    }
+
+    private String resolveOllamaVisionModel(String configuredModel) {
+        if (StringUtils.hasText(configuredModel)) {
+            String normalized = configuredModel.trim().toLowerCase(Locale.ROOT);
+            if (normalized.contains("llava") || normalized.contains("vision")) {
+                return configuredModel.trim();
+            }
+        }
+        if (StringUtils.hasText(ollamaVisionModel)) {
+            return ollamaVisionModel;
+        }
+        return DEFAULT_OLLAMA_VISION_MODEL;
+    }
+
+    private record AiModelSelection(AiProvider provider, String model) {
+    }
+
     private String resolvePrompt(Users owner, AiProvider provider, String model) {
+        return resolvePrompt(owner, provider, model, DEFAULT_IMAGE_PROMPT);
+    }
+
+    private String resolvePrompt(Users owner, AiProvider provider, String model, String defaultPrompt) {
         String ownerReference = owner != null ? owner.getId().toString() : null;
         return aiPromptReferenceService.resolvePrompt(PROMPT_CODE, provider, model, ownerReference)
                 .map(AiPromptReferenceDTO::getPrompt)
                 .filter(StringUtils::hasText)
                 .map(String::trim)
-                .orElse(DEFAULT_IMAGE_PROMPT);
+                .orElse(defaultPrompt);
     }
+
+    private String applyPromptTemplate(String prompt, Map<String, String> variables) {
+        if (!StringUtils.hasText(prompt) || variables == null || variables.isEmpty()) {
+            return prompt;
+        }
+        String result = prompt;
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            String placeholder = "{{" + entry.getKey() + "}}";
+            result = result.replace(placeholder, entry.getValue());
+        }
+        return result;
+    }
+
 
     private Optional<AiClient> resolveClient(AiProvider provider) {
         try {
@@ -1245,35 +1523,54 @@ public class WhatsAppNutritionService {
         }
     }
 
-    public String buildNutritionResponse(GeminiNutritionResult result) {
-        String primaryCategory = result.categories != null && !result.categories.isEmpty()
-                ? result.categories.get(0).name
-                : "Alimento";
-        String foodName = Optional.ofNullable(result.foodName).filter(s -> !s.isBlank()).orElse(primaryCategory);
-        String mealLabel = formatMealTypeLabel(result.mealType());
+    public Map<String, Object> buildNutritionCaptionVariables(GeminiNutritionResult result, Users owner,
+            OffsetDateTime referenceMoment) {
+        Map<String, Object> variables = new HashMap<>();
+        String mealLabel = formatMealTypeLabel(result != null ? result.mealType() : null);
 
-        return """
-                [Analysis Nutricional]
-                _%s_
+        String mealName = result != null && StringUtils.hasText(result.mealName()) ? result.mealName() : mealLabel;
+        variables.put("meal_name", mealName);
+        variables.put("portion", formatNumber(result != null ? result.portion() : null));
 
-                Calorias: %.0f kcal
-                Proteins: %.1f g
-                Carboidratos: %.1f g
-                Gorduras: %.1f g
-                Categoria: %s
-                Refeição: %s
+        String dishName = result != null && StringUtils.hasText(result.dishName()) ? result.dishName()
+                : Optional.ofNullable(result != null ? result.foodName() : null).filter(StringUtils::hasText)
+                        .orElse(mealName);
+        variables.put("dish_name", dishName);
+        String emoji = result != null && StringUtils.hasText(result.dishEmoji()) ? result.dishEmoji() : "🍽️";
+        variables.put("dish_emoji", emoji);
 
-                %s
-                """.formatted(foodName, Optional.ofNullable(result.calories).orElse(0.0),
-                result.macronutrients != null && result.macronutrients.protein_g != null
-                        ? result.macronutrients.protein_g
-                        : 0.0,
-                result.macronutrients != null && result.macronutrients.carbs_g != null ? result.macronutrients.carbs_g
-                        : 0.0,
-                result.macronutrients != null && result.macronutrients.fat_g != null ? result.macronutrients.fat_g
-                        : 0.0,
-                primaryCategory, mealLabel,
-                Optional.ofNullable(result.summary).orElse("Aproveite a sua meal!"));
+        variables.put("protein", formatNumber(result != null && result.macronutrients() != null
+                ? result.macronutrients().protein_g()
+                : null));
+        variables.put("carbs", formatNumber(result != null && result.macronutrients() != null
+                ? result.macronutrients().carbs_g()
+                : null));
+        variables.put("fat", formatNumber(result != null && result.macronutrients() != null
+                ? result.macronutrients().fat_g()
+                : null));
+        variables.put("fiber", formatNumber(result != null && result.macronutrients() != null
+                ? result.macronutrients().fiber_g()
+                : null));
+
+        double calories = result != null ? optionalDouble(result.kcal() != null ? result.kcal() : result.calories()) : 0.0;
+        variables.put("kcal", formatNumber(calories));
+
+        DailyTotals totals = computeDailyTotals(owner, referenceMoment);
+        variables.put("protein_total", formatNumber(totals.protein()));
+        variables.put("carb_total", formatNumber(totals.carbs()));
+        variables.put("fat_total", formatNumber(totals.fat()));
+        double fiberTotal = totals.fiber()
+                + (result != null && result.macronutrients() != null && result.macronutrients().fiber_g() != null
+                        ? result.macronutrients().fiber_g()
+                        : 0.0);
+        variables.put("fiber_total", formatNumber(fiberTotal));
+        variables.put("kcal_total", formatNumber(totals.kcal()));
+
+        return variables;
+    }
+
+    public String buildNutritionResponse(GeminiNutritionResult result, Users owner, OffsetDateTime referenceMoment) {
+        return WhatsAppCaptionTemplate.DAILY_EN.format(buildNutritionCaptionVariables(result, owner, referenceMoment));
     }
 
     private String normalizeCategoryName(String name) {
@@ -1832,6 +2129,61 @@ public class WhatsAppNutritionService {
         return value == null ? 0.0 : value.doubleValue();
     }
 
+    private double optionalDouble(Double value) {
+        return value == null ? 0.0 : value;
+    }
+
+    private DailyTotals computeDailyTotals(Users owner, OffsetDateTime referenceMoment) {
+        if (owner == null || owner.getId() == null) {
+            return DailyTotals.empty();
+        }
+        LocalDate referenceDate = referenceMoment != null
+                ? referenceMoment.atZoneSameInstant(DEFAULT_ZONE).toLocalDate()
+                : LocalDate.now(DEFAULT_ZONE);
+        OffsetDateTime start = startOfDay(referenceDate);
+        OffsetDateTime endExclusive = endOfDayExclusive(referenceDate);
+        OffsetDateTime endInclusive = endExclusive != null ? endExclusive.minusNanos(1) : null;
+        List<NutritionAnalysis> analyses = endInclusive != null
+                ? nutritionAnalysisRepository.findByCreatedAtBetween(start, endInclusive)
+                : nutritionAnalysisRepository.findTop20ByOrderByCreatedAtDesc();
+        UUID ownerId = owner.getId();
+        double protein = 0;
+        double carbs = 0;
+        double fat = 0;
+        double kcal = 0;
+        for (NutritionAnalysis analysis : analyses) {
+            Users analysisOwner = Optional.ofNullable(analysis.getMessage()).map(WhatsAppMessage::getOwner).orElse(null);
+            if (analysisOwner != null && ownerId.equals(analysisOwner.getId())) {
+                protein += optionalDouble(analysis.getProtein());
+                carbs += optionalDouble(analysis.getCarbs());
+                fat += optionalDouble(analysis.getFat());
+                kcal += optionalDouble(analysis.getCalories());
+            }
+        }
+        return new DailyTotals(protein, carbs, fat, 0.0, kcal);
+    }
+
+    private String formatNumber(Double value) {
+        if (value == null) {
+            return "";
+        }
+        double sanitized = optionalDouble(value);
+        if (Math.abs(sanitized - Math.rint(sanitized)) < 0.005) {
+            return String.format(Locale.US, "%.0f", sanitized);
+        }
+        return String.format(Locale.US, "%.1f", sanitized);
+    }
+
+    private String formatNumber(double value) {
+        return formatNumber(Double.valueOf(value));
+    }
+
+    private record DailyTotals(double protein, double carbs, double fat, double fiber, double kcal) {
+        private static DailyTotals empty() {
+            return new DailyTotals(0.0, 0.0, 0.0, 0.0, 0.0);
+        }
+    }
+
     private double convertToMilliliters(BigDecimal volume, MeasurementUnits unit) {
         if (volume == null || volume.signum() <= 0) {
             return 0.0;
@@ -1921,15 +2273,31 @@ public class WhatsAppNutritionService {
         return messageRepository.findById(messageId);
     }
 
-    public record GeminiNutritionResult(boolean isFood, String foodName, Double calories, String mealType,
-            Macronutrients macronutrients, List<Category> categories, String summary, Double confidence) {
+    public record GeminiNutritionResult(@JsonProperty("isFood") boolean isFood,
+            @JsonProperty("foodName") String foodName,
+            @JsonProperty("calories") Double calories,
+            @JsonProperty("kcal") Double kcal,
+            @JsonProperty("mealType") String mealType,
+            @JsonProperty("meal_name") String mealName,
+            @JsonProperty("dish_name") String dishName,
+            @JsonProperty("dish_emoji") String dishEmoji,
+            @JsonProperty("portion") Double portion,
+            Macronutrients macronutrients,
+            List<Category> categories,
+            List<Item> items,
+            String summary,
+            Double confidence) {
 
         private record Macronutrients(@JsonProperty("protein_g") Double protein_g,
                 @JsonProperty("carbs_g") Double carbs_g,
-                @JsonProperty("fat_g") Double fat_g) {
+                @JsonProperty("fat_g") Double fat_g,
+                @JsonProperty("fiber_g") Double fiber_g) {
         }
 
         private record Category(String name, Double confidence) {
+        }
+
+        private record Item(String name, Double confidence, @JsonProperty("portion_g") Double portion_g) {
         }
     }
 }
