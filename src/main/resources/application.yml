@@ -85,7 +85,7 @@ cloudflare:
     access-key-id: ${CLOUDFLARE_ACCESS_KEY_ID}
     secret-access-key: ${CLOUDFLARE_SECRET_ACCESS_KEY}
     bucket-name: ${CLOUDFLARE_BUCKET_NAME}
-    public-url: https://pub-1234567890.r2.dev
+    public-url: https://pub-83a83e2ebd0e4cdf8d1e1b42e7e0e711.r2.dev
 
 ollama:
   api:
