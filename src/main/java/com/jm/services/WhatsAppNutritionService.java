@@ -2156,22 +2156,19 @@ public class WhatsAppNutritionService {
         OffsetDateTime start = startOfDay(referenceDate);
         OffsetDateTime endExclusive = endOfDayExclusive(referenceDate);
         OffsetDateTime endInclusive = endExclusive != null ? endExclusive.minusNanos(1) : null;
-        List<NutritionAnalysis> analyses = endInclusive != null
-                ? nutritionAnalysisRepository.findByCreatedAtBetween(start, endInclusive)
-                : nutritionAnalysisRepository.findTop20ByOrderByCreatedAtDesc();
         UUID ownerId = owner.getId();
+        List<NutritionAnalysis> analyses = endInclusive != null
+                ? nutritionAnalysisRepository.findByMessageOwnerIdAndCreatedAtBetween(ownerId, start, endInclusive)
+                : nutritionAnalysisRepository.findTop20ByMessageOwnerIdOrderByCreatedAtDesc(ownerId);
         double protein = 0;
         double carbs = 0;
         double fat = 0;
         double kcal = 0;
         for (NutritionAnalysis analysis : analyses) {
-            Users analysisOwner = Optional.ofNullable(analysis.getMessage()).map(WhatsAppMessage::getOwner).orElse(null);
-            if (analysisOwner != null && ownerId.equals(analysisOwner.getId())) {
-                protein += optionalDouble(analysis.getProtein());
-                carbs += optionalDouble(analysis.getCarbs());
-                fat += optionalDouble(analysis.getFat());
-                kcal += optionalDouble(analysis.getCalories());
-            }
+            protein += optionalDouble(analysis.getProtein());
+            carbs += optionalDouble(analysis.getCarbs());
+            fat += optionalDouble(analysis.getFat());
+            kcal += optionalDouble(analysis.getCalories());
         }
         return new DailyTotals(protein, carbs, fat, 0.0, kcal);
     }

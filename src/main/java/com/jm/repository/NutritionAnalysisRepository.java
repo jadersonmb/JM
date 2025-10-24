@@ -2,6 +2,7 @@ package com.jm.repository;
 
 import com.jm.entity.NutritionAnalysis;
 import com.jm.entity.WhatsAppMessage;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.OffsetDateTime;
@@ -12,9 +13,17 @@ import java.util.UUID;
 public interface NutritionAnalysisRepository extends JpaRepository<NutritionAnalysis, UUID> {
     Optional<NutritionAnalysis> findByMessage(WhatsAppMessage message);
 
+    @EntityGraph(attributePaths = {"message", "message.owner"})
     List<NutritionAnalysis> findTop20ByOrderByCreatedAtDesc();
 
     List<NutritionAnalysis> findByCreatedAtAfter(OffsetDateTime createdAt);
 
+    @EntityGraph(attributePaths = {"message", "message.owner"})
     List<NutritionAnalysis> findByCreatedAtBetween(OffsetDateTime start, OffsetDateTime end);
+
+    @EntityGraph(attributePaths = {"message", "message.owner"})
+    List<NutritionAnalysis> findTop20ByMessageOwnerIdOrderByCreatedAtDesc(UUID ownerId);
+
+    @EntityGraph(attributePaths = {"message", "message.owner"})
+    List<NutritionAnalysis> findByMessageOwnerIdAndCreatedAtBetween(UUID ownerId, OffsetDateTime start, OffsetDateTime end);
 }
