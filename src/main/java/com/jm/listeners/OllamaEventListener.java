@@ -10,6 +10,7 @@ import com.jm.services.OllamaService;
 import com.jm.services.WhatsAppNutritionService;
 import com.jm.services.WhatsAppNutritionService.GeminiNutritionResult;
 import com.jm.services.WhatsAppService;
+import com.jm.services.WhatsAppCaptionTemplate;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,10 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -67,9 +71,14 @@ public class OllamaEventListener {
                     logger.info("Ollama request image {} completed successfully", entity.getId());
                     GeminiNutritionResult deserializeNutritionResult = whatsAppNutritionService
                             .deserializeNutritionResult(sanitizeResponse(response.getResponse()));
-                    String nutritionResponse = whatsAppNutritionService
-                            .buildNutritionResponse(deserializeNutritionResult);
-                    whatsAppService.sendTextMessage(entity.getFrom(), nutritionResponse).subscribe();
+                    Map<String, Object> captionVariables = whatsAppNutritionService
+                            .buildNutritionCaptionVariables(deserializeNutritionResult, entity.getUser(),
+                                    entity.getFinishedAt() != null
+                                            ? entity.getFinishedAt().atOffset(java.time.ZoneOffset.UTC)
+                                            : OffsetDateTime.now(ZoneOffset.UTC));
+                    whatsAppService
+                            .sendCaptionMessage(entity.getFrom(), WhatsAppCaptionTemplate.DAILY_EN, captionVariables)
+                            .subscribe();
                     return;
                 }
                 logger.info("Ollama request {} completed successfully", entity.getId());
