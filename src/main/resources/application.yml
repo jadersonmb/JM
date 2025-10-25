@@ -76,7 +76,7 @@ whatsapp:
       command-model: ${WHATSAPP_NUTRITION_COMMAND_MODEL:gemini-pro}
       analysis-provider: ${WHATSAPP_NUTRITION_ANALYSIS_PROVIDER:GEMINI}
       analysis-model: ${WHATSAPP_NUTRITION_ANALYSIS_MODEL:gemini-pro-vision}
-      ollama-vision-model: ${WHATSAPP_NUTRITION_OLLAMA_VISION_MODEL:llava:34b}
+      ollama-vision-model: ${WHATSAPP_NUTRITION_OLLAMA_VISION_MODEL:llava:latest}
 
 # Cloudflare R2 Configuration
 cloudflare:
