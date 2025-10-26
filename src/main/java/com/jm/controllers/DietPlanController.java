@@ -1,6 +1,7 @@
 package com.jm.controllers;
 
 import com.jm.dto.DietOwnerDTO;
+import com.jm.dto.DietPlanAiJobDTO;
 import com.jm.dto.DietPlanAiSuggestionRequest;
 import com.jm.dto.DietPlanDTO;
 import com.jm.execption.JMException;
@@ -49,8 +50,14 @@ public class DietPlanController {
 
     @PermissionRequired("ROLE_DIETS_GENERATE_AI")
     @PostMapping("/ai/suggestions")
-    public ResponseEntity<DietPlanDTO> generateWithAi(@RequestBody DietPlanAiSuggestionRequest request) {
-        return ResponseEntity.ok(aiService.generateSuggestion(request));
+    public ResponseEntity<DietPlanAiJobDTO> generateWithAi(@RequestBody DietPlanAiSuggestionRequest request) {
+        return ResponseEntity.ok(aiService.requestSuggestion(request));
+    }
+
+    @PermissionRequired("ROLE_DIETS_GENERATE_AI")
+    @GetMapping("/ai/suggestions/{jobId}")
+    public ResponseEntity<DietPlanAiJobDTO> getAiSuggestionStatus(@PathVariable UUID jobId) {
+        return ResponseEntity.ok(aiService.findJob(jobId));
     }
 
     @PermissionRequired("ROLE_DIETS_READ")

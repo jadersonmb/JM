@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { SparklesIcon } from '@heroicons/vue/24/outline';
@@ -186,6 +186,11 @@ const STORAGE_KEY_BASE = 'diet.wizard.draft';
 const loading = ref(false);
 const saving = ref(false);
 const aiGenerating = ref(false);
+const aiJobId = ref(null);
+const aiJobStatus = ref(null);
+let aiJobPollHandle = null;
+let aiJobPollAttempts = 0;
+const MAX_AI_POLL_ATTEMPTS = 60;
 const units = ref([]);
 const foods = ref([]);
 const owners = ref([]);
@@ -454,6 +459,93 @@ const scheduleSubstitutionRefresh = () => {
   }, 300);
 };
 
+const resetAiPolling = () => {
+  if (aiJobPollHandle) {
+    clearTimeout(aiJobPollHandle);
+    aiJobPollHandle = null;
+  }
+  aiJobPollAttempts = 0;
+};
+
+const scheduleAiPolling = (delay = 3000) => {
+  if (!aiJobId.value) {
+    return;
+  }
+  if (aiJobPollHandle) {
+    clearTimeout(aiJobPollHandle);
+  }
+  aiJobPollHandle = setTimeout(() => {
+    pollAiJobStatus();
+  }, delay);
+};
+
+const handleAiJobFailure = (message) => {
+  resetAiPolling();
+  aiGenerating.value = false;
+  aiJobStatus.value = 'FAILED';
+  const errorMessage = message || t('diet.wizard.toast.aiFailed');
+  notifications.push({
+    type: 'error',
+    title: t('notifications.validationTitle'),
+    message: errorMessage,
+  });
+  aiJobId.value = null;
+};
+
+const handleAiJobSuccess = (diet, job) => {
+  resetAiPolling();
+  aiGenerating.value = false;
+  aiJobStatus.value = job?.status ?? 'COMPLETED';
+  aiJobId.value = null;
+  if (diet) {
+    applyDietData(diet);
+    viewMode.value = 'edit';
+    clearDraft();
+    scheduleSubstitutionRefresh();
+    updateRouteAfterDietChange(diet.id ?? job?.dietPlanId ?? null);
+  }
+  notifications.push({
+    type: 'success',
+    title: t('diet.wizard.toast.title'),
+    message: t('diet.wizard.toast.aiGenerated'),
+  });
+};
+
+const pollAiJobStatus = async () => {
+  if (!aiJobId.value) {
+    return;
+  }
+  if (aiJobPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+    handleAiJobFailure(t('diet.wizard.toast.aiTimeout'));
+    return;
+  }
+
+  aiJobPollAttempts += 1;
+
+  try {
+    const { data } = await DietService.getAiSuggestionStatus(aiJobId.value);
+    aiJobStatus.value = data?.status ?? null;
+
+    if ((data?.status || '').toUpperCase() === 'COMPLETED') {
+      handleAiJobSuccess(data?.diet ?? null, data);
+      return;
+    }
+
+    if ((data?.status || '').toUpperCase() === 'FAILED') {
+      handleAiJobFailure(data?.errorMessage ?? data?.error ?? data?.details);
+      return;
+    }
+
+    scheduleAiPolling();
+  } catch (error) {
+    if (aiJobPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+      handleAiJobFailure(error.response?.data?.details ?? error.message);
+      return;
+    }
+    scheduleAiPolling();
+  }
+};
+
 const syncSuggestionContext = () => {
   substitutionSuggestions.value = substitutionSuggestions.value.map((suggestion) => {
     const meal = form.meals[suggestion.mealIndex];
@@ -709,6 +801,17 @@ const applyDietData = (data) => {
   currentStepIndex.value = 0;
 };
 
+const updateRouteAfterDietChange = (dietId) => {
+  const nextQuery = { ...route.query };
+  delete nextQuery.mode;
+
+  if (dietId) {
+    router.replace({ name: 'diet-edit', params: { id: dietId }, query: nextQuery });
+  } else if ('mode' in route.query) {
+    router.replace({ query: nextQuery });
+  }
+};
+
 const loadDiet = async (id) => {
   loading.value = true;
   try {
@@ -770,34 +873,25 @@ const generateAiSuggestion = async () => {
     };
 
     const { data } = await DietService.generateAiSuggestion(payload);
-    applyDietData(data);
-    viewMode.value = 'edit';
-    clearDraft();
-
-    const nextQuery = { ...route.query };
-    delete nextQuery.mode;
-
-    if (data?.id) {
-      router.replace({ name: 'diet-edit', params: { id: data.id }, query: nextQuery });
-    } else if ('mode' in route.query) {
-      router.replace({ query: nextQuery });
+    const jobId = data?.id;
+    if (!jobId) {
+      throw new Error(t('diet.wizard.toast.aiFailed'));
     }
 
+    resetAiPolling();
+    aiJobId.value = jobId;
+    aiJobStatus.value = data?.status ?? 'PROCESSING';
+    aiJobPollAttempts = 0;
+
     notifications.push({
-      type: 'success',
+      type: 'info',
       title: t('diet.wizard.toast.title'),
-      message: t('diet.wizard.toast.aiGenerated'),
+      message: t('diet.wizard.toast.aiInProgress'),
     });
+
+    scheduleAiPolling(1000);
   } catch (error) {
-    notifications.push({
-      type: 'error',
-      title: t('notifications.validationTitle'),
-      message:
-        error.response?.data?.details ?? error.message ?? t('diet.wizard.toast.aiFailed'),
-    });
-  } finally {
-    aiGenerating.value = false;
-    scheduleSubstitutionRefresh();
+    handleAiJobFailure(error.response?.data?.details ?? error.message);
   }
 };
 
@@ -899,6 +993,14 @@ watch(
 watch(form, () => {
   persistDraft();
 }, { deep: true });
+
+onBeforeUnmount(() => {
+  resetAiPolling();
+  if (substitutionRefreshHandle) {
+    clearTimeout(substitutionRefreshHandle);
+    substitutionRefreshHandle = null;
+  }
+});
 
 onMounted(async () => {
   await loadReferences();

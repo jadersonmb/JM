@@ -7,16 +7,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.DietMealDTO;
 import com.jm.dto.DietMealItemDTO;
+import com.jm.dto.DietPlanAiJobDTO;
 import com.jm.dto.DietPlanAiSuggestionRequest;
 import com.jm.dto.DietPlanDTO;
 import com.jm.entity.Food;
 import com.jm.entity.MeasurementUnits;
 import com.jm.enums.AiProvider;
+import com.jm.enums.DietPlanAiJobStatus;
 import com.jm.enums.DietMealType;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.entity.DietPlanAiJob;
 import com.jm.repository.FoodRepository;
 import com.jm.repository.MeasurementUnitRepository;
+import com.jm.repository.DietPlanAiJobRepository;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
 import com.jm.services.ai.AiRequest;
@@ -36,12 +40,16 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -59,6 +67,7 @@ public class DietPlanAiService {
     private final DietPlanService dietPlanService;
     private final FoodRepository foodRepository;
     private final MeasurementUnitRepository measurementUnitRepository;
+    private final DietPlanAiJobRepository jobRepository;
     private final MessageSource messageSource;
 
     @Value("${diet.ai.prompt-code:PLAN_DIET}")
@@ -69,21 +78,105 @@ public class DietPlanAiService {
 
     public DietPlanAiService(AiClientFactory aiClientFactory, AiPromptReferenceService aiPromptReferenceService,
             ObjectMapper objectMapper, DietPlanService dietPlanService, FoodRepository foodRepository,
-            MeasurementUnitRepository measurementUnitRepository, MessageSource messageSource) {
+            MeasurementUnitRepository measurementUnitRepository, DietPlanAiJobRepository jobRepository,
+            MessageSource messageSource) {
         this.aiClientFactory = aiClientFactory;
         this.aiPromptReferenceService = aiPromptReferenceService;
         this.objectMapper = objectMapper;
         this.dietPlanService = dietPlanService;
         this.foodRepository = foodRepository;
         this.measurementUnitRepository = measurementUnitRepository;
+        this.jobRepository = jobRepository;
         this.messageSource = messageSource;
     }
 
-    public DietPlanDTO generateSuggestion(DietPlanAiSuggestionRequest request) {
+    public DietPlanAiJobDTO requestSuggestion(DietPlanAiSuggestionRequest request) {
         if (request == null) {
             throw buildException(ProblemType.INVALID_BODY, HttpStatus.BAD_REQUEST, "invalid_message_body");
         }
 
+        DietPlanAiSuggestionRequest payload = cloneRequest(request);
+
+        DietPlanAiJob job = DietPlanAiJob.builder()
+                .status(DietPlanAiJobStatus.PROCESSING)
+                .requestedByUserId(SecurityUtils.getCurrentUserId().orElse(null))
+                .build();
+
+        job = jobRepository.save(job);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Locale locale = LocaleContextHolder.getLocale();
+
+        DietPlanAiJob persistedJob = job;
+        CompletableFuture.runAsync(() -> {
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+            LocaleContextHolder.setLocale(locale);
+            try {
+                processJob(persistedJob.getId(), payload);
+            } finally {
+                SecurityContextHolder.clearContext();
+                LocaleContextHolder.resetLocaleContext();
+            }
+        });
+
+        return mapToDto(job, null);
+    }
+
+    public DietPlanAiJobDTO findJob(UUID jobId) {
+        DietPlanAiJob job = jobRepository.findById(jobId)
+                .orElseThrow(() -> buildException(ProblemType.INVALID_DATA, HttpStatus.NOT_FOUND, "diet.ai.job-not-found"));
+
+        DietPlanDTO diet = null;
+        if (job.getStatus() == DietPlanAiJobStatus.COMPLETED && job.getDietPlanId() != null) {
+            diet = dietPlanService.findById(job.getDietPlanId());
+        }
+
+        return mapToDto(job, diet);
+    }
+
+    private void processJob(UUID jobId, DietPlanAiSuggestionRequest request) {
+        try {
+            DietPlanDTO result = generateSuggestion(request);
+            jobRepository.findById(jobId).ifPresent(job -> {
+                job.setStatus(DietPlanAiJobStatus.COMPLETED);
+                job.setDietPlanId(result != null ? result.getId() : null);
+                job.setErrorMessage(null);
+                jobRepository.save(job);
+            });
+        } catch (JMException ex) {
+            logger.warn("AI diet suggestion failed: {}", ex.getDetails(), ex);
+            updateJobFailure(jobId, ex.getDetails());
+        } catch (Exception ex) {
+            logger.error("Unexpected error generating AI diet suggestion", ex);
+            String message = messageSource.getMessage("diet.ai.unexpected-error", null, "diet.ai.unexpected-error",
+                    LocaleContextHolder.getLocale());
+            updateJobFailure(jobId, message);
+        }
+    }
+
+    private void updateJobFailure(UUID jobId, String message) {
+        jobRepository.findById(jobId).ifPresent(job -> {
+            job.setStatus(DietPlanAiJobStatus.FAILED);
+            job.setErrorMessage(message);
+            jobRepository.save(job);
+        });
+    }
+
+    private DietPlanAiSuggestionRequest cloneRequest(DietPlanAiSuggestionRequest source) {
+        DietPlanAiSuggestionRequest copy = new DietPlanAiSuggestionRequest();
+        copy.setDietId(source.getDietId());
+        copy.setOwnerId(source.getOwnerId());
+        copy.setPatientName(source.getPatientName());
+        copy.setGoal(source.getGoal());
+        copy.setNotes(source.getNotes());
+        copy.setDayOfWeek(source.getDayOfWeek());
+        copy.setActive(source.getActive());
+        return copy;
+    }
+
+    private DietPlanDTO generateSuggestion(DietPlanAiSuggestionRequest request) {
         AiPromptContext context = resolvePromptContext();
         String prompt = populatePrompt(context.promptTemplate(), request);
 
@@ -99,6 +192,7 @@ public class DietPlanAiService {
                 .type(AiRequestType.TEXT)
                 .model(context.model())
                 .prompt(prompt)
+                .from("IA-DietPlanService")
                 .userId(SecurityUtils.getCurrentUserId().orElse(null))
                 .timeout(Duration.ofSeconds(Math.max(timeoutSeconds, 1)))
                 .build();
@@ -112,6 +206,21 @@ public class DietPlanAiService {
         DietPlanPayload payload = parseResponse(content);
         DietPlanDTO dto = mapToDietPlan(payload, request);
         return dietPlanService.create(dto);
+    }
+
+    private DietPlanAiJobDTO mapToDto(DietPlanAiJob job, DietPlanDTO diet) {
+        if (job == null) {
+            return null;
+        }
+        return DietPlanAiJobDTO.builder()
+                .id(job.getId())
+                .status(job.getStatus())
+                .errorMessage(job.getErrorMessage())
+                .dietPlanId(job.getDietPlanId())
+                .diet(diet)
+                .createdAt(job.getCreatedAt())
+                .updatedAt(job.getUpdatedAt())
+                .build();
     }
 
     private AiPromptContext resolvePromptContext() {

@@ -31,4 +31,7 @@ export default {
   generateAiSuggestion(data) {
     return api.post('/api/v1/diets/ai/suggestions', data);
   },
+  getAiSuggestionStatus(id) {
+    return api.get(`/api/v1/diets/ai/suggestions/${id}`);
+  },
 };
