@@ -1115,6 +1115,9 @@ export default {
         message: 'This diet plan will be permanently removed. This action cannot be undone.',
       },
     },
+    actions: {
+      generateAi: 'AI Suggestion',
+    },
     wizard: {
       steps: {
         schedule: {
@@ -1188,12 +1191,16 @@ export default {
         emptyItems: 'No items added yet.',
       },
       toast: {
-        title: 'Diet plans',
-        saved: 'Diet saved successfully.',
-        deleted: 'Diet deleted successfully.',
-        draftTitle: 'Draft restored',
-        draftRestored: 'We recovered an unsaved diet draft.',
-      },
+      title: 'Diet plans',
+      saved: 'Diet saved successfully.',
+      deleted: 'Diet deleted successfully.',
+      draftTitle: 'Draft restored',
+      draftRestored: 'We recovered an unsaved diet draft.',
+      aiInProgress: 'Generating the AI diet plan. We will refresh as soon as it is ready.',
+      aiGenerated: 'Diet plan generated with AI assistance.',
+      aiFailed: 'We could not generate the AI suggestion.',
+      aiTimeout: 'The AI generation took longer than expected. Please try again shortly.',
+    },
     },
     meal: {
       breakfast: 'Breakfast',

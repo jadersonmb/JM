@@ -6,6 +6,9 @@ import com.jm.dto.OllamaResponseDTO;
 import com.jm.entity.Ollama;
 import com.jm.events.OllamaRequestEvent;
 import com.jm.repository.OllamaRepository;
+import com.jm.enums.DietPlanAiSuggestionStatus;
+import com.jm.services.DietPlanAiService;
+import com.jm.services.DietPlanAiService.DietPlanAiCompletionResult;
 import com.jm.services.OllamaService;
 import com.jm.services.WhatsAppNutritionService;
 import com.jm.services.WhatsAppNutritionService.GeminiNutritionResult;
@@ -26,6 +29,7 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -37,6 +41,7 @@ public class OllamaEventListener {
     private final OllamaService ollamaService;
     private final WhatsAppService whatsAppService;
     private final WhatsAppNutritionService whatsAppNutritionService;
+    private final DietPlanAiService dietPlanAiService;
 
     @Async
     @EventListener
@@ -49,8 +54,10 @@ public class OllamaEventListener {
 
         long start = System.currentTimeMillis();
         try {
-
-            whatsAppService.sendTextMessage(entity.getFrom(), "Um momento, estou pensando ⌛️").subscribe();
+            boolean handledByDietService = DietPlanAiService.REQUEST_SOURCE.equalsIgnoreCase(entity.getFrom());
+            if (!handledByDietService) {
+                whatsAppService.sendTextMessage(entity.getFrom(), "Um momento, estou pensando ⌛️").subscribe();
+            }
 
             OllamaResponseDTO response = ollamaService.sendPrompt(OllamaRequestDTO.builder()
                     .model(entity.getModel())
@@ -61,9 +68,32 @@ public class OllamaEventListener {
                     .build());
 
             entity.setResponse(response.getResponse());
-            entity.setStatus(OllamaStatus.DONE);
             entity.setFinishedAt(LocalDateTime.now());
             entity.setElapsedMs(System.currentTimeMillis() - start);
+            if (handledByDietService) {
+                Optional<DietPlanAiCompletionResult> result = dietPlanAiService.handleOllamaCompletion(entity);
+                if (result.isPresent()) {
+                    DietPlanAiCompletionResult completion = result.get();
+                    if (completion.status() == DietPlanAiSuggestionStatus.PROCESSING) {
+                        logger.warn("Diet AI completion for request {} returned PROCESSING status", entity.getId());
+                    } else {
+                        if (StringUtils.isNotBlank(completion.metadataJson())) {
+                            entity.setMetadata(completion.metadataJson());
+                        }
+                        if (completion.status() == DietPlanAiSuggestionStatus.FAILED) {
+                            entity.setStatus(OllamaStatus.ERROR);
+                            entity.setErrorMessage(completion.errorMessage());
+                        } else {
+                            entity.setStatus(OllamaStatus.DONE);
+                            entity.setErrorMessage(null);
+                        }
+                        ollamaRepository.save(entity);
+                        return;
+                    }
+                }
+            }
+
+            entity.setStatus(OllamaStatus.DONE);
             ollamaRepository.save(entity);
 
             if (response.isDone()) {

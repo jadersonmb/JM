@@ -1004,6 +1004,9 @@
         message: 'Este plano será removido permanentemente. Essa ação não pode ser desfeita.',
       },
     },
+    actions: {
+      generateAi: 'Sugestão por IA',
+    },
     wizard: {
       steps: {
         schedule: {
@@ -1077,12 +1080,16 @@
         emptyItems: 'Nenhum item adicionado ainda.',
       },
       toast: {
-        title: 'Planos alimentares',
-        saved: 'Plano salvo com sucesso.',
-        deleted: 'Plano excluído com sucesso.',
-        draftTitle: 'Rascunho recuperado',
-        draftRestored: 'Restauramos um rascunho não salvo.',
-      },
+      title: 'Planos alimentares',
+      saved: 'Plano salvo com sucesso.',
+      deleted: 'Plano excluído com sucesso.',
+      draftTitle: 'Rascunho recuperado',
+      draftRestored: 'Restauramos um rascunho não salvo.',
+      aiInProgress: 'Gerando o plano com IA. Atualizaremos a tela assim que estiver pronto.',
+      aiGenerated: 'Plano gerado com ajuda da IA.',
+      aiFailed: 'Não foi possível gerar a sugestão da IA.',
+      aiTimeout: 'A geração demorou mais do que o esperado. Tente novamente em instantes.',
+    },
     },
     meal: {
       breakfast: 'Café da manhã',

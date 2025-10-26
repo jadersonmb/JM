@@ -19,4 +19,5 @@ public class OllamaDTO {
     private Long elapsedMs;
     private UUID requestedBy;
     private String images;
+    private String metadata;
 }

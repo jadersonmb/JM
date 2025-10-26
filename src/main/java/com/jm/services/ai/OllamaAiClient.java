@@ -29,7 +29,8 @@ public class OllamaAiClient implements AiClient {
                 .model(request.model())
                 .prompt(request.prompt())
                 .stream(request.streamEnabled())
-                .from(request.from());
+                .from(request.from())
+                .metadata(request.metadata());
 
         if (request.userId() != null) {
             builder.userId(request.userId());

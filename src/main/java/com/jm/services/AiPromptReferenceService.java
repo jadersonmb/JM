@@ -90,6 +90,16 @@ public class AiPromptReferenceService {
                 .map(mapper::toDTO);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<AiPromptReferenceDTO> resolvePrompt(String code) {
+        if (!StringUtils.hasText(code)) {
+            return Optional.empty();
+        }
+
+        return repository.findFirstByCodeIgnoreCaseAndActiveTrueOrderByUpdatedAtDesc(code.trim())
+                .map(mapper::toDTO);
+    }
+
     private void normalize(AiPromptReference entity) {
         if (entity.getCode() != null) {
             entity.setCode(entity.getCode().trim().toUpperCase(Locale.ROOT));

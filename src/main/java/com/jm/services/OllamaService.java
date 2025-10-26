@@ -84,6 +84,7 @@ public class OllamaService {
         entity.setStatus(OllamaStatus.PENDING);
         entity.setStartedAt(LocalDateTime.now());
         entity.setImages(ollama.getImages() != null ? ollama.getImages().getFirst() : StringUtils.EMPTY);
+        entity.setMetadata(ollama.getMetadata());
         Ollama saved = repository.save(entity);
 
         /* dispatch event async */

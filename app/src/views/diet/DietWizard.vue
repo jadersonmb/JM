@@ -13,6 +13,20 @@
       <div class="flex flex-wrap items-center gap-3">
         <button type="button" class="btn-secondary" @click="goBack">{{ t('common.actions.cancel') }}</button>
         <button
+          v-if="!isReadOnly && canGenerateAi"
+          type="button"
+          class="btn-secondary flex items-center gap-2"
+          :disabled="aiGenerating"
+          @click="generateAiSuggestion"
+        >
+          <span
+            v-if="aiGenerating"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"
+          ></span>
+          <SparklesIcon v-else class="h-4 w-4" />
+          <span>{{ t('diet.wizard.actions.generateAi') }}</span>
+        </button>
+        <button
           v-if="isReadOnly && canEdit"
           type="button"
           class="btn-secondary"
@@ -149,9 +163,10 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { SparklesIcon } from '@heroicons/vue/24/outline';
 import StepMealSchedule from '@/components/diet/StepMealSchedule.vue';
 import StepMealItems from '@/components/diet/StepMealItems.vue';
 import StepFoodSubstitutions from '@/components/diet/StepFoodSubstitutions.vue';
@@ -170,6 +185,12 @@ const STORAGE_KEY_BASE = 'diet.wizard.draft';
 
 const loading = ref(false);
 const saving = ref(false);
+const aiGenerating = ref(false);
+const aiRequestId = ref(null);
+const aiRequestStatus = ref(null);
+let aiPollHandle = null;
+let aiPollAttempts = 0;
+const MAX_AI_POLL_ATTEMPTS = 60;
 const units = ref([]);
 const foods = ref([]);
 const owners = ref([]);
@@ -244,6 +265,7 @@ const dayOfWeekOptions = computed(() => [
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const canEdit = computed(() => isAdmin.value || !form.id || form.createdByUserId === auth.user?.id);
+const canGenerateAi = computed(() => auth.hasPermission('ROLE_DIETS_GENERATE_AI'));
 const viewMode = ref(route.query.mode === 'view' ? 'view' : 'edit');
 const isReadOnly = computed(() => viewMode.value === 'view');
 
@@ -435,6 +457,95 @@ const scheduleSubstitutionRefresh = () => {
   substitutionRefreshHandle = setTimeout(() => {
     refreshSubstitutions();
   }, 300);
+};
+
+const resetAiPolling = () => {
+  if (aiPollHandle) {
+    clearTimeout(aiPollHandle);
+    aiPollHandle = null;
+  }
+  aiPollAttempts = 0;
+};
+
+const scheduleAiPolling = (delay = 3000) => {
+  if (!aiRequestId.value) {
+    return;
+  }
+  if (aiPollHandle) {
+    clearTimeout(aiPollHandle);
+  }
+  aiPollHandle = setTimeout(() => {
+    pollAiStatus();
+  }, delay);
+};
+
+const handleAiFailure = (message) => {
+  resetAiPolling();
+  aiGenerating.value = false;
+  aiRequestStatus.value = 'FAILED';
+  const errorMessage = message || t('diet.wizard.toast.aiFailed');
+  notifications.push({
+    type: 'error',
+    title: t('notifications.validationTitle'),
+    message: errorMessage,
+  });
+  aiRequestId.value = null;
+};
+
+const handleAiSuccess = (diet, result) => {
+  resetAiPolling();
+  aiGenerating.value = false;
+  aiRequestStatus.value = result?.status ?? 'COMPLETED';
+  aiRequestId.value = null;
+  if (diet) {
+    applyDietData(diet);
+    viewMode.value = 'edit';
+    clearDraft();
+    scheduleSubstitutionRefresh();
+    updateRouteAfterDietChange(diet.id ?? null);
+  }
+  notifications.push({
+    type: 'success',
+    title: t('diet.wizard.toast.title'),
+    message: t('diet.wizard.toast.aiGenerated'),
+  });
+};
+
+const pollAiStatus = async () => {
+  if (!aiRequestId.value) {
+    return;
+  }
+  if (aiPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+    handleAiFailure(t('diet.wizard.toast.aiTimeout'));
+    return;
+  }
+
+  aiPollAttempts += 1;
+
+  try {
+    const { data } = await DietService.getAiSuggestionStatus(aiRequestId.value);
+    aiRequestStatus.value = data?.status ?? null;
+
+    const status = (data?.status || '').toUpperCase();
+
+    if (status === 'COMPLETED' && data?.diet) {
+      handleAiSuccess(data.diet, data);
+      return;
+    }
+
+    if (status === 'FAILED' || data?.errorMessage) {
+      handleAiFailure(data?.errorMessage ?? data?.error ?? data?.details);
+      return;
+    }
+
+    scheduleAiPolling();
+  } catch (error) {
+    if (aiPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+      handleAiFailure(error.response?.data?.details ?? error.message);
+      return;
+    }
+    scheduleAiPolling();
+  }
 };
 
 const syncSuggestionContext = () => {
@@ -667,29 +778,48 @@ const saveDiet = async () => {
   }
 };
 
+const applyDietData = (data) => {
+  if (!data) return;
+  form.id = data.id ?? null;
+  form.createdByUserId =
+    data.createdByUserId ?? data.createdBy ?? form.createdByUserId ?? auth.user?.id ?? null;
+  form.patientName = data.patientName ?? '';
+  form.notes = data.notes ?? '';
+  form.active = data.active !== false;
+  form.dayOfWeek = data.dayOfWeek ?? form.dayOfWeek ?? 'MONDAY';
+  form.meals = (data.meals ?? []).map((meal) => ({
+    ...meal,
+    scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
+    items: (meal.items ?? []).map((item) => ({
+      ...item,
+      quantity: item.quantity != null ? Number(item.quantity) : null,
+    })),
+  }));
+  ensureOwnerOption(
+    form.createdByUserId,
+    data.createdByName ?? '',
+    data.createdByEmail ?? '',
+  );
+  currentStepIndex.value = 0;
+};
+
+const updateRouteAfterDietChange = (dietId) => {
+  const nextQuery = { ...route.query };
+  delete nextQuery.mode;
+
+  if (dietId) {
+    router.replace({ name: 'diet-edit', params: { id: dietId }, query: nextQuery });
+  } else if ('mode' in route.query) {
+    router.replace({ query: nextQuery });
+  }
+};
+
 const loadDiet = async (id) => {
   loading.value = true;
   try {
     const { data } = await DietService.get(id);
-    form.id = data.id;
-    form.createdByUserId = data.createdByUserId ?? data.createdBy ?? null;
-    form.patientName = data.patientName ?? '';
-    form.notes = data.notes ?? '';
-    form.active = data.active !== false;
-    form.dayOfWeek = data.dayOfWeek ?? 'MONDAY';
-    form.meals = (data.meals ?? []).map((meal) => ({
-      ...meal,
-      scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
-      items: (meal.items ?? []).map((item) => ({
-        ...item,
-        quantity: item.quantity != null ? Number(item.quantity) : null,
-      })),
-    }));
-    ensureOwnerOption(
-      form.createdByUserId,
-      data.createdByName ?? '',
-      data.createdByEmail ?? ''
-    );
+    applyDietData(data);
+    clearDraft();
     scheduleSubstitutionRefresh();
   } catch (error) {
     notifications.push({
@@ -699,6 +829,85 @@ const loadDiet = async (id) => {
     });
   } finally {
     loading.value = false;
+  }
+};
+
+const resolveRouteGoal = () => {
+  const raw = route.query.goal;
+  if (Array.isArray(raw)) {
+    return raw.find((entry) => typeof entry === 'string') ?? '';
+  }
+  return typeof raw === 'string' ? raw : '';
+};
+
+const generateAiSuggestion = async () => {
+  if (isReadOnly.value || aiGenerating.value) return;
+  if (!canGenerateAi.value) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('routes.unauthorized'),
+    });
+    return;
+  }
+  if (!form.createdByUserId) {
+    setDefaultOwner();
+  }
+  if (!form.createdByUserId) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('diet.validation.ownerRequired'),
+    });
+    return;
+  }
+
+  aiGenerating.value = true;
+  try {
+    const payload = {
+      dietId: form.id ?? null,
+      ownerId: form.createdByUserId ?? null,
+      patientName: form.patientName ?? '',
+      goal: resolveRouteGoal(),
+      notes: form.notes ?? '',
+      dayOfWeek: form.dayOfWeek ?? 'MONDAY',
+      active: form.active !== false,
+    };
+
+    const { data } = await DietService.generateAiSuggestion(payload);
+    const status = (data?.status || '').toUpperCase();
+    const requestId = data?.requestId ?? null;
+    const diet = data?.diet ?? null;
+    const errorMessage = data?.errorMessage ?? data?.error ?? data?.details ?? null;
+
+    if (status === 'FAILED' || errorMessage) {
+      handleAiFailure(errorMessage);
+      return;
+    }
+
+    if (diet) {
+      handleAiSuccess(diet, data);
+      return;
+    }
+
+    if (!requestId) {
+      throw new Error(t('diet.wizard.toast.aiFailed'));
+    }
+
+    resetAiPolling();
+    aiRequestId.value = requestId;
+    aiRequestStatus.value = data?.status ?? 'PROCESSING';
+    aiPollAttempts = 0;
+
+    notifications.push({
+      type: 'info',
+      title: t('diet.wizard.toast.title'),
+      message: t('diet.wizard.toast.aiInProgress'),
+    });
+
+    scheduleAiPolling(1000);
+  } catch (error) {
+    handleAiFailure(error.response?.data?.details ?? error.message);
   }
 };
 
@@ -800,6 +1009,14 @@ watch(
 watch(form, () => {
   persistDraft();
 }, { deep: true });
+
+onBeforeUnmount(() => {
+  resetAiPolling();
+  if (substitutionRefreshHandle) {
+    clearTimeout(substitutionRefreshHandle);
+    substitutionRefreshHandle = null;
+  }
+});
 
 onMounted(async () => {
   await loadReferences();
