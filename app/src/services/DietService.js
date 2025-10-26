@@ -28,4 +28,7 @@ export default {
   listOwners(params) {
     return api.get('/api/v1/diets/owners', { params });
   },
+  generateAiSuggestion(data) {
+    return api.post('/api/v1/diets/ai/suggestions', data);
+  },
 };

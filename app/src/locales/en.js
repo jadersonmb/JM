@@ -1115,6 +1115,9 @@ export default {
         message: 'This diet plan will be permanently removed. This action cannot be undone.',
       },
     },
+    actions: {
+      generateAi: 'AI Suggestion',
+    },
     wizard: {
       steps: {
         schedule: {
@@ -1193,6 +1196,8 @@ export default {
         deleted: 'Diet deleted successfully.',
         draftTitle: 'Draft restored',
         draftRestored: 'We recovered an unsaved diet draft.',
+        aiGenerated: 'Diet plan generated with AI assistance.',
+        aiFailed: 'We could not generate the AI suggestion.',
       },
     },
     meal: {

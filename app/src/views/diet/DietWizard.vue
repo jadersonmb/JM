@@ -13,6 +13,20 @@
       <div class="flex flex-wrap items-center gap-3">
         <button type="button" class="btn-secondary" @click="goBack">{{ t('common.actions.cancel') }}</button>
         <button
+          v-if="!isReadOnly && canGenerateAi"
+          type="button"
+          class="btn-secondary flex items-center gap-2"
+          :disabled="aiGenerating"
+          @click="generateAiSuggestion"
+        >
+          <span
+            v-if="aiGenerating"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent"
+          ></span>
+          <SparklesIcon v-else class="h-4 w-4" />
+          <span>{{ t('diet.wizard.actions.generateAi') }}</span>
+        </button>
+        <button
           v-if="isReadOnly && canEdit"
           type="button"
           class="btn-secondary"
@@ -152,6 +166,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { SparklesIcon } from '@heroicons/vue/24/outline';
 import StepMealSchedule from '@/components/diet/StepMealSchedule.vue';
 import StepMealItems from '@/components/diet/StepMealItems.vue';
 import StepFoodSubstitutions from '@/components/diet/StepFoodSubstitutions.vue';
@@ -170,6 +185,7 @@ const STORAGE_KEY_BASE = 'diet.wizard.draft';
 
 const loading = ref(false);
 const saving = ref(false);
+const aiGenerating = ref(false);
 const units = ref([]);
 const foods = ref([]);
 const owners = ref([]);
@@ -244,6 +260,7 @@ const dayOfWeekOptions = computed(() => [
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
 const canEdit = computed(() => isAdmin.value || !form.id || form.createdByUserId === auth.user?.id);
+const canGenerateAi = computed(() => auth.hasPermission('ROLE_DIETS_GENERATE_AI'));
 const viewMode = ref(route.query.mode === 'view' ? 'view' : 'edit');
 const isReadOnly = computed(() => viewMode.value === 'view');
 
@@ -667,29 +684,37 @@ const saveDiet = async () => {
   }
 };
 
+const applyDietData = (data) => {
+  if (!data) return;
+  form.id = data.id ?? null;
+  form.createdByUserId =
+    data.createdByUserId ?? data.createdBy ?? form.createdByUserId ?? auth.user?.id ?? null;
+  form.patientName = data.patientName ?? '';
+  form.notes = data.notes ?? '';
+  form.active = data.active !== false;
+  form.dayOfWeek = data.dayOfWeek ?? form.dayOfWeek ?? 'MONDAY';
+  form.meals = (data.meals ?? []).map((meal) => ({
+    ...meal,
+    scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
+    items: (meal.items ?? []).map((item) => ({
+      ...item,
+      quantity: item.quantity != null ? Number(item.quantity) : null,
+    })),
+  }));
+  ensureOwnerOption(
+    form.createdByUserId,
+    data.createdByName ?? '',
+    data.createdByEmail ?? '',
+  );
+  currentStepIndex.value = 0;
+};
+
 const loadDiet = async (id) => {
   loading.value = true;
   try {
     const { data } = await DietService.get(id);
-    form.id = data.id;
-    form.createdByUserId = data.createdByUserId ?? data.createdBy ?? null;
-    form.patientName = data.patientName ?? '';
-    form.notes = data.notes ?? '';
-    form.active = data.active !== false;
-    form.dayOfWeek = data.dayOfWeek ?? 'MONDAY';
-    form.meals = (data.meals ?? []).map((meal) => ({
-      ...meal,
-      scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
-      items: (meal.items ?? []).map((item) => ({
-        ...item,
-        quantity: item.quantity != null ? Number(item.quantity) : null,
-      })),
-    }));
-    ensureOwnerOption(
-      form.createdByUserId,
-      data.createdByName ?? '',
-      data.createdByEmail ?? ''
-    );
+    applyDietData(data);
+    clearDraft();
     scheduleSubstitutionRefresh();
   } catch (error) {
     notifications.push({
@@ -699,6 +724,80 @@ const loadDiet = async (id) => {
     });
   } finally {
     loading.value = false;
+  }
+};
+
+const resolveRouteGoal = () => {
+  const raw = route.query.goal;
+  if (Array.isArray(raw)) {
+    return raw.find((entry) => typeof entry === 'string') ?? '';
+  }
+  return typeof raw === 'string' ? raw : '';
+};
+
+const generateAiSuggestion = async () => {
+  if (isReadOnly.value || aiGenerating.value) return;
+  if (!canGenerateAi.value) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('routes.unauthorized'),
+    });
+    return;
+  }
+  if (!form.createdByUserId) {
+    setDefaultOwner();
+  }
+  if (!form.createdByUserId) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('diet.validation.ownerRequired'),
+    });
+    return;
+  }
+
+  aiGenerating.value = true;
+  try {
+    const payload = {
+      dietId: form.id ?? null,
+      ownerId: form.createdByUserId ?? null,
+      patientName: form.patientName ?? '',
+      goal: resolveRouteGoal(),
+      notes: form.notes ?? '',
+      dayOfWeek: form.dayOfWeek ?? 'MONDAY',
+      active: form.active !== false,
+    };
+
+    const { data } = await DietService.generateAiSuggestion(payload);
+    applyDietData(data);
+    viewMode.value = 'edit';
+    clearDraft();
+
+    const nextQuery = { ...route.query };
+    delete nextQuery.mode;
+
+    if (data?.id) {
+      router.replace({ name: 'diet-edit', params: { id: data.id }, query: nextQuery });
+    } else if ('mode' in route.query) {
+      router.replace({ query: nextQuery });
+    }
+
+    notifications.push({
+      type: 'success',
+      title: t('diet.wizard.toast.title'),
+      message: t('diet.wizard.toast.aiGenerated'),
+    });
+  } catch (error) {
+    notifications.push({
+      type: 'error',
+      title: t('notifications.validationTitle'),
+      message:
+        error.response?.data?.details ?? error.message ?? t('diet.wizard.toast.aiFailed'),
+    });
+  } finally {
+    aiGenerating.value = false;
+    scheduleSubstitutionRefresh();
   }
 };
 

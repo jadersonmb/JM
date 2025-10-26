@@ -1004,6 +1004,9 @@
         message: 'Este plano será removido permanentemente. Essa ação não pode ser desfeita.',
       },
     },
+    actions: {
+      generateAi: 'Sugestão por IA',
+    },
     wizard: {
       steps: {
         schedule: {
@@ -1082,6 +1085,8 @@
         deleted: 'Plano excluído com sucesso.',
         draftTitle: 'Rascunho recuperado',
         draftRestored: 'Restauramos um rascunho não salvo.',
+        aiGenerated: 'Plano gerado com ajuda da IA.',
+        aiFailed: 'Não foi possível gerar a sugestão da IA.',
       },
     },
     meal: {
