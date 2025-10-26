@@ -14,6 +14,7 @@ public record AiRequest(
         Boolean stream,
         UUID userId,
         String from,
+        String metadata,
         List<MultipartFile> attachments,
         byte[] imageBytes,
         String mimeType,

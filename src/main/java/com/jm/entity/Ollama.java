@@ -83,6 +83,10 @@ public class Ollama {
     @Column(name = "images", columnDefinition = "TEXT")
     private String images;
 
+    /** Dados auxiliares para processamento do request */
+    @Column(name = "metadata", columnDefinition = "TEXT")
+    private String metadata;
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;

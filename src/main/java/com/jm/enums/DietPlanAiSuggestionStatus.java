@@ -1,6 +1,7 @@
 package com.jm.enums;
 
-public enum DietPlanAiJobStatus {
+public enum DietPlanAiSuggestionStatus {
+    PENDING,
     PROCESSING,
     COMPLETED,
     FAILED

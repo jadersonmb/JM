@@ -186,10 +186,10 @@ const STORAGE_KEY_BASE = 'diet.wizard.draft';
 const loading = ref(false);
 const saving = ref(false);
 const aiGenerating = ref(false);
-const aiJobId = ref(null);
-const aiJobStatus = ref(null);
-let aiJobPollHandle = null;
-let aiJobPollAttempts = 0;
+const aiRequestId = ref(null);
+const aiRequestStatus = ref(null);
+let aiPollHandle = null;
+let aiPollAttempts = 0;
 const MAX_AI_POLL_ATTEMPTS = 60;
 const units = ref([]);
 const foods = ref([]);
@@ -460,49 +460,49 @@ const scheduleSubstitutionRefresh = () => {
 };
 
 const resetAiPolling = () => {
-  if (aiJobPollHandle) {
-    clearTimeout(aiJobPollHandle);
-    aiJobPollHandle = null;
+  if (aiPollHandle) {
+    clearTimeout(aiPollHandle);
+    aiPollHandle = null;
   }
-  aiJobPollAttempts = 0;
+  aiPollAttempts = 0;
 };
 
 const scheduleAiPolling = (delay = 3000) => {
-  if (!aiJobId.value) {
+  if (!aiRequestId.value) {
     return;
   }
-  if (aiJobPollHandle) {
-    clearTimeout(aiJobPollHandle);
+  if (aiPollHandle) {
+    clearTimeout(aiPollHandle);
   }
-  aiJobPollHandle = setTimeout(() => {
-    pollAiJobStatus();
+  aiPollHandle = setTimeout(() => {
+    pollAiStatus();
   }, delay);
 };
 
-const handleAiJobFailure = (message) => {
+const handleAiFailure = (message) => {
   resetAiPolling();
   aiGenerating.value = false;
-  aiJobStatus.value = 'FAILED';
+  aiRequestStatus.value = 'FAILED';
   const errorMessage = message || t('diet.wizard.toast.aiFailed');
   notifications.push({
     type: 'error',
     title: t('notifications.validationTitle'),
     message: errorMessage,
   });
-  aiJobId.value = null;
+  aiRequestId.value = null;
 };
 
-const handleAiJobSuccess = (diet, job) => {
+const handleAiSuccess = (diet, result) => {
   resetAiPolling();
   aiGenerating.value = false;
-  aiJobStatus.value = job?.status ?? 'COMPLETED';
-  aiJobId.value = null;
+  aiRequestStatus.value = result?.status ?? 'COMPLETED';
+  aiRequestId.value = null;
   if (diet) {
     applyDietData(diet);
     viewMode.value = 'edit';
     clearDraft();
     scheduleSubstitutionRefresh();
-    updateRouteAfterDietChange(diet.id ?? job?.dietPlanId ?? null);
+    updateRouteAfterDietChange(diet.id ?? null);
   }
   notifications.push({
     type: 'success',
@@ -511,35 +511,37 @@ const handleAiJobSuccess = (diet, job) => {
   });
 };
 
-const pollAiJobStatus = async () => {
-  if (!aiJobId.value) {
+const pollAiStatus = async () => {
+  if (!aiRequestId.value) {
     return;
   }
-  if (aiJobPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
-    handleAiJobFailure(t('diet.wizard.toast.aiTimeout'));
+  if (aiPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+    handleAiFailure(t('diet.wizard.toast.aiTimeout'));
     return;
   }
 
-  aiJobPollAttempts += 1;
+  aiPollAttempts += 1;
 
   try {
-    const { data } = await DietService.getAiSuggestionStatus(aiJobId.value);
-    aiJobStatus.value = data?.status ?? null;
+    const { data } = await DietService.getAiSuggestionStatus(aiRequestId.value);
+    aiRequestStatus.value = data?.status ?? null;
 
-    if ((data?.status || '').toUpperCase() === 'COMPLETED') {
-      handleAiJobSuccess(data?.diet ?? null, data);
+    const status = (data?.status || '').toUpperCase();
+
+    if (status === 'COMPLETED' && data?.diet) {
+      handleAiSuccess(data.diet, data);
       return;
     }
 
-    if ((data?.status || '').toUpperCase() === 'FAILED') {
-      handleAiJobFailure(data?.errorMessage ?? data?.error ?? data?.details);
+    if (status === 'FAILED' || data?.errorMessage) {
+      handleAiFailure(data?.errorMessage ?? data?.error ?? data?.details);
       return;
     }
 
     scheduleAiPolling();
   } catch (error) {
-    if (aiJobPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
-      handleAiJobFailure(error.response?.data?.details ?? error.message);
+    if (aiPollAttempts >= MAX_AI_POLL_ATTEMPTS) {
+      handleAiFailure(error.response?.data?.details ?? error.message);
       return;
     }
     scheduleAiPolling();
@@ -873,15 +875,29 @@ const generateAiSuggestion = async () => {
     };
 
     const { data } = await DietService.generateAiSuggestion(payload);
-    const jobId = data?.id;
-    if (!jobId) {
+    const status = (data?.status || '').toUpperCase();
+    const requestId = data?.requestId ?? null;
+    const diet = data?.diet ?? null;
+    const errorMessage = data?.errorMessage ?? data?.error ?? data?.details ?? null;
+
+    if (status === 'FAILED' || errorMessage) {
+      handleAiFailure(errorMessage);
+      return;
+    }
+
+    if (diet) {
+      handleAiSuccess(diet, data);
+      return;
+    }
+
+    if (!requestId) {
       throw new Error(t('diet.wizard.toast.aiFailed'));
     }
 
     resetAiPolling();
-    aiJobId.value = jobId;
-    aiJobStatus.value = data?.status ?? 'PROCESSING';
-    aiJobPollAttempts = 0;
+    aiRequestId.value = requestId;
+    aiRequestStatus.value = data?.status ?? 'PROCESSING';
+    aiPollAttempts = 0;
 
     notifications.push({
       type: 'info',
@@ -891,7 +907,7 @@ const generateAiSuggestion = async () => {
 
     scheduleAiPolling(1000);
   } catch (error) {
-    handleAiJobFailure(error.response?.data?.details ?? error.message);
+    handleAiFailure(error.response?.data?.details ?? error.message);
   }
 };
 

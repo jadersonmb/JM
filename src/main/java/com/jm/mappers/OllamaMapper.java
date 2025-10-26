@@ -20,6 +20,7 @@ public interface OllamaMapper {
     @Mapping(target = "elapsedMs", source = "elapsedMs")
     @Mapping(target = "requestedBy", source = "requestedBy")
     @Mapping(target = "images", source = "images")
+    @Mapping(target = "metadata", source = "metadata")
     OllamaDTO toDTO(Ollama entity);
 
     @Mapping(target = "id", source = "id")
@@ -33,5 +34,6 @@ public interface OllamaMapper {
     @Mapping(target = "elapsedMs", source = "elapsedMs")
     @Mapping(target = "requestedBy", source = "requestedBy")
     @Mapping(target = "images", source = "images")
+    @Mapping(target = "metadata", source = "metadata")
     Ollama toEntity(OllamaDTO dto);
 }
