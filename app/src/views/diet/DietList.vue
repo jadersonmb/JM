@@ -33,6 +33,15 @@
           </select>
         </label>
         <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
+          <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.list.filters.dayOfWeek') }}</span>
+          <select class="input" v-model="filters.dayOfWeek">
+            <option value="all">{{ t('diet.status.all') }}</option>
+            <option v-for="option in dayOfWeekOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm font-semibold text-slate-600">
           <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.list.filters.status') }}</span>
           <select class="input" v-model="filters.status">
             <option value="all">{{ t('diet.status.all') }}</option>
@@ -47,6 +56,12 @@
           <p class="font-semibold text-slate-800">{{ row.patientName || t('common.placeholders.empty') }}</p>
           <p v-if="row.createdByUser" class="text-xs text-slate-400">{{ row.createdByUser }}</p>
         </div>
+      </template>
+
+      <template #cell:dayOfWeek="{ row }">
+        <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+          {{ formatDayOfWeek(row.dayOfWeek) }}
+        </span>
       </template>
 
       <template #cell:meals="{ row }">
@@ -112,6 +127,7 @@ const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN'
 const filters = reactive({
   patientName: '',
   mealType: 'all',
+  dayOfWeek: 'all',
   status: 'all',
   page: 0,
   perPage: 10,
@@ -134,8 +150,19 @@ const mealTypeOptions = computed(() => [
   { value: 'SUPPER', label: t('diet.meal.supper') },
 ]);
 
+const dayOfWeekOptions = computed(() => [
+  { value: 'MONDAY', label: t('common.weekdays.monday') },
+  { value: 'TUESDAY', label: t('common.weekdays.tuesday') },
+  { value: 'WEDNESDAY', label: t('common.weekdays.wednesday') },
+  { value: 'THURSDAY', label: t('common.weekdays.thursday') },
+  { value: 'FRIDAY', label: t('common.weekdays.friday') },
+  { value: 'SATURDAY', label: t('common.weekdays.saturday') },
+  { value: 'SUNDAY', label: t('common.weekdays.sunday') },
+]);
+
 const tableColumns = computed(() => [
   { key: 'patient', label: t('diet.list.columns.patient'), sortable: false, visible: true },
+  { key: 'dayOfWeek', label: t('diet.list.columns.dayOfWeek'), sortable: false, visible: true },
   { key: 'mealCount', label: t('diet.list.columns.meals'), sortable: false, visible: true },
   { key: 'updatedAt', label: t('diet.list.columns.updatedAt'), sortable: false, visible: true },
   { key: 'active', label: t('diet.list.columns.active'), sortable: false, visible: true },
@@ -149,6 +176,7 @@ const fetchDiets = async () => {
       size: filters.perPage,
       patientName: filters.patientName || undefined,
       mealType: filters.mealType !== 'all' ? filters.mealType : undefined,
+      dayOfWeek: filters.dayOfWeek !== 'all' ? filters.dayOfWeek : undefined,
       active: filters.status === 'all' ? undefined : filters.status === 'active',
     };
     const { data } = await DietService.list(params);
@@ -162,6 +190,7 @@ const fetchDiets = async () => {
       id: item.id,
       patientName: item.patientName,
       createdByUser: item.createdByName ?? '',
+      dayOfWeek: item.dayOfWeek,
       mealCount: item.meals?.length ?? 0,
       updatedAt: formatDate(item.updatedAt ?? item.createdAt),
       active: item.active !== false,
@@ -202,7 +231,7 @@ watch(
 );
 
 watch(
-  () => [filters.mealType, filters.status],
+  () => [filters.mealType, filters.dayOfWeek, filters.status],
   () => {
     filters.page = 0;
     fetchDiets();
@@ -256,6 +285,16 @@ const removeDiet = async () => {
   } finally {
     removalId.value = null;
   }
+};
+
+const formatDayOfWeek = (value) => {
+  if (!value) {
+    return t('common.placeholders.empty');
+  }
+  const key = String(value).toLowerCase();
+  const translationKey = `common.weekdays.${key}`;
+  const translated = t(translationKey);
+  return translated === translationKey ? value : translated;
 };
 
 const formatDate = (value) => {

@@ -29,7 +29,7 @@
     </div>
     <template v-else>
       <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-4">
           <label class="flex flex-col text-sm font-semibold text-slate-600">
             <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.fields.owner') }}</span>
             <template v-if="isAdmin">
@@ -58,6 +58,18 @@
               v-model="form.patientName"
               :placeholder="t('diet.wizard.fields.patientPlaceholder')"
             />
+          </label>
+          <label class="flex flex-col text-sm font-semibold text-slate-600">
+            <span class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.fields.dayOfWeek') }}</span>
+            <select
+              class="input"
+              :disabled="isReadOnly"
+              v-model="form.dayOfWeek"
+            >
+              <option v-for="option in dayOfWeekOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
           </label>
           <div class="flex items-center gap-3 md:justify-end">
             <input
@@ -168,6 +180,7 @@ const form = reactive({
   patientName: '',
   notes: '',
   active: true,
+  dayOfWeek: 'MONDAY',
   meals: [],
 });
 
@@ -217,6 +230,16 @@ const mealTypeOptions = computed(() => [
   { value: 'SNACK', label: t('diet.meal.snack') },
   { value: 'DINNER', label: t('diet.meal.dinner') },
   { value: 'SUPPER', label: t('diet.meal.supper') },
+]);
+
+const dayOfWeekOptions = computed(() => [
+  { value: 'MONDAY', label: t('common.weekdays.monday') },
+  { value: 'TUESDAY', label: t('common.weekdays.tuesday') },
+  { value: 'WEDNESDAY', label: t('common.weekdays.wednesday') },
+  { value: 'THURSDAY', label: t('common.weekdays.thursday') },
+  { value: 'FRIDAY', label: t('common.weekdays.friday') },
+  { value: 'SATURDAY', label: t('common.weekdays.saturday') },
+  { value: 'SUNDAY', label: t('common.weekdays.sunday') },
 ]);
 
 const isAdmin = computed(() => (auth.user?.type ?? '').toUpperCase() === 'ADMIN');
@@ -488,6 +511,7 @@ const currentStepProps = computed(() => {
     units: units.value,
     patientName: isAdmin.value ? form.patientName : auth.user?.name || '',
     ownerName: ownerDisplayName.value,
+    dayOfWeek: form.dayOfWeek,
     disabled: isReadOnly.value,
     'onUpdate:modelValue': (value) => {
       form.notes = value;
@@ -575,6 +599,14 @@ const validateForm = () => {
     });
     return false;
   }
+  if (!form.dayOfWeek) {
+    notifications.push({
+      type: 'warning',
+      title: t('notifications.validationTitle'),
+      message: t('diet.validation.dayOfWeekRequired'),
+    });
+    return false;
+  }
   if (!form.meals.length) {
     notifications.push({
       type: 'warning',
@@ -608,6 +640,7 @@ const saveDiet = async () => {
       patientName: form.patientName,
       notes: form.notes,
       active: form.active,
+      dayOfWeek: form.dayOfWeek,
       meals: normalizeMealsForPayload(),
     };
 
@@ -643,6 +676,7 @@ const loadDiet = async (id) => {
     form.patientName = data.patientName ?? '';
     form.notes = data.notes ?? '';
     form.active = data.active !== false;
+    form.dayOfWeek = data.dayOfWeek ?? 'MONDAY';
     form.meals = (data.meals ?? []).map((meal) => ({
       ...meal,
       scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
@@ -711,6 +745,7 @@ const restoreDraft = () => {
         scheduledTime: meal.scheduledTime ? String(meal.scheduledTime).slice(0, 5) : '08:00',
       })),
     });
+    form.dayOfWeek = parsed.dayOfWeek ?? form.dayOfWeek ?? 'MONDAY';
     ensureOwnerOption(form.createdByUserId);
     setDefaultOwner();
     scheduleSubstitutionRefresh();

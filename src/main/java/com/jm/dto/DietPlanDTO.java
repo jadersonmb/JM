@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class DietPlanDTO {
     private String patientName;
     private String notes;
     private Boolean active;
+    private DayOfWeek dayOfWeek;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private DietMealType mealType;

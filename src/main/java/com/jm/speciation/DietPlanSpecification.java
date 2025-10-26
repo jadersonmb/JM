@@ -39,6 +39,10 @@ public class DietPlanSpecification {
                 predicates.add(builder.equal(root.get("active"), filter.getActive()));
             }
 
+            if (Objects.nonNull(filter.getDayOfWeek())) {
+                predicates.add(builder.equal(root.get("dayOfWeek"), filter.getDayOfWeek()));
+            }
+
             if (Objects.nonNull(filter.getMealType())) {
                 Join<DietPlan, DietMeal> meals = root.join("meals", JoinType.LEFT);
                 predicates.add(builder.equal(meals.get("mealType"), filter.getMealType()));

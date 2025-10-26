@@ -1,5 +1,6 @@
 package com.jm.entity;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
@@ -50,6 +53,10 @@ public class DietPlan {
 
     @Column(name = "is_active")
     private Boolean active = Boolean.TRUE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_of_week", nullable = false, length = 20)
+    private DayOfWeek dayOfWeek;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
