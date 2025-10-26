@@ -16,7 +16,7 @@
       />
     </label>
 
-    <section class="grid gap-3 sm:grid-cols-3">
+    <section class="grid gap-3 sm:grid-cols-4">
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.ownerLabel') }}</p>
         <p class="mt-1 text-sm font-semibold text-slate-700">{{ props.ownerName || t('common.placeholders.empty') }}</p>
@@ -24,6 +24,10 @@
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.patientLabel') }}</p>
         <p class="mt-1 text-sm font-semibold text-slate-700">{{ props.patientName || t('common.placeholders.empty') }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.dayOfWeekLabel') }}</p>
+        <p class="mt-1 text-sm font-semibold text-slate-700">{{ formattedDayOfWeek }}</p>
       </div>
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <p class="text-xs uppercase tracking-wide text-slate-400">{{ t('diet.wizard.review.mealCountLabel') }}</p>
@@ -81,6 +85,7 @@ const props = defineProps({
   units: { type: Array, default: () => [] },
   patientName: { type: String, default: '' },
   ownerName: { type: String, default: '' },
+  dayOfWeek: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
 });
 
@@ -90,6 +95,14 @@ const { t } = useI18n();
 
 const meals = computed(() => props.meals ?? []);
 const mealCount = computed(() => meals.value.length ?? 0);
+const formattedDayOfWeek = computed(() => {
+  if (!props.dayOfWeek) {
+    return t('common.placeholders.empty');
+  }
+  const key = `common.weekdays.${String(props.dayOfWeek).toLowerCase()}`;
+  const translated = t(key);
+  return translated === key ? props.dayOfWeek : translated;
+});
 
 const onInput = (value) => {
   emit('update:modelValue', value);

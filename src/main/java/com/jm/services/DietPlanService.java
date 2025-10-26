@@ -101,9 +101,14 @@ public class DietPlanService {
             entity.setCreatedByUserId(dto.getCreatedByUserId());
         }
 
+        if (dto.getDayOfWeek() == null) {
+            throw invalidBodyException();
+        }
+
         entity.setPatientName(dto.getPatientName());
         entity.setNotes(dto.getNotes());
         entity.setActive(dto.getActive() != null ? dto.getActive() : Boolean.TRUE);
+        entity.setDayOfWeek(dto.getDayOfWeek());
 
         applyMeals(entity, dto.getMeals());
 

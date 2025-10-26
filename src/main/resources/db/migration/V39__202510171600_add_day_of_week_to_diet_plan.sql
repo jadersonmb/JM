@@ -1,0 +1,2 @@
+ALTER TABLE diet_plan
+    ADD COLUMN day_of_week VARCHAR(20) NOT NULL DEFAULT 'MONDAY';
