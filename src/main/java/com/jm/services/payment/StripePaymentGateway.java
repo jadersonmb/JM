@@ -9,6 +9,7 @@ import com.jm.entity.PaymentCard;
 import com.jm.entity.PaymentPlan;
 import com.jm.entity.Users;
 import com.jm.enums.PaymentStatus;
+import com.jm.enums.RecurringInterval;
 import com.jm.enums.RecurringStatus;
 import com.jm.execption.PaymentIntegrationException;
 import com.jm.mappers.UserMapper;
@@ -129,6 +130,27 @@ public class StripePaymentGateway {
         assertStripeConfigured();
         PaymentPlan plan = paymentPlanService.findActiveById(recurringPaymentRequest.getPaymentPlanId());
 
+        PriceCreateParams.Recurring.Interval interval = null;
+        Long intervalCount = null;
+        switch (plan.getIntervals()) {
+            case DAILY:
+                interval = PriceCreateParams.Recurring.Interval.DAY;
+                break;
+            case MONTHLY:
+                interval = PriceCreateParams.Recurring.Interval.MONTH;
+                break;
+            case YEARLY:
+                interval = PriceCreateParams.Recurring.Interval.YEAR;
+                break;
+            case WEEKLY:
+                interval = PriceCreateParams.Recurring.Interval.WEEK;
+                intervalCount = 2L;
+                break;
+            default:
+                interval = PriceCreateParams.Recurring.Interval.MONTH;
+                break;
+        }
+
         if (Objects.isNull(plan.getStripePriceId())) {
             ProductCreateParams productParams = ProductCreateParams.builder()
                     .setName(plan.getName())
@@ -143,7 +165,8 @@ public class StripePaymentGateway {
                     .setCurrency(plan.getCurrency())
                     .setUnitAmount(plan.getAmount().multiply(BigDecimal.valueOf(100)).longValue())
                     .setRecurring(PriceCreateParams.Recurring.builder()
-                            .setInterval(PriceCreateParams.Recurring.Interval.MONTH) /* Modificar para pegar do plan */
+                            .setInterval(interval)
+                            .setIntervalCount(intervalCount)
                             .build())
                     .putMetadata("plan_code", plan.getIntervals().name())
                     .build();

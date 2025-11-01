@@ -297,7 +297,7 @@ const navigation = computed(() => {
       icon: ShieldCheckIcon,
       permission: 'ROLE_ADMIN_MANAGE_ROLES',
     },
-    {
+    /*{
       name: 'exercises',
       label: t('routes.exercises'),
       to: { name: 'exercises' },
@@ -310,7 +310,7 @@ const navigation = computed(() => {
       to: { name: 'anamnesis' },
       icon: ClipboardDocumentListIcon,
       permission: 'ROLE_ANAMNESIS_READ',
-    },
+    },*/
     {
       name: 'diet',
       label: t('menu.diet'),
