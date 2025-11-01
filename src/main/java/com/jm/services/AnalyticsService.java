@@ -88,13 +88,14 @@ public class AnalyticsService {
     private static final BigDecimal SEVEN = BigDecimal.valueOf(7);
     private static final BigDecimal THIRTY = BigDecimal.valueOf(30);
 
-    private static final Map<NutritionGoalType, String> GOAL_TYPE_TO_METRIC = Map.of(
-            NutritionGoalType.PROTEIN, "protein",
-            NutritionGoalType.CARBOHYDRATE, "carbs",
-            NutritionGoalType.FAT, "fat",
-            NutritionGoalType.WATER, "water",
-            NutritionGoalType.FIBER, "fiber",
-            NutritionGoalType.ENERGY, "calories");
+    private static final Map<NutritionGoalType, String> GOAL_TYPE_TO_METRIC = Map.ofEntries(
+            Map.entry(NutritionGoalType.PROTEIN, "protein"),
+            Map.entry(NutritionGoalType.CARBOHYDRATE, "carbs"),
+            Map.entry(NutritionGoalType.FAT, "fat"),
+            Map.entry(NutritionGoalType.WATER, "water"),
+            Map.entry(NutritionGoalType.FIBER, "fiber"),
+            Map.entry(NutritionGoalType.ENERGY, "calories"),
+            Map.entry(NutritionGoalType.CALORIE_TARGET, "calories"));
 
     private static final List<String> METRIC_ORDER = List.of("protein", "carbs", "fat", "water", "fiber", "calories");
 

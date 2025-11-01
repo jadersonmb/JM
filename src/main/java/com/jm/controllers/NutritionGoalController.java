@@ -1,5 +1,7 @@
 package com.jm.controllers;
 
+import com.jm.dto.NutritionGoalCalculationResponseDTO;
+import com.jm.dto.NutritionGoalCreateRequestDTO;
 import com.jm.dto.NutritionGoalDTO;
 import com.jm.dto.NutritionGoalOwnerDTO;
 import com.jm.execption.JMException;
@@ -29,7 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/goals")
+@RequestMapping({ "/api/v1/goals", "/api/v1/nutrition-goals" })
 @AllArgsConstructor
 @Tag(name = "Nutrition Goals", description = "Operations about nutrition goals")
 public class NutritionGoalController {
@@ -43,6 +45,15 @@ public class NutritionGoalController {
     public ResponseEntity<NutritionGoalDTO> create(@RequestBody NutritionGoalDTO dto) {
         logger.debug("REST request to create NutritionGoal");
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
+    }
+
+    @PermissionRequired("ROLE_GOALS_CREATE")
+    @PostMapping("/calculate")
+    public ResponseEntity<NutritionGoalCalculationResponseDTO> calculate(
+            @RequestBody NutritionGoalCreateRequestDTO request) {
+        logger.debug("REST request to calculate AI nutrition goals");
+        NutritionGoalCalculationResponseDTO response = service.calculateAndSaveUserGoals(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PermissionRequired("ROLE_GOALS_READ")
