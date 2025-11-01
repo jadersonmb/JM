@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jm.dto.AiPromptReferenceDTO;
 import com.jm.dto.ImageDTO;
 import com.jm.dto.NutritionDashboardDTO;
+import com.jm.dto.NutritionGoalCalculationResponseDTO;
+import com.jm.dto.NutritionGoalCreateRequestDTO;
 import com.jm.dto.OllamaRequestDTO;
 import com.jm.dto.OllamaResponseDTO;
 import com.jm.dto.UserDTO;
@@ -31,6 +33,8 @@ import com.jm.repository.WhatsAppMessageRepository;
 import com.jm.speciation.WhatsAppSpecification;
 
 import com.jm.enums.AiProvider;
+import com.jm.enums.BiologicalSex;
+import com.jm.enums.NutritionGoalObjective;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
 import com.jm.services.WhatsAppCaptionTemplate;
@@ -76,6 +80,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -181,6 +187,19 @@ public class WhatsAppNutritionService {
             Keep the food names concise and in Portuguese when the request is in Portuguese.
             Do not include extra text outside the JSON.
             """;
+    private static final String PLAN_FALLBACK_ERROR = "Desculpe, não consegui calcular seu plano agora. Pode tentar novamente em instantes?";
+    private static final Pattern AGE_PATTERN = Pattern.compile("(?i)age\\s*[:=]\\s*(\\d{1,3})");
+    private static final Pattern SEX_PATTERN = Pattern.compile("(?i)sex\\s*[:=]\\s*([a-zÀ-ÿ]+)");
+    private static final Pattern WEIGHT_PATTERN = Pattern
+            .compile("(?i)weight\\s*[:=]\\s*([\\d.,]+)\\s*(kg|kilograms?|kilos?|lb|lbs|pounds?)?");
+    private static final Pattern HEIGHT_CM_PATTERN = Pattern
+            .compile("(?i)height\\s*[:=]\\s*([\\d.,]+)\\s*(cm|centimeters?)");
+    private static final Pattern HEIGHT_M_PATTERN = Pattern
+            .compile("(?i)height\\s*[:=]\\s*([\\d.,]+)\\s*(m|meters?)");
+    private static final Pattern HEIGHT_FEET_PATTERN = Pattern.compile(
+            "(?i)height\\s*[:=]\\s*(\\d{1,2})\\s*(?:ft|feet|')\\s*(\\d{1,2})?\\s*(?:in|inch|inches|\")?");
+    private static final Pattern GOAL_PATTERN = Pattern
+            .compile("(?i)goal\\s*[:=]\\s*([a-zÀ-ÿ\\s]+)");
     private final WhatsAppService whatsAppService;
     private final WhatsAppMessageRepository messageRepository;
     private final NutritionAnalysisRepository nutritionAnalysisRepository;
@@ -195,6 +214,7 @@ public class WhatsAppNutritionService {
     private final AiPromptReferenceService aiPromptReferenceService;
     private final OllamaService ollamaService;
     private final ApplicationEventPublisher eventPublisher;
+    private final NutritionGoalService nutritionGoalService;
 
     @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
     private AiProvider assistantProvider;
@@ -293,7 +313,7 @@ public class WhatsAppNutritionService {
 
         WhatsAppMessage savedMessage = messageRepository.save(builder.build());
         dispatchToAssistant(savedMessage, body);
-        /* processCommandFromText(savedMessage, from); */
+        processCommandFromText(savedMessage, from);
     }
 
     private void dispatchToAssistant(WhatsAppMessage message, String body) {
@@ -512,6 +532,10 @@ public class WhatsAppNutritionService {
             return;
         }
 
+        if (tryHandleAutoGoalCalculation(owner, message, from, body)) {
+            return;
+        }
+
         Optional<NutritionCommand> commandOpt = parseNutritionCommand(body);
         if (commandOpt.isEmpty()) {
             return;
@@ -530,6 +554,216 @@ public class WhatsAppNutritionService {
                 whatsAppService.sendTextMessage(target, reply).subscribe();
             }
         });
+    }
+
+    private boolean tryHandleAutoGoalCalculation(Users owner, WhatsAppMessage message, String from, String body) {
+        if (owner == null || owner.getId() == null) {
+            return false;
+        }
+        Optional<AutoPlanInput> inputOpt = parseAutoPlanInput(body);
+        if (inputOpt.isEmpty()) {
+            return false;
+        }
+
+        AutoPlanInput input = inputOpt.get();
+        NutritionGoalCreateRequestDTO request = NutritionGoalCreateRequestDTO.builder()
+                .userId(owner.getId())
+                .age(input.age())
+                .sex(input.sex())
+                .weight(input.weight())
+                .weightUnit(input.weightUnit())
+                .height(input.height())
+                .heightUnit(input.heightUnit())
+                .heightInches(input.heightInches())
+                .objective(input.objective())
+                .build();
+
+        String target = resolveTargetPhone(from, message);
+        try {
+            NutritionGoalCalculationResponseDTO response = nutritionGoalService.calculateAndSaveUserGoals(request);
+            String reply = StringUtils.hasText(response.getSummary()) ? response.getSummary()
+                    : fallbackPlanSummary(response);
+            if (StringUtils.hasText(target)) {
+                whatsAppService.sendTextMessage(target, reply).subscribe();
+            }
+            logger.info("Calculated AI nutrition goals for message {}", message.getId());
+            return true;
+        } catch (JMException ex) {
+            String detail = StringUtils.hasText(ex.getDetails()) ? ex.getDetails() : PLAN_FALLBACK_ERROR;
+            if (StringUtils.hasText(target)) {
+                whatsAppService.sendTextMessage(target, detail).subscribe();
+            }
+            return true;
+        } catch (Exception ex) {
+            logger.error("Failed to calculate AI nutrition goals for message {}", message.getId(), ex);
+            if (StringUtils.hasText(target)) {
+                whatsAppService.sendTextMessage(target, PLAN_FALLBACK_ERROR).subscribe();
+            }
+            return true;
+        }
+    }
+
+    private Optional<AutoPlanInput> parseAutoPlanInput(String body) {
+        if (!StringUtils.hasText(body)) {
+            return Optional.empty();
+        }
+
+        Matcher ageMatcher = AGE_PATTERN.matcher(body);
+        if (!ageMatcher.find()) {
+            return Optional.empty();
+        }
+        Integer age = parseInteger(ageMatcher.group(1));
+        if (age == null) {
+            return Optional.empty();
+        }
+
+        Matcher sexMatcher = SEX_PATTERN.matcher(body);
+        if (!sexMatcher.find()) {
+            return Optional.empty();
+        }
+        String sexRaw = sexMatcher.group(1);
+        BiologicalSex sex = parseSexValue(sexRaw);
+
+        Matcher weightMatcher = WEIGHT_PATTERN.matcher(body);
+        if (!weightMatcher.find()) {
+            return Optional.empty();
+        }
+        Double weight = parseDecimal(weightMatcher.group(1));
+        if (weight == null) {
+            return Optional.empty();
+        }
+        String weightUnit = Optional.ofNullable(weightMatcher.group(2)).map(String::trim)
+                .filter(StringUtils::hasText).orElse("kg");
+
+        Double height = null;
+        String heightUnit = null;
+        Double heightInches = null;
+
+        Matcher heightCmMatcher = HEIGHT_CM_PATTERN.matcher(body);
+        if (heightCmMatcher.find()) {
+            height = parseDecimal(heightCmMatcher.group(1));
+            heightUnit = "cm";
+        } else {
+            Matcher heightMetersMatcher = HEIGHT_M_PATTERN.matcher(body);
+            if (heightMetersMatcher.find()) {
+                height = parseDecimal(heightMetersMatcher.group(1));
+                heightUnit = "m";
+            } else {
+                Matcher heightFeetMatcher = HEIGHT_FEET_PATTERN.matcher(body);
+                if (heightFeetMatcher.find()) {
+                    height = parseDecimal(heightFeetMatcher.group(1));
+                    heightUnit = "ft";
+                    heightInches = parseDecimal(heightFeetMatcher.group(2));
+                }
+            }
+        }
+
+        if (height == null) {
+            return Optional.empty();
+        }
+
+        NutritionGoalObjective objective = parseObjectiveFromBody(body);
+        return Optional.of(new AutoPlanInput(age, sex, weight, weightUnit, height, heightUnit, heightInches, objective));
+    }
+
+    private Integer parseInteger(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(value.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Double parseDecimal(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            String normalized = value.replace(" ", "").replace(',', '.');
+            return Double.valueOf(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private BiologicalSex parseSexValue(String value) {
+        String normalized = normalizeText(value);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        if (normalized.startsWith("m") || normalized.contains("masc")) {
+            return BiologicalSex.MALE;
+        }
+        if (normalized.startsWith("f") || normalized.contains("fem")) {
+            return BiologicalSex.FEMALE;
+        }
+        return null;
+    }
+
+    private NutritionGoalObjective parseObjectiveFromBody(String body) {
+        Matcher matcher = GOAL_PATTERN.matcher(body);
+        if (matcher.find()) {
+            NutritionGoalObjective resolved = mapObjective(matcher.group(1));
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+        return mapObjective(body);
+    }
+
+    private NutritionGoalObjective mapObjective(String value) {
+        String normalized = normalizeText(value);
+        if (!StringUtils.hasText(normalized)) {
+            return null;
+        }
+        if (normalized.contains("emagrec") || normalized.contains("loss") || normalized.contains("cut")) {
+            return NutritionGoalObjective.WEIGHT_LOSS;
+        }
+        if (normalized.contains("massa") || normalized.contains("muscle") || normalized.contains("gain")
+                || normalized.contains("bulk")) {
+            return NutritionGoalObjective.MUSCLE_GAIN;
+        }
+        if (normalized.contains("manuten") || normalized.contains("maint")) {
+            return NutritionGoalObjective.MAINTENANCE;
+        }
+        return null;
+    }
+
+    private String normalizeText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return normalized.toLowerCase(Locale.ROOT).trim();
+    }
+
+    private String resolveTargetPhone(String from, WhatsAppMessage message) {
+        if (StringUtils.hasText(from)) {
+            return from;
+        }
+        return message != null ? message.getFromPhone() : null;
+    }
+
+    private String fallbackPlanSummary(NutritionGoalCalculationResponseDTO response) {
+        if (response == null) {
+            return PLAN_FALLBACK_ERROR;
+        }
+        double bmr = response.getBmr() != null ? response.getBmr() : 0.0;
+        double tdee = response.getTdee() != null ? response.getTdee() : 0.0;
+        double calories = response.getRecommendedCalories() != null ? response.getRecommendedCalories() : 0.0;
+        double protein = response.getProtein() != null ? response.getProtein() : 0.0;
+        double carbs = response.getCarbs() != null ? response.getCarbs() : 0.0;
+        double fat = response.getFat() != null ? response.getFat() : 0.0;
+        return String.format(Locale.ROOT,
+                "BMR: %.0f kcal/dia | TDEE: %.0f kcal/dia | Calorias: %.0f kcal | Proteínas: %.0f g | Carboidratos: %.0f g | Gorduras: %.0f g",
+                bmr, tdee, calories, protein, carbs, fat);
+    }
+
+    private record AutoPlanInput(Integer age, BiologicalSex sex, Double weight, String weightUnit, Double height,
+            String heightUnit, Double heightInches, NutritionGoalObjective objective) {
     }
 
     private Optional<NutritionCommand> parseNutritionCommand(String body) {
