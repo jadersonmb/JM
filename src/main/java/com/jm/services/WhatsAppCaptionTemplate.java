@@ -96,12 +96,28 @@ public enum WhatsAppCaptionTemplate {
         if (parameterOrder.isEmpty()) {
             return Collections.emptyList();
         }
+        Map<String, Object> normalizedVariables = normalizeVariables(variables);
         List<Map<String, Object>> parameters = new ArrayList<>();
         for (String key : parameterOrder) {
-            Object value = variables != null ? variables.get(key) : null;
+            Object value = normalizedVariables.get(key.toLowerCase(Locale.ROOT));
             String text = value == null ? "" : Objects.toString(value);
             parameters.add(Map.of("type", "text", "text", text));
         }
         return List.of(Map.of("type", "body", "parameters", parameters));
+    }
+
+    private Map<String, Object> normalizeVariables(Map<String, ?> variables) {
+        if (variables == null || variables.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> normalized = new java.util.HashMap<>();
+        for (Map.Entry<String, ?> entry : variables.entrySet()) {
+            if (entry.getKey() == null) {
+                continue;
+            }
+            String normalizedKey = entry.getKey().toLowerCase(Locale.ROOT);
+            normalized.put(normalizedKey, entry.getValue());
+        }
+        return normalized;
     }
 }
