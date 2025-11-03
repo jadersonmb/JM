@@ -2039,6 +2039,10 @@
       portuguese: 'Português',
     },
   },
+  'goal.ai.summary':
+    '✅ Seu plano nutricional baseado nos seus dados:\n\n🔥 BMR: {bmr} kcal/dia\n⚡ TDEE estimado: {tdee} kcal/dia\n\n🎯 Meta diária recomendada:\nCalorias: {calories} kcal\nObjetivo: {goal}\n\n🍗 Proteínas: {protein} g\n🍞 Carboidratos: {carbs} g\n🥑 Gorduras: {fat} g\n\nVamos juntos rumo à sua melhor versão 💪',
+  'goal.ai.summary.fallback':
+    'BMR: {bmr} kcal/dia | TDEE: {tdee} kcal/dia | Calorias: {calories} kcal | Proteínas: {protein} g | Carboidratos: {carbs} g | Gorduras: {fat} g',
 };
 
 

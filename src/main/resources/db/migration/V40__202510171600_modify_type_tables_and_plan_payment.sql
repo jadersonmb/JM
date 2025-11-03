@@ -4,6 +4,9 @@ MODIFY prompt TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ALTER TABLE jm.ai_prompt_references 
 MODIFY prompt TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+ALTER TABLE jm.nutrition_goal  
+MODIFY notes TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 UPDATE jm.payment_plans set active=0
 WHERE code IN ('plan_quarterly');
 

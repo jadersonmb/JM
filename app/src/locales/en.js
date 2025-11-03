@@ -2053,6 +2053,10 @@ export default {
       portuguese: 'Portuguese',
     },
   },
+  'goal.ai.summary':
+    "✅ Your nutrition plan based on your data:\n\n🔥 BMR: {bmr} kcal/day\n⚡ Estimated TDEE: {tdee} kcal/day\n\n🎯 Recommended daily target:\nCalories: {calories} kcal\nGoal: {goal}\n\n🍗 Protein: {protein} g\n🍞 Carbohydrates: {carbs} g\n🥑 Fat: {fat} g\n\nLet's work together towards your best version 💪",
+  'goal.ai.summary.fallback':
+    'BMR: {bmr} kcal/day | TDEE: {tdee} kcal/day | Calories: {calories} kcal | Protein: {protein} g | Carbohydrates: {carbs} g | Fat: {fat} g',
   users: {
     empty: 'No patients found.',
     title: 'Patients',
