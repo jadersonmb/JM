@@ -7,7 +7,6 @@ import com.jm.dto.NutritionGoalOwnerDTO;
 import com.jm.entity.MeasurementUnits;
 import com.jm.entity.NutritionGoal;
 import com.jm.entity.NutritionGoalTemplate;
-import com.jm.entity.UserConfiguration;
 import com.jm.entity.Users;
 import com.jm.enums.BiologicalSex;
 import com.jm.enums.NutritionGoalPeriodicity;
@@ -20,7 +19,6 @@ import com.jm.mappers.NutritionGoalMapper;
 import com.jm.repository.MeasurementUnitRepository;
 import com.jm.repository.NutritionGoalRepository;
 import com.jm.repository.NutritionGoalTemplateRepository;
-import com.jm.repository.UserConfigurationRepository;
 import com.jm.repository.UserRepository;
 import com.jm.speciation.NutritionGoalSpecification;
 import com.jm.utils.SecurityUtils;
@@ -63,19 +61,16 @@ public class NutritionGoalService {
     private final NutritionGoalTemplateRepository templateRepository;
     private final MeasurementUnitRepository measurementUnitRepository;
     private final UserRepository userRepository;
-    private final UserConfigurationRepository userConfigurationRepository;
     private final MessageSource messageSource;
 
     public NutritionGoalService(NutritionGoalRepository repository, NutritionGoalMapper mapper,
             NutritionGoalTemplateRepository templateRepository, MeasurementUnitRepository measurementUnitRepository,
-            UserRepository userRepository, UserConfigurationRepository userConfigurationRepository,
-            MessageSource messageSource) {
+            UserRepository userRepository, MessageSource messageSource) {
         this.repository = repository;
         this.mapper = mapper;
         this.templateRepository = templateRepository;
         this.measurementUnitRepository = measurementUnitRepository;
         this.userRepository = userRepository;
-        this.userConfigurationRepository = userConfigurationRepository;
         this.messageSource = messageSource;
     }
 
@@ -171,13 +166,13 @@ public class NutritionGoalService {
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = startDate.plusYears(1);
 
-        Locale locale = resolveLocale(user);
+        Locale locale = LocaleContextHolder.getLocale();
         String objectiveLabel = resolveObjectiveLabel(objective, locale);
         String summary = buildSummaryMessage(locale, bmrRounded, tdeeRounded, recommendedRounded, objectiveLabel,
                 proteinGrams, carbsGrams, fatGrams);
 
         NutritionGoal calorieGoal = NutritionGoal.builder()
-                .type(NutritionGoalType.CALORIE_TARGET)
+                .type(NutritionGoalType.ENERGY)
                 .targetValue(toBigDecimal(recommendedRounded))
                 .unit(calorieUnit)
                 .periodicity(NutritionGoalPeriodicity.DAILY)
@@ -309,46 +304,6 @@ public class NutritionGoalService {
                 .active(Boolean.TRUE)
                 .notes(notes)
                 .build();
-    }
-
-    private Locale resolveLocale(Users user) {
-        Locale configurationLocale = resolveLocaleFromConfiguration(user);
-        if (configurationLocale != null) {
-            return configurationLocale;
-        }
-        if (user != null) {
-            Locale userLocale = parseLocale(user.getLocale());
-            if (userLocale != null) {
-                return userLocale;
-            }
-        }
-        Locale contextLocale = LocaleContextHolder.getLocale();
-        if (contextLocale != null && StringUtils.hasText(contextLocale.getLanguage())) {
-            return contextLocale;
-        }
-        return Locale.getDefault();
-    }
-
-    private Locale resolveLocaleFromConfiguration(Users user) {
-        if (user == null || user.getId() == null) {
-            return null;
-        }
-        Optional<UserConfiguration> configuration = userConfigurationRepository.findByUserId(user.getId());
-        if (configuration.isEmpty()) {
-            return null;
-        }
-        return parseLocale(configuration.get().getLanguage());
-    }
-
-    private Locale parseLocale(String value) {
-        if (!StringUtils.hasText(value)) {
-            return null;
-        }
-        Locale locale = Locale.forLanguageTag(value.replace('_', '-').trim());
-        if (!StringUtils.hasText(locale.getLanguage())) {
-            return null;
-        }
-        return locale;
     }
 
     private JMException invalidDataException(String messageKey) {
