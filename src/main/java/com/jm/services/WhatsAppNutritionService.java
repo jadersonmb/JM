@@ -22,6 +22,7 @@ import com.jm.entity.Meal;
 import com.jm.entity.MeasurementUnits;
 import com.jm.entity.NutritionAnalysis;
 import com.jm.entity.Users;
+import com.jm.entity.UserConfiguration;
 import com.jm.entity.WhatsAppMessage;
 import com.jm.events.NutritionAnalysisRequestEvent;
 import com.jm.repository.FoodCategoryRepository;
@@ -29,6 +30,7 @@ import com.jm.repository.FoodRepository;
 import com.jm.repository.MealRepository;
 import com.jm.repository.MeasurementUnitRepository;
 import com.jm.repository.NutritionAnalysisRepository;
+import com.jm.repository.UserConfigurationRepository;
 import com.jm.repository.WhatsAppMessageRepository;
 import com.jm.speciation.WhatsAppSpecification;
 
@@ -51,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.MessageSource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -61,6 +64,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.Normalizer;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -215,6 +219,8 @@ public class WhatsAppNutritionService {
     private final OllamaService ollamaService;
     private final ApplicationEventPublisher eventPublisher;
     private final NutritionGoalService nutritionGoalService;
+    private final UserConfigurationRepository userConfigurationRepository;
+    private final MessageSource messageSource;
 
     @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
     private AiProvider assistantProvider;
@@ -582,7 +588,7 @@ public class WhatsAppNutritionService {
         try {
             NutritionGoalCalculationResponseDTO response = nutritionGoalService.calculateAndSaveUserGoals(request);
             String reply = StringUtils.hasText(response.getSummary()) ? response.getSummary()
-                    : fallbackPlanSummary(response);
+                    : fallbackPlanSummary(response, owner);
             if (StringUtils.hasText(target)) {
                 whatsAppService.sendTextMessage(target, reply).subscribe();
             }
@@ -747,19 +753,70 @@ public class WhatsAppNutritionService {
         return message != null ? message.getFromPhone() : null;
     }
 
-    private String fallbackPlanSummary(NutritionGoalCalculationResponseDTO response) {
+    private String fallbackPlanSummary(NutritionGoalCalculationResponseDTO response, Users owner) {
         if (response == null) {
             return PLAN_FALLBACK_ERROR;
         }
-        double bmr = response.getBmr() != null ? response.getBmr() : 0.0;
-        double tdee = response.getTdee() != null ? response.getTdee() : 0.0;
-        double calories = response.getRecommendedCalories() != null ? response.getRecommendedCalories() : 0.0;
-        double protein = response.getProtein() != null ? response.getProtein() : 0.0;
-        double carbs = response.getCarbs() != null ? response.getCarbs() : 0.0;
-        double fat = response.getFat() != null ? response.getFat() : 0.0;
-        return String.format(Locale.ROOT,
-                "BMR: %.0f kcal/dia | TDEE: %.0f kcal/dia | Calorias: %.0f kcal | Proteínas: %.0f g | Carboidratos: %.0f g | Gorduras: %.0f g",
-                bmr, tdee, calories, protein, carbs, fat);
+        Locale locale = resolveUserLocale(owner);
+        Object[] args = new Object[] {
+                formatNumber(response.getBmr(), locale),
+                formatNumber(response.getTdee(), locale),
+                formatNumber(response.getRecommendedCalories(), locale),
+                formatNumber(response.getProtein(), locale),
+                formatNumber(response.getCarbs(), locale),
+                formatNumber(response.getFat(), locale)
+        };
+        try {
+            return messageSource.getMessage("goal.ai.summary.fallback", args, locale);
+        } catch (Exception ex) {
+            return String.format(locale,
+                    "BMR: %s kcal/dia | TDEE: %s kcal/dia | Calorias: %s kcal | Proteínas: %s g | Carboidratos: %s g | Gorduras: %s g",
+                    args);
+        }
+    }
+
+    private Locale resolveUserLocale(Users owner) {
+        Locale configurationLocale = resolveConfigurationLocale(owner);
+        if (configurationLocale != null) {
+            return configurationLocale;
+        }
+        if (owner != null) {
+            Locale userLocale = parseLocale(owner.getLocale());
+            if (userLocale != null) {
+                return userLocale;
+            }
+        }
+        return Locale.getDefault();
+    }
+
+    private Locale resolveConfigurationLocale(Users owner) {
+        if (owner == null || owner.getId() == null) {
+            return null;
+        }
+        Optional<UserConfiguration> configuration = userConfigurationRepository.findByUserId(owner.getId());
+        if (configuration.isEmpty()) {
+            return null;
+        }
+        return parseLocale(configuration.get().getLanguage());
+    }
+
+    private Locale parseLocale(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        Locale locale = Locale.forLanguageTag(value.replace('_', '-').trim());
+        if (!StringUtils.hasText(locale.getLanguage())) {
+            return null;
+        }
+        return locale;
+    }
+
+    private String formatNumber(Double value, Locale locale) {
+        double sanitized = value != null && Double.isFinite(value) ? value : 0.0;
+        NumberFormat format = NumberFormat.getNumberInstance(locale);
+        format.setMaximumFractionDigits(0);
+        format.setMinimumFractionDigits(0);
+        return format.format(Math.round(sanitized));
     }
 
     private record AutoPlanInput(Integer age, BiologicalSex sex, Double weight, String weightUnit, Double height,
