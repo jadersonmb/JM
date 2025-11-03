@@ -12,6 +12,7 @@ import com.jm.mappers.NutritionGoalMapper;
 import com.jm.repository.MeasurementUnitRepository;
 import com.jm.repository.NutritionGoalRepository;
 import com.jm.repository.NutritionGoalTemplateRepository;
+import com.jm.repository.UserConfigurationRepository;
 import com.jm.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,9 @@ class NutritionGoalServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private UserConfigurationRepository userConfigurationRepository;
+
     private NutritionGoalService service;
 
     @BeforeEach
@@ -66,7 +70,7 @@ class NutritionGoalServiceTest {
         messageSource.setDefaultEncoding("UTF-8");
         NutritionGoalMapper mapper = Mappers.getMapper(NutritionGoalMapper.class);
         service = new NutritionGoalService(repository, mapper, templateRepository, measurementUnitRepository,
-                userRepository, messageSource);
+                userRepository, userConfigurationRepository, messageSource);
         LocaleContextHolder.setLocale(new Locale("pt", "BR"));
     }
 
@@ -80,6 +84,7 @@ class NutritionGoalServiceTest {
         UUID userId = UUID.randomUUID();
         Users user = Users.builder().id(userId).build();
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userConfigurationRepository.findByUserId(userId)).thenReturn(Optional.empty());
 
         MeasurementUnits kcalUnit = buildUnit("KCAL", MeasurementUnits.UnitType.ENERGY, "kcal");
         MeasurementUnits gramUnit = buildUnit("GRAM", MeasurementUnits.UnitType.WEIGHT, "g");
