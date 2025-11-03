@@ -25,7 +25,7 @@ public enum WhatsAppCaptionTemplate {
     MEAL_REMINDERS_EN("meal_reminders_en", "meal_reminders_en", "en_US",
             List.of("user_name", "meal_name", "dish_name", "kcal", "protein"),
             "\u23F0 Time for your next meal, {{user_name}}! \uD83C\uDF74 {{meal_name}} is ready \uD83D\uDCAA Suggestion: {{dish_name}} ({{kcal}} kcal | {{protein}} g protein) Don't skip meals — consistency is key! \u26A1"),
-    GOLS_WATER_PT("gols_water_pt", "gols_water_pt", "pt_BR", List.of("user_name", "water_goal", "water_current",
+    GOLS_WATER_EN("gols_water_en", "gols_water_en", "en_US", List.of("user_name", "water_goal", "water_current",
             "water_remaining"),
             "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0");
 

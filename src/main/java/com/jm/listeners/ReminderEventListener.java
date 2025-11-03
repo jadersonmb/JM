@@ -79,7 +79,7 @@ public class ReminderEventListener {
                 variables.put("water_current", "0");
                 variables.put("water_remaining", goal);
                 whatsAppService
-                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.GOLS_WATER_PT, variables)
+                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.GOLS_WATER_EN, variables)
                         .blockOptional(Duration.ofSeconds(30));
             } else if (reminder.getType() == ReminderType.MEAL) {
                 Map<String, Object> variables = new HashMap<>();
