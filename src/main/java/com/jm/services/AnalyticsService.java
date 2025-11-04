@@ -30,6 +30,8 @@ import com.jm.repository.NutritionAnalysisRepository;
 import com.jm.repository.NutritionGoalRepository;
 import com.jm.repository.UserRepository;
 import com.jm.utils.SecurityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AnalyticsService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AnalyticsService.class);
     private static final int DEFAULT_RANGE_DAYS = 7;
     private static final int MAX_RANGE_DAYS = 365;
     private static final MathContext MATH_CONTEXT = MathContext.DECIMAL64;
@@ -808,6 +811,37 @@ public class AnalyticsService {
             }
         }
         return total;
+    }
+
+    public Optional<DailyHydrationSummary> getTodayHydrationSummary(UUID userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        try {
+            AnalyticsContext context = buildContext(1, AnalyticsGroupBy.DAY.name(), userId);
+            List<NutritionGoal> goals = loadGoals(context);
+            BigDecimal dailyTarget = computeDailyWaterTarget(context, goals);
+            AnalysisSnapshot snapshot = analyze(context);
+            BigDecimal goal = dailyTarget != null ? dailyTarget : BigDecimal.ZERO;
+            BigDecimal consumed = snapshot != null && snapshot.totalWater() != null ? snapshot.totalWater()
+                    : BigDecimal.ZERO;
+            return Optional.of(new DailyHydrationSummary(goal, consumed));
+        } catch (JMException ex) {
+            logger.warn("Unable to compute hydration summary for user {}: {}", userId, ex.getMessage());
+            return Optional.empty();
+        } catch (Exception ex) {
+            logger.error("Unexpected error computing hydration summary for user {}", userId, ex);
+            return Optional.empty();
+        }
+    }
+
+    public record DailyHydrationSummary(BigDecimal dailyGoalMl, BigDecimal consumedMl) {
+        public BigDecimal remainingMl() {
+            BigDecimal goal = dailyGoalMl != null ? dailyGoalMl : BigDecimal.ZERO;
+            BigDecimal consumed = consumedMl != null ? consumedMl : BigDecimal.ZERO;
+            BigDecimal remaining = goal.subtract(consumed);
+            return remaining.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : remaining;
+        }
     }
 
     private BigDecimal scale(BigDecimal value) {
