@@ -39,6 +39,7 @@ import com.jm.enums.BiologicalSex;
 import com.jm.enums.NutritionGoalObjective;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.services.AnalyticsService;
 import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
@@ -71,6 +72,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -221,6 +224,7 @@ public class WhatsAppNutritionService {
     private final NutritionGoalService nutritionGoalService;
     private final UserConfigurationRepository userConfigurationRepository;
     private final MessageSource messageSource;
+    private final AnalyticsService analyticsService;
 
     @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
     private AiProvider assistantProvider;
@@ -1859,16 +1863,56 @@ public class WhatsAppNutritionService {
         double calories = result != null ? optionalDouble(result.kcal() != null ? result.kcal() : result.calories()) : 0.0;
         variables.put("kcal", formatNumber(calories));
 
+        AnalyticsService.DailyNutritionSummary summary = owner != null && owner.getId() != null
+                ? analyticsService.getTodayNutritionSummary(owner.getId()).orElse(null)
+                : null;
+
         DailyTotals totals = computeDailyTotals(owner, referenceMoment);
-        variables.put("protein_total", formatNumber(totals.protein()));
-        variables.put("carb_total", formatNumber(totals.carbs()));
-        variables.put("fat_total", formatNumber(totals.fat()));
-        double fiberTotal = totals.fiber()
-                + (result != null && result.macronutrients() != null && result.macronutrients().fiber_g() != null
-                        ? result.macronutrients().fiber_g()
-                        : 0.0);
-        variables.put("fiber_total", formatNumber(fiberTotal));
-        variables.put("kcal_total", formatNumber(totals.kcal()));
+        BigDecimal proteinConsumed = summary != null ? summary.proteinConsumed() : BigDecimal.valueOf(totals.protein());
+        BigDecimal proteinGoal = summary != null ? summary.proteinGoal() : null;
+        BigDecimal carbsConsumed = summary != null ? summary.carbsConsumed() : BigDecimal.valueOf(totals.carbs());
+        BigDecimal carbsGoal = summary != null ? summary.carbsGoal() : null;
+        BigDecimal fatConsumed = summary != null ? summary.fatConsumed() : BigDecimal.valueOf(totals.fat());
+        BigDecimal fatGoal = summary != null ? summary.fatGoal() : null;
+        BigDecimal fiberConsumed = summary != null ? summary.fiberConsumed()
+                : BigDecimal.valueOf(totals.fiber()
+                        + (result != null && result.macronutrients() != null
+                                && result.macronutrients().fiber_g() != null
+                                        ? result.macronutrients().fiber_g()
+                                        : 0.0));
+        BigDecimal fiberGoal = summary != null ? summary.fiberGoal() : null;
+        BigDecimal waterConsumed = summary != null ? summary.waterConsumed() : BigDecimal.ZERO;
+        BigDecimal waterGoal = summary != null ? summary.waterGoal() : null;
+        BigDecimal caloriesConsumed = summary != null ? summary.calorieConsumed() : BigDecimal.valueOf(totals.kcal());
+        BigDecimal caloriesGoal = summary != null ? summary.calorieGoal() : null;
+
+        variables.put("protein_total", formatGoalProgress(proteinConsumed, proteinGoal));
+        variables.put("carb_total", formatGoalProgress(carbsConsumed, carbsGoal));
+        variables.put("fat_total", formatGoalProgress(fatConsumed, fatGoal));
+        variables.put("fiber_total", formatGoalProgress(fiberConsumed, fiberGoal));
+        variables.put("water_total", formatGoalProgress(waterConsumed, waterGoal));
+        variables.put("kcal_total", formatNumber(caloriesConsumed));
+        variables.put("kcal_goal", formatNumber(caloriesGoal));
+        variables.put("kcal_total_1", formatNumber(caloriesGoal));
+
+        BigDecimal caloriesUsed = caloriesConsumed != null ? caloriesConsumed : BigDecimal.ZERO;
+        variables.put("tmb", formatNumber(caloriesUsed));
+
+        BigDecimal deficit = caloriesGoal != null ? caloriesGoal.subtract(caloriesUsed) : null;
+        variables.put("deficit", formatNumber(deficit));
+        variables.put("status", resolveCalorieStatus(deficit, caloriesGoal, caloriesUsed));
+
+        if (summary != null) {
+            variables.put("date", formatSummaryDate(summary.date(), referenceMoment));
+            variables.put("water_goal", formatNumber(summary.waterGoal()));
+            variables.put("water_current", formatNumber(summary.waterConsumed()));
+            variables.put("water_remaining", formatNumber(summary.waterRemaining()));
+            variables.put("protein_remaining", formatNumber(summary.proteinRemaining()));
+            variables.put("kcal_remaining", formatNumber(summary.calorieRemaining()));
+            variables.put("bmr", formatNumber(summary.basalMetabolicRate()));
+        } else {
+            variables.put("date", formatSummaryDate(null, referenceMoment));
+        }
 
         return variables;
     }
@@ -2477,6 +2521,59 @@ public class WhatsAppNutritionService {
 
     private String formatNumber(double value) {
         return formatNumber(Double.valueOf(value));
+    }
+
+    private String formatNumber(BigDecimal value) {
+        if (value == null) {
+            return "";
+        }
+        return formatNumber(value.doubleValue());
+    }
+
+    private String formatGoalProgress(BigDecimal consumed, BigDecimal goal) {
+        String consumedText = formatNumber(consumed);
+        if (!StringUtils.hasText(consumedText)) {
+            consumedText = "0";
+        }
+        if (goal == null || goal.compareTo(BigDecimal.ZERO) <= 0) {
+            return consumedText;
+        }
+        String goalText = formatNumber(goal);
+        if (!StringUtils.hasText(goalText)) {
+            return consumedText;
+        }
+        return consumedText + "/" + goalText;
+    }
+
+    private String resolveCalorieStatus(BigDecimal deficit, BigDecimal goal, BigDecimal consumed) {
+        BigDecimal safeGoal = goal != null ? goal : BigDecimal.ZERO;
+        BigDecimal safeConsumed = consumed != null ? consumed : BigDecimal.ZERO;
+        BigDecimal delta = deficit != null ? deficit : safeGoal.subtract(safeConsumed);
+
+        if (safeGoal.compareTo(BigDecimal.ZERO) <= 0) {
+            return "Goal unavailable";
+        }
+        if (safeConsumed.compareTo(BigDecimal.ZERO) <= 0) {
+            return "No intake recorded";
+        }
+
+        int comparison = delta.compareTo(BigDecimal.ZERO);
+        if (comparison > 0) {
+            return "Below goal";
+        }
+        if (comparison < 0) {
+            return "Above goal";
+        }
+        return "On target";
+    }
+
+    private String formatSummaryDate(LocalDate date, OffsetDateTime referenceMoment) {
+        LocalDate resolvedDate = date != null ? date
+                : referenceMoment != null ? referenceMoment.atZoneSameInstant(DEFAULT_ZONE).toLocalDate()
+                        : LocalDate.now(DEFAULT_ZONE);
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                .withLocale(Locale.US);
+        return formatter.format(resolvedDate);
     }
 
     private record DailyTotals(double protein, double carbs, double fat, double fiber, double kcal) {

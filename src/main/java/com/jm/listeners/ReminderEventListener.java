@@ -107,8 +107,16 @@ public class ReminderEventListener {
                 variables.put("meal_name", reminder.getTitle());
                 variables.put("dish_name", StringUtils.hasText(reminder.getDescription()) ? reminder.getDescription().trim()
                         : reminder.getTitle());
-                variables.put("kcal", "");
-                variables.put("protein", "");
+                AnalyticsService.DailyNutritionSummary nutritionSummary = analyticsService
+                        .getTodayNutritionSummary(target.getId())
+                        .orElse(null);
+                if (nutritionSummary != null) {
+                    variables.put("kcal", formatMacroValue(nutritionSummary.calorieRemaining()));
+                    variables.put("protein", formatMacroValue(nutritionSummary.proteinRemaining()));
+                } else {
+                    variables.put("kcal", "");
+                    variables.put("protein", "");
+                }
                 whatsAppService
                         .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.MEAL_REMINDERS_EN, variables)
                         .blockOptional(Duration.ofSeconds(30));
@@ -249,6 +257,14 @@ public class ReminderEventListener {
     private String formatMilliliters(BigDecimal value) {
         if (value == null) {
             return "0";
+        }
+        BigDecimal sanitized = value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
+        return sanitized.setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private String formatMacroValue(BigDecimal value) {
+        if (value == null) {
+            return "";
         }
         BigDecimal sanitized = value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
         return sanitized.setScale(0, RoundingMode.HALF_UP).toPlainString();

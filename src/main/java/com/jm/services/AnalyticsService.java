@@ -844,6 +844,92 @@ public class AnalyticsService {
         }
     }
 
+    public Optional<DailyNutritionSummary> getTodayNutritionSummary(UUID userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        try {
+            AnalyticsContext context = buildContext(1, AnalyticsGroupBy.DAY.name(), userId);
+            List<NutritionGoal> goals = loadGoals(context);
+            AnalysisSnapshot snapshot = analyze(context);
+
+            Map<String, BigDecimal> targets = computeTargets(context, goals);
+            Map<String, BigDecimal> achieved = computeAchievements(snapshot);
+
+            BigDecimal proteinGoal = targets.getOrDefault("protein", BigDecimal.ZERO);
+            BigDecimal carbsGoal = targets.getOrDefault("carbs", BigDecimal.ZERO);
+            BigDecimal fatGoal = targets.getOrDefault("fat", BigDecimal.ZERO);
+            BigDecimal fiberGoal = targets.getOrDefault("fiber", BigDecimal.ZERO);
+            BigDecimal waterGoal = targets.getOrDefault("water", BigDecimal.ZERO);
+            BigDecimal caloriesGoal = targets.getOrDefault("calories", BigDecimal.ZERO);
+
+            BigDecimal proteinConsumed = achieved.getOrDefault("protein", BigDecimal.ZERO);
+            BigDecimal carbsConsumed = achieved.getOrDefault("carbs", BigDecimal.ZERO);
+            BigDecimal fatConsumed = achieved.getOrDefault("fat", BigDecimal.ZERO);
+            BigDecimal fiberConsumed = achieved.getOrDefault("fiber", BigDecimal.ZERO);
+            BigDecimal waterConsumed = achieved.getOrDefault("water", BigDecimal.ZERO);
+            BigDecimal caloriesConsumed = achieved.getOrDefault("calories", BigDecimal.ZERO);
+
+            BigDecimal basalMetabolicRate = anamnesisRepository.findTopByUserIdOrderByIdDesc(userId)
+                    .map(Anamnesis::getBasalMetabolicRate)
+                    .orElse(BigDecimal.ZERO);
+
+            return Optional.of(new DailyNutritionSummary(context.startDate(), proteinGoal, proteinConsumed, carbsGoal,
+                    carbsConsumed, fatGoal, fatConsumed, fiberGoal, fiberConsumed, waterGoal, waterConsumed,
+                    caloriesGoal, caloriesConsumed, basalMetabolicRate));
+        } catch (JMException ex) {
+            logger.warn("Unable to compute nutrition summary for user {}: {}", userId, ex.getMessage());
+            return Optional.empty();
+        } catch (Exception ex) {
+            logger.error("Unexpected error computing nutrition summary for user {}", userId, ex);
+            return Optional.empty();
+        }
+    }
+
+    public record DailyNutritionSummary(
+            LocalDate date,
+            BigDecimal proteinGoal,
+            BigDecimal proteinConsumed,
+            BigDecimal carbsGoal,
+            BigDecimal carbsConsumed,
+            BigDecimal fatGoal,
+            BigDecimal fatConsumed,
+            BigDecimal fiberGoal,
+            BigDecimal fiberConsumed,
+            BigDecimal waterGoal,
+            BigDecimal waterConsumed,
+            BigDecimal calorieGoal,
+            BigDecimal calorieConsumed,
+            BigDecimal basalMetabolicRate) {
+
+        public BigDecimal calorieDelta() {
+            return difference(calorieGoal, calorieConsumed);
+        }
+
+        public BigDecimal calorieRemaining() {
+            return remaining(calorieGoal, calorieConsumed);
+        }
+
+        public BigDecimal proteinRemaining() {
+            return remaining(proteinGoal, proteinConsumed);
+        }
+
+        public BigDecimal waterRemaining() {
+            return remaining(waterGoal, waterConsumed);
+        }
+
+        private BigDecimal difference(BigDecimal goal, BigDecimal consumed) {
+            BigDecimal goalValue = goal != null ? goal : BigDecimal.ZERO;
+            BigDecimal consumedValue = consumed != null ? consumed : BigDecimal.ZERO;
+            return goalValue.subtract(consumedValue);
+        }
+
+        private BigDecimal remaining(BigDecimal goal, BigDecimal consumed) {
+            BigDecimal delta = difference(goal, consumed);
+            return delta.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : delta;
+        }
+    }
+
     private BigDecimal scale(BigDecimal value) {
         if (value == null) {
             return BigDecimal.ZERO;
