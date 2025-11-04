@@ -10,10 +10,13 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -62,7 +65,28 @@ public class WhatsAppService {
             return Mono.empty();
         }
 
-        Map<String, Object> payload = template.buildTemplatePayload(phoneNumber, variables);
+        List<String> templateNames = template.templateNames();
+        if (templateNames.isEmpty()) {
+            logger.warn("Template {} does not have any registered WhatsApp template names", template.code());
+            return Mono.empty();
+        }
+
+        return sendTemplateWithFallback(phoneNumber, template, variables, templateNames, 0);
+    }
+
+    private Mono<Void> sendTemplateWithFallback(String phoneNumber, WhatsAppCaptionTemplate template,
+            Map<String, ?> variables, List<String> templateNames, int index) {
+        if (index >= templateNames.size()) {
+            String formatted = template.format(variables);
+            if (!StringUtils.hasText(formatted)) {
+                return Mono.empty();
+            }
+            logger.warn("All template fallbacks failed for {}. Falling back to plain text delivery.", template.code());
+            return sendTextMessage(phoneNumber, formatted);
+        }
+
+        String templateName = templateNames.get(index);
+        Map<String, Object> payload = template.buildTemplatePayload(phoneNumber, variables, templateName);
 
         return webClient.post()
                 .uri(apiUrl, uriBuilder -> uriBuilder.build(phoneNumberId))
@@ -71,8 +95,18 @@ public class WhatsAppService {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(WhatsAppMessageResponse.class)
-                .doOnError(error -> logger.error("Failed to send WhatsApp template message", error))
-                .then();
+                .doOnError(error -> {
+                    if (!(error instanceof WebClientResponseException.NotFound)) {
+                        logger.error("Failed to send WhatsApp template message using {}", templateName, error);
+                    }
+                })
+                .then()
+                .onErrorResume(WebClientResponseException.NotFound.class, ex -> {
+                    String responseBody = ex.getResponseBodyAsString();
+                    logger.warn("Template {} with name '{}' not found (response: {}). Trying next fallback if available.",
+                            template.code(), templateName, StringUtils.hasText(responseBody) ? responseBody : "<empty>");
+                    return sendTemplateWithFallback(phoneNumber, template, variables, templateNames, index + 1);
+                });
     }
 
     public WhatsAppMessageResponse sendImageMessage(WhatsAppMessageDTO dto) {

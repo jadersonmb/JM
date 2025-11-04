@@ -2,10 +2,12 @@ package com.jm.services;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public enum WhatsAppCaptionTemplate {
 
@@ -25,23 +27,28 @@ public enum WhatsAppCaptionTemplate {
     MEAL_REMINDERS_EN("meal_reminders_en", "meal_reminders_en", "en_US",
             List.of("user_name", "meal_name", "dish_name", "kcal", "protein"),
             "\u23F0 Time for your next meal, {{user_name}}! \uD83C\uDF74 {{meal_name}} is ready \uD83D\uDCAA Suggestion: {{dish_name}} ({{kcal}} kcal | {{protein}} g protein) Don't skip meals — consistency is key! \u26A1"),
-    GOLS_WATER_EN("gols_water_en", "gols_water_en", "en_US", List.of("user_name", "water_goal", "water_current",
-            "water_remaining"),
-            "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0");
+    GOLS_WATER_EN("gols_water_en", "en_US", List.of("user_name", "water_goal", "water_current", "water_remaining"),
+            "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0",
+            "gols_water_en", "gols_water_pt");
 
     private final String code;
-    private final String templateName;
     private final String languageCode;
+    private final List<String> templateNames;
     private final List<String> parameterOrder;
     private final String template;
 
     WhatsAppCaptionTemplate(String code, String templateName, String languageCode, List<String> parameterOrder,
             String template) {
+        this(code, languageCode, parameterOrder, template, templateName);
+    }
+
+    WhatsAppCaptionTemplate(String code, String languageCode, List<String> parameterOrder, String template,
+            String... templateNames) {
         this.code = code;
-        this.templateName = templateName;
         this.languageCode = languageCode;
         this.parameterOrder = parameterOrder == null ? Collections.emptyList() : List.copyOf(parameterOrder);
         this.template = template;
+        this.templateNames = buildTemplateNames(templateNames);
     }
 
     public String code() {
@@ -49,7 +56,11 @@ public enum WhatsAppCaptionTemplate {
     }
 
     public String templateName() {
-        return templateName;
+        return templateNames.isEmpty() ? null : templateNames.get(0);
+    }
+
+    public List<String> templateNames() {
+        return templateNames;
     }
 
     public String languageCode() {
@@ -74,13 +85,17 @@ public enum WhatsAppCaptionTemplate {
     }
 
     public Map<String, Object> buildTemplatePayload(String to, Map<String, ?> variables) {
+        return buildTemplatePayload(to, variables, templateName());
+    }
+
+    public Map<String, Object> buildTemplatePayload(String to, Map<String, ?> variables, String selectedTemplateName) {
         Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("messaging_product", "whatsapp");
         payload.put("to", to);
         payload.put("type", "template");
 
         Map<String, Object> template = new java.util.HashMap<>();
-        template.put("name", templateName);
+        template.put("name", selectedTemplateName != null ? selectedTemplateName : templateName());
         template.put("language", Map.of("code", languageCode));
 
         List<Map<String, Object>> components = buildComponents(variables);
@@ -119,5 +134,22 @@ public enum WhatsAppCaptionTemplate {
             normalized.put(normalizedKey, entry.getValue());
         }
         return normalized;
+    }
+
+    private List<String> buildTemplateNames(String... names) {
+        if (names == null || names.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<String> ordered = new LinkedHashSet<>();
+        for (String name : names) {
+            if (name == null) {
+                continue;
+            }
+            String trimmed = name.trim();
+            if (!trimmed.isEmpty()) {
+                ordered.add(trimmed);
+            }
+        }
+        return ordered.isEmpty() ? Collections.emptyList() : List.copyOf(ordered);
     }
 }
