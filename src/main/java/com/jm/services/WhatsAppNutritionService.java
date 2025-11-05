@@ -101,6 +101,7 @@ public class WhatsAppNutritionService {
     private static final String PROMPT_CODE = "WHATSAPP_NUTRITION_ANALYSIS";
     private static final String DEFAULT_ASSISTANT_MODEL = "ALIENTELLIGENCE/personalizednutrition:latest";
     private static final String DEFAULT_ANALYSIS_MODEL = "gemini-pro-vision";
+    private static final String DEFAULT_GEMINI_TEXT_MODEL = "gemini-pro";
     private static final String DEFAULT_OLLAMA_VISION_MODEL = "llava:34b";
     private static final String OLLAMA_AUDIO_MODEL = "nuextract:latest";
     private static final String DEFAULT_IMAGE_PROMPT = """
@@ -422,6 +423,10 @@ public class WhatsAppNutritionService {
                 logger.warn("Nutrition provider {} returned empty result for message {}", effectiveProvider,
                         savedMessage.getId());
                 return;
+            }
+
+            if (result.isFood()) {
+                result = maybeEnhanceNutritionResult(result, owner, analysisConfig);
             }
 
             if (!result.isFood()) {
@@ -1601,6 +1606,214 @@ public class WhatsAppNutritionService {
                 .map(this::sanitizeGeminiResponse)
                 .map(this::deserializeNutritionResult)
                 .orElse(null);
+    }
+
+    private GeminiNutritionResult maybeEnhanceNutritionResult(GeminiNutritionResult detection, Users owner,
+            AiModelSelection analysisConfig) {
+        if (!needsPersonalization(detection)) {
+            return detection;
+        }
+
+        GeminiNutritionResult personalized = requestPersonalizedNutritionAnalysis(detection, owner, analysisConfig);
+        if (personalized == null) {
+            return detection;
+        }
+
+        if (!personalized.isFood()) {
+            return detection;
+        }
+
+        return mergeNutritionResults(detection, personalized);
+    }
+
+    private boolean needsPersonalization(GeminiNutritionResult result) {
+        if (result == null || !result.isFood()) {
+            return false;
+        }
+        if (hasMacronutrientEstimates(result)) {
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasMacronutrientEstimates(GeminiNutritionResult result) {
+        if (result == null) {
+            return false;
+        }
+        GeminiNutritionResult.Macronutrients macros = result.macronutrients();
+        if (macros == null) {
+            return false;
+        }
+        return hasMeaningfulValue(macros.protein_g()) || hasMeaningfulValue(macros.carbs_g())
+                || hasMeaningfulValue(macros.fat_g()) || hasMeaningfulValue(macros.fiber_g());
+    }
+
+    private boolean hasMeaningfulValue(Double value) {
+        return value != null && Math.abs(value) > 0.001;
+    }
+
+    private GeminiNutritionResult requestPersonalizedNutritionAnalysis(GeminiNutritionResult detection, Users owner,
+            AiModelSelection analysisConfig) {
+        if (detection == null || !detection.isFood()) {
+            return detection;
+        }
+
+        AiModelSelection assistantSelection = resolvePersonalizedModelSelection(analysisConfig);
+        Optional<AiClient> client = resolveClient(assistantSelection.provider());
+        if (client.isEmpty()) {
+            logger.warn("AI provider {} not available for personalized nutrition analysis", assistantSelection.provider());
+            return detection;
+        }
+
+        String promptTemplate = resolvePrompt(owner, assistantSelection.provider(), assistantSelection.model(),
+                DEFAULT_PERSONALIZED_PROMPT);
+
+        Map<String, String> variables = new HashMap<>();
+        String detectionPayload;
+        try {
+            detectionPayload = objectMapper.writeValueAsString(detection);
+        } catch (JsonProcessingException ex) {
+            logger.warn("Failed to serialise detection result for personalization", ex);
+            detectionPayload = null;
+        }
+        variables.put("DETECTION_JSON", StringUtils.hasText(detectionPayload) ? detectionPayload : "{}");
+
+        List<GeminiNutritionResult.Item> detectedItems = detection.items();
+        if (detectedItems != null && !detectedItems.isEmpty()) {
+            String names = detectedItems.stream()
+                    .filter(Objects::nonNull)
+                    .map(GeminiNutritionResult.Item::name)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.joining(", "));
+            if (StringUtils.hasText(names)) {
+                variables.put("ITEM_NAMES", names);
+            }
+        }
+        variables.putIfAbsent("ITEM_NAMES", "(no items detected)");
+
+        if (StringUtils.hasText(detection.summary())) {
+            variables.put("SUMMARY", detection.summary());
+        }
+
+        String prompt = applyPromptTemplate(promptTemplate, variables);
+
+        try {
+            AiResponse response = client.get()
+                    .execute(AiRequest.builder()
+                            .type(AiRequestType.TEXT)
+                            .model(assistantSelection.model())
+                            .prompt(prompt)
+                            .timeout(DEFAULT_TIMEOUT)
+                            .build());
+
+            if (response == null || response.content() == null) {
+                return detection;
+            }
+
+            return Optional.ofNullable(response.content())
+                    .map(this::sanitizeGeminiResponse)
+                    .map(this::deserializeNutritionResult)
+                    .orElse(detection);
+        } catch (Exception ex) {
+            logger.error("Failed to request personalised nutrition analysis", ex);
+            return detection;
+        }
+    }
+
+    private AiModelSelection resolvePersonalizedModelSelection(AiModelSelection analysisConfig) {
+        AiProvider defaultProvider = analysisConfig != null && analysisConfig.provider() != null
+                ? analysisConfig.provider()
+                : AiProvider.GEMINI;
+        String defaultModel;
+        if (defaultProvider == AiProvider.OLLAMA) {
+            defaultModel = DEFAULT_ASSISTANT_MODEL;
+        } else if (defaultProvider == AiProvider.GEMINI) {
+            defaultModel = DEFAULT_GEMINI_TEXT_MODEL;
+        } else {
+            defaultModel = null;
+        }
+
+        AiModelSelection selection = resolveModelSelection(assistantModel, assistantProvider, defaultProvider, defaultModel);
+
+        if (selection.provider() == AiProvider.GEMINI) {
+            String model = selection.model();
+            if (!StringUtils.hasText(model) || model.toLowerCase(Locale.ROOT).contains("vision")) {
+                model = DEFAULT_GEMINI_TEXT_MODEL;
+                return new AiModelSelection(selection.provider(), model);
+            }
+        }
+
+        return selection;
+    }
+
+    private GeminiNutritionResult mergeNutritionResults(GeminiNutritionResult detection,
+            GeminiNutritionResult personalized) {
+        if (personalized == null) {
+            return detection;
+        }
+
+        GeminiNutritionResult.Macronutrients macros = mergeMacronutrients(personalized.macronutrients(),
+                detection.macronutrients());
+
+        List<GeminiNutritionResult.Category> categories = chooseList(personalized.categories(), detection.categories());
+        List<GeminiNutritionResult.Item> items = chooseList(personalized.items(), detection.items());
+
+        Double calories = firstNonNull(personalized.calories(), personalized.kcal(), detection.calories(),
+                detection.kcal());
+        Double kcal = firstNonNull(personalized.kcal(), personalized.calories(), detection.kcal(), detection.calories());
+
+        return new GeminiNutritionResult(detection.isFood(),
+                firstNonEmpty(personalized.foodName(), detection.foodName()),
+                calories,
+                kcal,
+                firstNonEmpty(personalized.mealType(), detection.mealType()),
+                firstNonEmpty(personalized.mealName(), detection.mealName()),
+                firstNonEmpty(personalized.dishName(), detection.dishName()),
+                firstNonEmpty(personalized.dishEmoji(), detection.dishEmoji()),
+                firstNonNull(personalized.portion(), detection.portion()),
+                macros,
+                categories,
+                items,
+                firstNonEmpty(personalized.summary(), detection.summary()),
+                firstNonNull(personalized.confidence(), detection.confidence()));
+    }
+
+    private GeminiNutritionResult.Macronutrients mergeMacronutrients(GeminiNutritionResult.Macronutrients primary,
+            GeminiNutritionResult.Macronutrients fallback) {
+        Double protein = firstNonNull(primary != null ? primary.protein_g() : null,
+                fallback != null ? fallback.protein_g() : null);
+        Double carbs = firstNonNull(primary != null ? primary.carbs_g() : null,
+                fallback != null ? fallback.carbs_g() : null);
+        Double fat = firstNonNull(primary != null ? primary.fat_g() : null,
+                fallback != null ? fallback.fat_g() : null);
+        Double fiber = firstNonNull(primary != null ? primary.fiber_g() : null,
+                fallback != null ? fallback.fiber_g() : null);
+
+        if (protein == null && carbs == null && fat == null && fiber == null) {
+            return null;
+        }
+
+        return new GeminiNutritionResult.Macronutrients(protein, carbs, fat, fiber);
+    }
+
+    private <T> List<T> chooseList(List<T> primary, List<T> fallback) {
+        if (primary != null && !primary.isEmpty()) {
+            return primary;
+        }
+        return fallback;
+    }
+
+    @SafeVarargs
+    private final <T> T firstNonNull(T... values) {
+        if (values == null) {
+            return null;
+        }
+        for (T value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private GeminiNutritionResult requestOllamaNutritionAnalysis(byte[] imageBytes, Users owner, String configuredModel) {
