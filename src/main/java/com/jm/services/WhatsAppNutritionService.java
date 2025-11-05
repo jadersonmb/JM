@@ -1520,7 +1520,7 @@ public class WhatsAppNutritionService {
         NutritionAnalysis analysis = NutritionAnalysis.builder()
                 .message(message)
                 .foodName(result.foodName())
-                .calories(toBigDecimal(result.calories()))
+                .calories(toBigDecimal(resolveCalories(result)))
                 .protein(toBigDecimal(result.macronutrients() != null ? result.macronutrients().protein_g() : null))
                 .carbs(toBigDecimal(result.macronutrients() != null ? result.macronutrients().carbs_g() : null))
                 .fat(toBigDecimal(result.macronutrients() != null ? result.macronutrients().fat_g() : null))
@@ -1833,6 +1833,38 @@ public class WhatsAppNutritionService {
         }
     }
 
+    private Double resolveCalories(GeminiNutritionResult result) {
+        if (result == null) {
+            return null;
+        }
+        if (result.calories() != null) {
+            return result.calories();
+        }
+        return result.kcal();
+    }
+
+    private String resolvePortion(GeminiNutritionResult result, NutritionAnalysis analysis) {
+        if (result != null && result.portion() != null) {
+            return formatNumber(result.portion());
+        }
+        if (analysis != null && analysis.getLiquidVolume() != null) {
+            return formatNumber(analysis.getLiquidVolume());
+        }
+        return "";
+    }
+
+    private String firstNonEmpty(String... candidates) {
+        if (candidates == null) {
+            return "";
+        }
+        for (String candidate : candidates) {
+            if (StringUtils.hasText(candidate)) {
+                return candidate;
+            }
+        }
+        return "";
+    }
+
     public Map<String, Object> buildNutritionCaptionVariables(GeminiNutritionResult result, Users owner,
             OffsetDateTime referenceMoment) {
         return buildNutritionCaptionVariables(result, null, owner, referenceMoment);
@@ -1841,15 +1873,20 @@ public class WhatsAppNutritionService {
     public Map<String, Object> buildNutritionCaptionVariables(GeminiNutritionResult result, NutritionAnalysis analysis,
             Users owner, OffsetDateTime referenceMoment) {
         Map<String, Object> variables = new HashMap<>();
-        String mealLabel = formatMealTypeLabel(result != null ? result.mealType() : null);
+        String mealLabel = Optional.ofNullable(analysis)
+                .map(NutritionAnalysis::getMeal)
+                .map(Meal::getCode)
+                .map(this::formatMealTypeLabel)
+                .orElseGet(() -> formatMealTypeLabel(result != null ? result.mealType() : null));
 
-        String mealName = result != null && StringUtils.hasText(result.mealName()) ? result.mealName() : mealLabel;
+        String mealName = firstNonEmpty(result != null ? result.mealName() : null,
+                Optional.ofNullable(analysis).map(NutritionAnalysis::getFoodName).orElse(null), mealLabel);
         variables.put("meal_name", mealName);
-        variables.put("portion", formatNumber(result != null ? result.portion() : null));
+        variables.put("portion", resolvePortion(result, analysis));
 
-        String dishName = result != null && StringUtils.hasText(result.dishName()) ? result.dishName()
-                : Optional.ofNullable(result != null ? result.foodName() : null).filter(StringUtils::hasText)
-                        .orElse(mealName);
+        String dishName = firstNonEmpty(result != null ? result.dishName() : null,
+                result != null ? result.foodName() : null,
+                Optional.ofNullable(analysis).map(NutritionAnalysis::getFoodName).orElse(null), mealName);
         variables.put("dish_name", dishName);
         String emoji = result != null && StringUtils.hasText(result.dishEmoji()) ? result.dishEmoji() : "🍽️";
         variables.put("dish_emoji", emoji);
@@ -1875,8 +1912,7 @@ public class WhatsAppNutritionService {
                 : null));
 
         BigDecimal calorieValue = Optional.ofNullable(analysis).map(NutritionAnalysis::getCalories)
-                .orElseGet(() -> toBigDecimal(result != null ? (result.kcal() != null ? result.kcal() : result.calories())
-                        : null));
+                .orElseGet(() -> toBigDecimal(resolveCalories(result)));
         variables.put("kcal", formatNumber(calorieValue));
 
         AnalyticsService.DailyNutritionSummary summary = owner != null && owner.getId() != null
