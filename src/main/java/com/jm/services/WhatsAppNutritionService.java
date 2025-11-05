@@ -39,6 +39,7 @@ import com.jm.enums.BiologicalSex;
 import com.jm.enums.NutritionGoalObjective;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
+import com.jm.services.AnalyticsService;
 import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
@@ -71,6 +72,8 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -221,6 +224,7 @@ public class WhatsAppNutritionService {
     private final NutritionGoalService nutritionGoalService;
     private final UserConfigurationRepository userConfigurationRepository;
     private final MessageSource messageSource;
+    private final AnalyticsService analyticsService;
 
     @Value("${whatsapp.nutrition.ai.assistant-provider:OLLAMA}")
     private AiProvider assistantProvider;
@@ -429,8 +433,8 @@ public class WhatsAppNutritionService {
                 return;
             }
 
-            saveNutritionAnalysis(savedMessage, result);
-            Map<String, Object> captionVariables = buildNutritionCaptionVariables(result, owner,
+            NutritionAnalysis persistedAnalysis = saveNutritionAnalysis(savedMessage, result);
+            Map<String, Object> captionVariables = buildNutritionCaptionVariables(result, persistedAnalysis, owner,
                     savedMessage.getReceivedAt());
             if (StringUtils.hasText(from)) {
                 whatsAppService.sendCaptionMessage(from, WhatsAppCaptionTemplate.DAILY_EN, captionVariables)
@@ -1506,7 +1510,7 @@ public class WhatsAppNutritionService {
         }
     }
 
-    public void saveNutritionAnalysis(WhatsAppMessage message, GeminiNutritionResult result)
+    public NutritionAnalysis saveNutritionAnalysis(WhatsAppMessage message, GeminiNutritionResult result)
             throws JsonProcessingException {
         MeasurementUnits caloriesUnit = resolveMeasurementUnit(null, "KCAL");
         MeasurementUnits macroUnit = resolveMeasurementUnit(null, "G");
@@ -1516,7 +1520,7 @@ public class WhatsAppNutritionService {
         NutritionAnalysis analysis = NutritionAnalysis.builder()
                 .message(message)
                 .foodName(result.foodName())
-                .calories(toBigDecimal(result.calories()))
+                .calories(toBigDecimal(resolveCalories(result)))
                 .protein(toBigDecimal(result.macronutrients() != null ? result.macronutrients().protein_g() : null))
                 .carbs(toBigDecimal(result.macronutrients() != null ? result.macronutrients().carbs_g() : null))
                 .fat(toBigDecimal(result.macronutrients() != null ? result.macronutrients().fat_g() : null))
@@ -1532,7 +1536,9 @@ public class WhatsAppNutritionService {
                 .build();
 
         message.setNutritionAnalysis(analysis);
-        nutritionAnalysisRepository.save(analysis);
+        NutritionAnalysis saved = nutritionAnalysisRepository.save(analysis);
+        messageRepository.save(message);
+        return saved;
     }
 
     private FoodCategory resolvePrimaryCategory(List<GeminiNutritionResult.Category> categories) {
@@ -1827,48 +1833,138 @@ public class WhatsAppNutritionService {
         }
     }
 
+    private Double resolveCalories(GeminiNutritionResult result) {
+        if (result == null) {
+            return null;
+        }
+        if (result.calories() != null) {
+            return result.calories();
+        }
+        return result.kcal();
+    }
+
+    private String resolvePortion(GeminiNutritionResult result, NutritionAnalysis analysis) {
+        if (result != null && result.portion() != null) {
+            return formatNumber(result.portion());
+        }
+        if (analysis != null && analysis.getLiquidVolume() != null) {
+            return formatNumber(analysis.getLiquidVolume());
+        }
+        return "";
+    }
+
+    private String firstNonEmpty(String... candidates) {
+        if (candidates == null) {
+            return "";
+        }
+        for (String candidate : candidates) {
+            if (StringUtils.hasText(candidate)) {
+                return candidate;
+            }
+        }
+        return "";
+    }
+
     public Map<String, Object> buildNutritionCaptionVariables(GeminiNutritionResult result, Users owner,
             OffsetDateTime referenceMoment) {
+        return buildNutritionCaptionVariables(result, null, owner, referenceMoment);
+    }
+
+    public Map<String, Object> buildNutritionCaptionVariables(GeminiNutritionResult result, NutritionAnalysis analysis,
+            Users owner, OffsetDateTime referenceMoment) {
         Map<String, Object> variables = new HashMap<>();
-        String mealLabel = formatMealTypeLabel(result != null ? result.mealType() : null);
+        String mealLabel = Optional.ofNullable(analysis)
+                .map(NutritionAnalysis::getMeal)
+                .map(Meal::getCode)
+                .map(this::formatMealTypeLabel)
+                .orElseGet(() -> formatMealTypeLabel(result != null ? result.mealType() : null));
 
-        String mealName = result != null && StringUtils.hasText(result.mealName()) ? result.mealName() : mealLabel;
+        String mealName = firstNonEmpty(result != null ? result.mealName() : null,
+                Optional.ofNullable(analysis).map(NutritionAnalysis::getFoodName).orElse(null), mealLabel);
         variables.put("meal_name", mealName);
-        variables.put("portion", formatNumber(result != null ? result.portion() : null));
+        variables.put("portion", resolvePortion(result, analysis));
 
-        String dishName = result != null && StringUtils.hasText(result.dishName()) ? result.dishName()
-                : Optional.ofNullable(result != null ? result.foodName() : null).filter(StringUtils::hasText)
-                        .orElse(mealName);
+        String dishName = firstNonEmpty(result != null ? result.dishName() : null,
+                result != null ? result.foodName() : null,
+                Optional.ofNullable(analysis).map(NutritionAnalysis::getFoodName).orElse(null), mealName);
         variables.put("dish_name", dishName);
         String emoji = result != null && StringUtils.hasText(result.dishEmoji()) ? result.dishEmoji() : "🍽️";
         variables.put("dish_emoji", emoji);
 
-        variables.put("protein", formatNumber(result != null && result.macronutrients() != null
-                ? result.macronutrients().protein_g()
-                : null));
-        variables.put("carbs", formatNumber(result != null && result.macronutrients() != null
-                ? result.macronutrients().carbs_g()
-                : null));
-        variables.put("fat", formatNumber(result != null && result.macronutrients() != null
-                ? result.macronutrients().fat_g()
-                : null));
+        BigDecimal proteinValue = Optional.ofNullable(analysis).map(NutritionAnalysis::getProtein)
+                .orElseGet(() -> toBigDecimal(result != null && result.macronutrients() != null
+                        ? result.macronutrients().protein_g()
+                        : null));
+        BigDecimal carbsValue = Optional.ofNullable(analysis).map(NutritionAnalysis::getCarbs)
+                .orElseGet(() -> toBigDecimal(result != null && result.macronutrients() != null
+                        ? result.macronutrients().carbs_g()
+                        : null));
+        BigDecimal fatValue = Optional.ofNullable(analysis).map(NutritionAnalysis::getFat)
+                .orElseGet(() -> toBigDecimal(result != null && result.macronutrients() != null
+                        ? result.macronutrients().fat_g()
+                        : null));
+
+        variables.put("protein", formatNumber(proteinValue));
+        variables.put("carbs", formatNumber(carbsValue));
+        variables.put("fat", formatNumber(fatValue));
         variables.put("fiber", formatNumber(result != null && result.macronutrients() != null
                 ? result.macronutrients().fiber_g()
                 : null));
 
-        double calories = result != null ? optionalDouble(result.kcal() != null ? result.kcal() : result.calories()) : 0.0;
-        variables.put("kcal", formatNumber(calories));
+        BigDecimal calorieValue = Optional.ofNullable(analysis).map(NutritionAnalysis::getCalories)
+                .orElseGet(() -> toBigDecimal(resolveCalories(result)));
+        variables.put("kcal", formatNumber(calorieValue));
+
+        AnalyticsService.DailyNutritionSummary summary = owner != null && owner.getId() != null
+                ? analyticsService.getTodayNutritionSummary(owner.getId()).orElse(null)
+                : null;
 
         DailyTotals totals = computeDailyTotals(owner, referenceMoment);
-        variables.put("protein_total", formatNumber(totals.protein()));
-        variables.put("carb_total", formatNumber(totals.carbs()));
-        variables.put("fat_total", formatNumber(totals.fat()));
-        double fiberTotal = totals.fiber()
-                + (result != null && result.macronutrients() != null && result.macronutrients().fiber_g() != null
-                        ? result.macronutrients().fiber_g()
-                        : 0.0);
-        variables.put("fiber_total", formatNumber(fiberTotal));
-        variables.put("kcal_total", formatNumber(totals.kcal()));
+        BigDecimal proteinConsumed = summary != null ? summary.proteinConsumed() : BigDecimal.valueOf(totals.protein());
+        BigDecimal proteinGoal = summary != null ? summary.proteinGoal() : null;
+        BigDecimal carbsConsumed = summary != null ? summary.carbsConsumed() : BigDecimal.valueOf(totals.carbs());
+        BigDecimal carbsGoal = summary != null ? summary.carbsGoal() : null;
+        BigDecimal fatConsumed = summary != null ? summary.fatConsumed() : BigDecimal.valueOf(totals.fat());
+        BigDecimal fatGoal = summary != null ? summary.fatGoal() : null;
+        BigDecimal fiberConsumed = summary != null ? summary.fiberConsumed()
+                : BigDecimal.valueOf(totals.fiber()
+                        + (result != null && result.macronutrients() != null
+                                && result.macronutrients().fiber_g() != null
+                                        ? result.macronutrients().fiber_g()
+                                        : 0.0));
+        BigDecimal fiberGoal = summary != null ? summary.fiberGoal() : null;
+        BigDecimal waterConsumed = summary != null ? summary.waterConsumed() : BigDecimal.ZERO;
+        BigDecimal waterGoal = summary != null ? summary.waterGoal() : null;
+        BigDecimal caloriesConsumed = summary != null ? summary.calorieConsumed() : BigDecimal.valueOf(totals.kcal());
+        BigDecimal caloriesGoal = summary != null ? summary.calorieGoal() : null;
+
+        variables.put("protein_total", formatGoalProgress(proteinConsumed, proteinGoal));
+        variables.put("carb_total", formatGoalProgress(carbsConsumed, carbsGoal));
+        variables.put("fat_total", formatGoalProgress(fatConsumed, fatGoal));
+        variables.put("fiber_total", formatGoalProgress(fiberConsumed, fiberGoal));
+        variables.put("water_total", formatGoalProgress(waterConsumed, waterGoal));
+        variables.put("kcal_total", formatNumber(caloriesConsumed));
+        variables.put("kcal_goal", formatNumber(caloriesGoal));
+        variables.put("kcal_total_1", formatNumber(caloriesGoal));
+
+        BigDecimal caloriesUsed = caloriesConsumed != null ? caloriesConsumed : BigDecimal.ZERO;
+        variables.put("tmb", formatNumber(caloriesUsed));
+
+        BigDecimal deficit = caloriesGoal != null ? caloriesGoal.subtract(caloriesUsed) : null;
+        variables.put("deficit", formatNumber(deficit));
+        variables.put("status", resolveCalorieStatus(deficit, caloriesGoal, caloriesUsed));
+
+        if (summary != null) {
+            variables.put("date", formatSummaryDate(summary.date(), referenceMoment));
+            variables.put("water_goal", formatNumber(summary.waterGoal()));
+            variables.put("water_current", formatNumber(summary.waterConsumed()));
+            variables.put("water_remaining", formatNumber(summary.waterRemaining()));
+            variables.put("protein_remaining", formatNumber(summary.proteinRemaining()));
+            variables.put("kcal_remaining", formatNumber(summary.calorieRemaining()));
+            variables.put("bmr", formatNumber(summary.basalMetabolicRate()));
+        } else {
+            variables.put("date", formatSummaryDate(null, referenceMoment));
+        }
 
         return variables;
     }
@@ -2477,6 +2573,59 @@ public class WhatsAppNutritionService {
 
     private String formatNumber(double value) {
         return formatNumber(Double.valueOf(value));
+    }
+
+    private String formatNumber(BigDecimal value) {
+        if (value == null) {
+            return "";
+        }
+        return formatNumber(value.doubleValue());
+    }
+
+    private String formatGoalProgress(BigDecimal consumed, BigDecimal goal) {
+        String consumedText = formatNumber(consumed);
+        if (!StringUtils.hasText(consumedText)) {
+            consumedText = "0";
+        }
+        if (goal == null || goal.compareTo(BigDecimal.ZERO) <= 0) {
+            return consumedText;
+        }
+        String goalText = formatNumber(goal);
+        if (!StringUtils.hasText(goalText)) {
+            return consumedText;
+        }
+        return consumedText + "/" + goalText;
+    }
+
+    private String resolveCalorieStatus(BigDecimal deficit, BigDecimal goal, BigDecimal consumed) {
+        BigDecimal safeGoal = goal != null ? goal : BigDecimal.ZERO;
+        BigDecimal safeConsumed = consumed != null ? consumed : BigDecimal.ZERO;
+        BigDecimal delta = deficit != null ? deficit : safeGoal.subtract(safeConsumed);
+
+        if (safeGoal.compareTo(BigDecimal.ZERO) <= 0) {
+            return "Goal unavailable";
+        }
+        if (safeConsumed.compareTo(BigDecimal.ZERO) <= 0) {
+            return "No intake recorded";
+        }
+
+        int comparison = delta.compareTo(BigDecimal.ZERO);
+        if (comparison > 0) {
+            return "Below goal";
+        }
+        if (comparison < 0) {
+            return "Above goal";
+        }
+        return "On target";
+    }
+
+    private String formatSummaryDate(LocalDate date, OffsetDateTime referenceMoment) {
+        LocalDate resolvedDate = date != null ? date
+                : referenceMoment != null ? referenceMoment.atZoneSameInstant(DEFAULT_ZONE).toLocalDate()
+                        : LocalDate.now(DEFAULT_ZONE);
+        DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+                .withLocale(Locale.US);
+        return formatter.format(resolvedDate);
     }
 
     private record DailyTotals(double protein, double carbs, double fat, double fiber, double kcal) {

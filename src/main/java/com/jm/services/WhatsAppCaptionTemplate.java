@@ -2,46 +2,57 @@ package com.jm.services;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public enum WhatsAppCaptionTemplate {
 
-    DAILY_EN("daily_en", "daily_en", "en_US",
+    DAILY_EN("daily_en", "en_US",
             List.of("meal_name", "portion", "dish_name", "dish_emoji", "protein", "carbs", "fat", "fiber", "kcal",
                     "protein_total", "carb_total", "fat_total", "fiber_total", "kcal_total"),
-            "\uD83C\uDF73 {{meal_name}}: {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g proteína | {{carbs}} g carboidrato | {{fat}} g gordura | {{fiber}} g fibras | {{kcal}} kcal) \uD83C\uDFAF Total: \uD83E\uDD57 Proteínas: {{protein_total}} g \uD83C\uDF5E Carboidratos: {{carb_total}} g \uD83C\uDF73 Gorduras: {{fat_total}} g \uD83C\uDF97\uFE0F Fibras: {{fiber_total}} g \uD83C\uDF7D\uFE0F Ingeridas: {{kcal_total}} kcal"),
-    DAILY_SUMMARY_EN("daily_sumary_en", "daily_sumary_en", "en_US",
+            "\uD83C\uDF73 {{meal_name}}: {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g proteína | {{carbs}} g carboidrato | {{fat}} g gordura | {{fiber}} g fibras | {{kcal}} kcal) \uD83C\uDFAF Total: \uD83E\uDD57 Proteínas: {{protein_total}} g \uD83C\uDF5E Carboidratos: {{carb_total}} g \uD83C\uDF73 Gorduras: {{fat_total}} g \uD83C\uDF97\uFE0F Fibras: {{fiber_total}} g \uD83C\uDF7D\uFE0F Ingeridas: {{kcal_total}} kcal",
+            "daily_en", "daily_en_v1", "daily_pt"),
+    DAILY_SUMMARY_EN("daily_sumary_en", "en_US",
             List.of("date", "protein_total", "carb_total", "fat_total", "fiber_total", "water_total", "kcal_total",
                     "kcal_goal", "deficit", "status"),
-            "\uD83D\uDDD3\uFE0F Daily summary - {{date}} \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal \uD83C\uDFAF Goal: {{kcal_goal}} kcal Result: {{deficit}} kcal ({{status}})"),
-    EDIT_MEALS_EN("edit_meals_en", "edit_meals_en", "en_US",
+            "\uD83D\uDDD3\uFE0F Daily summary - {{date}} \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal \uD83C\uDFAF Goal: {{kcal_goal}} kcal Result: {{deficit}} kcal ({{status}})",
+            "daily_sumary_en", "daily_summary_en", "daily_summary_pt"),
+    EDIT_MEALS_EN("edit_meals_en", "en_US",
             List.of("meal_name", "portion", "dish_name", "dish_emoji", "protein", "carbs", "fat", "fiber", "kcal",
                     "protein_total", "carb_total", "fat_total", "fiber_total", "water_total", "kcal_total",
                     "kcal_total_1", "tmb", "deficit"),
-            "\u2705 Changes saved successfully! \uD83C\uDF5D Meal: {{meal_name}} \uD83C\uDF73 {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g protein | {{carbs}} g carbs | {{fat}} g fat | {{fiber}} g fiber | {{kcal}} kcal) \uD83C\uDFAF Daily total: \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal Deficit: {{kcal_total_1}} - {{tmb}} = {{deficit}} kcal"),
-    MEAL_REMINDERS_EN("meal_reminders_en", "meal_reminders_en", "en_US",
+            "\u2705 Changes saved successfully! \uD83C\uDF5D Meal: {{meal_name}} \uD83C\uDF73 {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g protein | {{carbs}} g carbs | {{fat}} g fat | {{fiber}} g fiber | {{kcal}} kcal) \uD83C\uDFAF Daily total: \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal Deficit: {{kcal_total_1}} - {{tmb}} = {{deficit}} kcal",
+            "edit_meals_en", "edit_meals_pt"),
+    MEAL_REMINDERS_EN("meal_reminders_en", "en_US",
             List.of("user_name", "meal_name", "dish_name", "kcal", "protein"),
-            "\u23F0 Time for your next meal, {{user_name}}! \uD83C\uDF74 {{meal_name}} is ready \uD83D\uDCAA Suggestion: {{dish_name}} ({{kcal}} kcal | {{protein}} g protein) Don't skip meals — consistency is key! \u26A1"),
-    GOLS_WATER_PT("gols_water_pt", "gols_water_pt", "pt_BR", List.of("user_name", "water_goal", "water_current",
-            "water_remaining"),
-            "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0");
+            "\u23F0 Time for your next meal, {{user_name}}! \uD83C\uDF74 {{meal_name}} is ready \uD83D\uDCAA Suggestion: {{dish_name}} ({{kcal}} kcal | {{protein}} g protein) Don't skip meals — consistency is key! \u26A1",
+            "meal_reminders_en", "meal_reminders_pt"),
+    GOLS_WATER_EN("gols_water_en", "en_US", List.of("user_name", "water_goal", "water_current", "water_remaining"),
+            "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0",
+            "gols_water_en", "gols_water_pt");
 
     private final String code;
-    private final String templateName;
     private final String languageCode;
+    private final List<String> templateNames;
     private final List<String> parameterOrder;
     private final String template;
 
     WhatsAppCaptionTemplate(String code, String templateName, String languageCode, List<String> parameterOrder,
             String template) {
+        this(code, languageCode, parameterOrder, template, templateName);
+    }
+
+    WhatsAppCaptionTemplate(String code, String languageCode, List<String> parameterOrder, String template,
+            String... templateNames) {
         this.code = code;
-        this.templateName = templateName;
         this.languageCode = languageCode;
         this.parameterOrder = parameterOrder == null ? Collections.emptyList() : List.copyOf(parameterOrder);
         this.template = template;
+        this.templateNames = buildTemplateNames(templateNames);
     }
 
     public String code() {
@@ -49,7 +60,11 @@ public enum WhatsAppCaptionTemplate {
     }
 
     public String templateName() {
-        return templateName;
+        return templateNames.isEmpty() ? null : templateNames.get(0);
+    }
+
+    public List<String> templateNames() {
+        return templateNames;
     }
 
     public String languageCode() {
@@ -74,13 +89,17 @@ public enum WhatsAppCaptionTemplate {
     }
 
     public Map<String, Object> buildTemplatePayload(String to, Map<String, ?> variables) {
+        return buildTemplatePayload(to, variables, templateName());
+    }
+
+    public Map<String, Object> buildTemplatePayload(String to, Map<String, ?> variables, String selectedTemplateName) {
         Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("messaging_product", "whatsapp");
         payload.put("to", to);
         payload.put("type", "template");
 
         Map<String, Object> template = new java.util.HashMap<>();
-        template.put("name", templateName);
+        template.put("name", selectedTemplateName != null ? selectedTemplateName : templateName());
         template.put("language", Map.of("code", languageCode));
 
         List<Map<String, Object>> components = buildComponents(variables);
@@ -96,12 +115,45 @@ public enum WhatsAppCaptionTemplate {
         if (parameterOrder.isEmpty()) {
             return Collections.emptyList();
         }
+        Map<String, Object> normalizedVariables = normalizeVariables(variables);
         List<Map<String, Object>> parameters = new ArrayList<>();
         for (String key : parameterOrder) {
-            Object value = variables != null ? variables.get(key) : null;
+            Object value = normalizedVariables.get(key.toLowerCase(Locale.ROOT));
             String text = value == null ? "" : Objects.toString(value);
             parameters.add(Map.of("type", "text", "text", text));
         }
         return List.of(Map.of("type", "body", "parameters", parameters));
+    }
+
+    private Map<String, Object> normalizeVariables(Map<String, ?> variables) {
+        if (variables == null || variables.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> normalized = new java.util.HashMap<>();
+        for (Map.Entry<String, ?> entry : variables.entrySet()) {
+            if (entry.getKey() == null) {
+                continue;
+            }
+            String normalizedKey = entry.getKey().toLowerCase(Locale.ROOT);
+            normalized.put(normalizedKey, entry.getValue());
+        }
+        return normalized;
+    }
+
+    private List<String> buildTemplateNames(String... names) {
+        if (names == null || names.length == 0) {
+            return Collections.emptyList();
+        }
+        Set<String> ordered = new LinkedHashSet<>();
+        for (String name : names) {
+            if (name == null) {
+                continue;
+            }
+            String trimmed = name.trim();
+            if (!trimmed.isEmpty()) {
+                ordered.add(trimmed);
+            }
+        }
+        return ordered.isEmpty() ? Collections.emptyList() : List.copyOf(ordered);
     }
 }

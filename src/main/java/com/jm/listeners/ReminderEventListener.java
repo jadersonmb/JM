@@ -6,6 +6,7 @@ import com.jm.enums.ReminderRepeatMode;
 import com.jm.enums.ReminderType;
 import com.jm.events.ReminderDueEvent;
 import com.jm.repository.ReminderRepository;
+import com.jm.services.AnalyticsService;
 import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.WhatsAppService;
 import com.jm.services.support.ReminderScheduleSupport;
@@ -21,6 +22,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,12 +39,14 @@ public class ReminderEventListener {
 
     private final ReminderRepository reminderRepository;
     private final WhatsAppService whatsAppService;
+    private final AnalyticsService analyticsService;
     private final MessageSource messageSource;
 
     public ReminderEventListener(ReminderRepository reminderRepository, WhatsAppService whatsAppService,
-            MessageSource messageSource) {
+            AnalyticsService analyticsService, MessageSource messageSource) {
         this.reminderRepository = reminderRepository;
         this.whatsAppService = whatsAppService;
+        this.analyticsService = analyticsService;
         this.messageSource = messageSource;
     }
 
@@ -74,12 +79,27 @@ public class ReminderEventListener {
             if (isWaterReminder(reminder)) {
                 Map<String, Object> variables = new HashMap<>();
                 variables.put("user_name", resolveDisplayName(target));
-                String goal = resolveWaterGoal(reminder);
-                variables.put("water_goal", goal);
-                variables.put("water_current", "0");
-                variables.put("water_remaining", goal);
+                BigDecimal fallbackGoal = resolveWaterGoal(reminder);
+                AnalyticsService.DailyHydrationSummary hydrationSummary = analyticsService
+                        .getTodayHydrationSummary(target.getId())
+                        .orElse(null);
+                BigDecimal goalMl = hydrationSummary != null ? hydrationSummary.dailyGoalMl() : BigDecimal.ZERO;
+                BigDecimal consumedMl = hydrationSummary != null ? hydrationSummary.consumedMl() : BigDecimal.ZERO;
+
+                if (goalMl.compareTo(BigDecimal.ZERO) <= 0 && fallbackGoal.compareTo(BigDecimal.ZERO) > 0) {
+                    goalMl = fallbackGoal;
+                }
+
+                BigDecimal remainingMl = goalMl.subtract(consumedMl);
+                if (remainingMl.compareTo(BigDecimal.ZERO) < 0) {
+                    remainingMl = BigDecimal.ZERO;
+                }
+
+                variables.put("water_goal", formatMilliliters(goalMl));
+                variables.put("water_current", formatMilliliters(consumedMl));
+                variables.put("water_remaining", formatMilliliters(remainingMl));
                 whatsAppService
-                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.GOLS_WATER_PT, variables)
+                        .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.GOLS_WATER_EN, variables)
                         .blockOptional(Duration.ofSeconds(30));
             } else if (reminder.getType() == ReminderType.MEAL) {
                 Map<String, Object> variables = new HashMap<>();
@@ -87,8 +107,16 @@ public class ReminderEventListener {
                 variables.put("meal_name", reminder.getTitle());
                 variables.put("dish_name", StringUtils.hasText(reminder.getDescription()) ? reminder.getDescription().trim()
                         : reminder.getTitle());
-                variables.put("kcal", "");
-                variables.put("protein", "");
+                AnalyticsService.DailyNutritionSummary nutritionSummary = analyticsService
+                        .getTodayNutritionSummary(target.getId())
+                        .orElse(null);
+                if (nutritionSummary != null) {
+                    variables.put("kcal", formatMacroValue(nutritionSummary.calorieRemaining()));
+                    variables.put("protein", formatMacroValue(nutritionSummary.proteinRemaining()));
+                } else {
+                    variables.put("kcal", "");
+                    variables.put("protein", "");
+                }
                 whatsAppService
                         .sendCaptionMessage(target.getPhoneNumber(), WhatsAppCaptionTemplate.MEAL_REMINDERS_EN, variables)
                         .blockOptional(Duration.ofSeconds(30));
@@ -209,11 +237,36 @@ public class ReminderEventListener {
         return "";
     }
 
-    private String resolveWaterGoal(Reminder reminder) {
+    private BigDecimal resolveWaterGoal(Reminder reminder) {
         if (reminder == null || !StringUtils.hasText(reminder.getDescription())) {
-            return "0";
+            return BigDecimal.ZERO;
         }
         String digits = reminder.getDescription().replaceAll("[^0-9]", "");
-        return StringUtils.hasText(digits) ? digits : "0";
+        if (!StringUtils.hasText(digits)) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return new BigDecimal(digits);
+        } catch (NumberFormatException ex) {
+            logger.warn("Unable to parse water goal from reminder {} description: {}", reminder.getId(),
+                    reminder.getDescription());
+            return BigDecimal.ZERO;
+        }
+    }
+
+    private String formatMilliliters(BigDecimal value) {
+        if (value == null) {
+            return "0";
+        }
+        BigDecimal sanitized = value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
+        return sanitized.setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+
+    private String formatMacroValue(BigDecimal value) {
+        if (value == null) {
+            return "";
+        }
+        BigDecimal sanitized = value.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : value;
+        return sanitized.setScale(0, RoundingMode.HALF_UP).toPlainString();
     }
 }
