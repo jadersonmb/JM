@@ -21,9 +21,13 @@ ENV VITE_API_URL=$VITE_API_URL \
 RUN npm run build
 
 FROM nginx:1.27-alpine AS production
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl openssl
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/letsencrypt /opt/letsencrypt
+COPY docker/entrypoint.sh /docker-entrypoint.sh
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 CMD curl -f http://localhost || exit 1
+RUN chmod +x /docker-entrypoint.sh
+EXPOSE 80 443
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 CMD curl -f http://localhost/health || exit 1
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

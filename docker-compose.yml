@@ -132,9 +132,11 @@ services:
         condition: service_healthy
     ports:
       - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_SSL_PORT:-443}:443"
     environment:
       VITE_API_URL: /api
       CHOKIDAR_USEPOLLING: "true"
+      NGINX_DOMAIN: ${NGINX_DOMAIN:-www.macromv.com}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
@@ -144,6 +146,9 @@ services:
     volumes:
       - ./app:/app
       - node-modules:/app/node_modules
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-www:/var/www/certbot
     networks:
       - jm-network
 
@@ -163,11 +168,38 @@ services:
     networks:
       - jm-network
 
+  certbot:
+    image: certbot/certbot:latest
+    container_name: jm-certbot
+    depends_on:
+      frontend:
+        condition: service_started
+    environment:
+      CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
+      CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-www.macromv.com}
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        trap exit TERM;
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet || true;
+          sleep 12h & wait $!;
+        done
+    networks:
+      - jm-network
+
 volumes:
   db-data:
   ollama-data:
   maven-cache:
   node-modules:
+  certbot-etc:
+  certbot-var:
+  certbot-www:
 
 networks:
   jm-network:
