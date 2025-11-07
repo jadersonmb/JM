@@ -174,6 +174,7 @@ services:
     depends_on:
       frontend:
         condition: service_started
+    restart: unless-stopped
     environment:
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
       CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-www.macromv.com}
@@ -184,10 +185,43 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        trap exit TERM;
+        set -eu
+
+        if [ -z "${CERTBOT_EMAIL:-}" ]; then
+          echo "[certbot] CERTBOT_EMAIL environment variable is required" >&2
+          exit 1
+        fi
+
+        DOMAINS="${CERTBOT_DOMAINS:-www.macromv.com}"
+        PRIMARY_DOMAIN=$(printf "%s" "$DOMAINS" | cut -d',' -f1)
+        set -- $(printf "%s" "$DOMAINS" | tr ',' ' ')
+        if [ "$#" -eq 0 ]; then
+          echo "[certbot] No domains provided via CERTBOT_DOMAINS" >&2
+          exit 1
+        fi
+        DOMAIN_ARGS=""
+
+        for domain in "$@"; do
+          DOMAIN_ARGS="$DOMAIN_ARGS -d $domain"
+        done
+
+        if [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/privkey.pem" ]; then
+          echo "[certbot] Requesting initial certificate for $DOMAINS"
+          certbot certonly \
+            --non-interactive \
+            --agree-tos \
+            --email "$CERTBOT_EMAIL" \
+            --webroot -w /var/www/certbot \
+            $DOMAIN_ARGS
+        else
+          echo "[certbot] Existing certificate found for $PRIMARY_DOMAIN; skipping initial request"
+        fi
+
+        trap 'exit 0' TERM INT
+
         while :; do
-          certbot renew --webroot -w /var/www/certbot --quiet || true;
-          sleep 12h & wait $!;
+          certbot renew --webroot -w /var/www/certbot --quiet || true
+          sleep 43200 & wait $!
         done
     networks:
       - jm-network
