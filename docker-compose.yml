@@ -136,7 +136,7 @@ services:
     environment:
       VITE_API_URL: /api
       CHOKIDAR_USEPOLLING: "true"
-      NGINX_DOMAIN: ${NGINX_DOMAIN:-www.macromv.com}
+      NGINX_DOMAIN: ${NGINX_DOMAIN:-macromv.com,www.macromv.com}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost/health || exit 1"]
       interval: 30s
@@ -177,7 +177,7 @@ services:
     restart: unless-stopped
     environment:
       CERTBOT_EMAIL: ${CERTBOT_EMAIL:-}
-      CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-www.macromv.com}
+      CERTBOT_DOMAINS: ${CERTBOT_DOMAINS:-macromv.com,www.macromv.com}
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt
@@ -192,7 +192,7 @@ services:
           exit 1
         fi
 
-        DOMAINS="${CERTBOT_DOMAINS:-www.macromv.com}"
+        DOMAINS="${CERTBOT_DOMAINS:-macromv.com,www.macromv.com}"
         PRIMARY_DOMAIN=$(printf "%s" "$DOMAINS" | cut -d',' -f1)
         set -- $(printf "%s" "$DOMAINS" | tr ',' ' ')
         if [ "$#" -eq 0 ]; then

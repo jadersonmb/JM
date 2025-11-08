@@ -1,7 +1,17 @@
 #!/bin/sh
 set -e
 
-DOMAIN="${NGINX_DOMAIN:-www.macromv.com}"
+DOMAINS_RAW="${NGINX_DOMAIN:-macromv.com,www.macromv.com}"
+DOMAIN_LIST=$(printf "%s" "$DOMAINS_RAW" | tr ',\n' ' ')
+set -- $DOMAIN_LIST
+PRIMARY_DOMAIN="$1"
+
+if [ -z "$PRIMARY_DOMAIN" ]; then
+  echo "[nginx] No domain provided via NGINX_DOMAIN" >&2
+  exit 1
+fi
+
+DOMAIN="$PRIMARY_DOMAIN"
 LE_DIR="/etc/letsencrypt"
 LE_LIVE_DIR="$LE_DIR/live/$DOMAIN"
 TEMPLATE_DIR="/opt/letsencrypt"
@@ -24,12 +34,42 @@ ensure_self_signed_certificate() {
     return
   fi
 
-  echo "[nginx] No existing certificate for $DOMAIN. Generating temporary self-signed certificate."
+  echo "[nginx] No existing certificate for $DOMAINS_RAW. Generating temporary self-signed certificate."
   mkdir -p "$LE_LIVE_DIR"
+
+  local openssl_cfg i
+  openssl_cfg=$(mktemp)
+
+  {
+    echo "[req]"
+    echo "default_bits = 2048"
+    echo "prompt = no"
+    echo "default_md = sha256"
+    echo "x509_extensions = v3_req"
+    echo "distinguished_name = req_distinguished_name"
+    echo
+    echo "[req_distinguished_name]"
+    echo "CN = $PRIMARY_DOMAIN"
+    echo
+    echo "[v3_req]"
+    echo "subjectAltName = @alt_names"
+    echo
+    echo "[alt_names]"
+    i=1
+    for d in $DOMAIN_LIST; do
+      echo "DNS.$i = $d"
+      i=$((i + 1))
+    done
+  } >"$openssl_cfg"
+
   openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
     -keyout "$LE_LIVE_DIR/privkey.pem" \
     -out "$LE_LIVE_DIR/fullchain.pem" \
-    -subj "/CN=$DOMAIN" >/dev/null 2>&1
+    -config "$openssl_cfg" \
+    -extensions v3_req >/dev/null 2>&1
+
+  rm -f "$openssl_cfg"
+
   cp "$LE_LIVE_DIR/fullchain.pem" "$LE_LIVE_DIR/chain.pem"
 }
 
