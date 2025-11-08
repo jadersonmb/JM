@@ -1,10 +1,10 @@
-Subject: 👋 Welcome to NutriVision AI
+Subject: 👋 Welcome to Macro AI
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to NutriVision AI</title>
+  <title>Welcome to Macro AI</title>
   <style>
     body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Helvetica Neue', Arial, sans-serif; color: #1f2937; }
     .wrapper { width: 100%; table-layout: fixed; background-color: #f8fafc; padding: 20px 0; }
@@ -28,10 +28,10 @@ Subject: 👋 Welcome to NutriVision AI
   <div class="wrapper">
     <div class="main">
       <div class="header">
-        <h1>NutriVision AI</h1>
+        <h1>Macro AI</h1>
       </div>
       <div class="content">
-        <h2>👋 Welcome to NutriVision AI</h2>
+        <h2>👋 Welcome to Macro AI</h2>
         <p>Hello <strong>{{userName}}</strong>, your account has been successfully created!</p>
         <p>You can now access the platform using the credentials below:</p>
         <ul class="credentials">
@@ -43,10 +43,10 @@ Subject: 👋 Welcome to NutriVision AI
         <p style="text-align: center;">
           <a href="{{loginUrl}}" class="button">Access your account</a>
         </p>
-        <p>We are excited to support your journey with NutriVision AI.</p>
+        <p>We are excited to support your journey with Macro AI.</p>
       </div>
       <div class="footer">
-        © 2025 NutriVision AI — All rights reserved.
+        © 2025 Macro AI — All rights reserved.
       </div>
     </div>
   </div>

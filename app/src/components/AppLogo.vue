@@ -4,7 +4,7 @@
       🌿
     </div>
     <div>
-      <p class="text-lg font-bold text-slate-900">NutriVision AI</p>
+      <p class="text-lg font-bold text-slate-900">Macro AI</p>
       <p class="text-xs uppercase tracking-[0.3em] text-emerald-500">AI Control Center</p>
     </div>
   </div>

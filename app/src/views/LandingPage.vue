@@ -6,7 +6,7 @@
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-lg font-semibold text-emerald-600 shadow-sm">
             🌿
           </div>
-          <span class="text-lg font-semibold tracking-tight">NutriVision AI</span>
+          <span class="text-lg font-semibold tracking-tight">Macro AI</span>
         </a>
         <nav class="hidden items-center gap-10 text-sm font-medium text-slate-600 lg:flex">
           <button type="button" class="transition-colors hover:text-emerald-600" @click="scrollTo('features')">
@@ -521,9 +521,9 @@ const messages = {
     },
     hero: {
       badge: 'AI-powered nutrition',
-      title: 'NutriVision AI',
+      title: 'Macro AI',
       subtitle:
-        'Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis directly to your WhatsApp! With NutriVision AI, this reality is within reach.',
+        'Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis directly to your WhatsApp! With Macro AI, this reality is within reach.',
       demo: 'Try WhatsApp Demo',
       watch: 'Watch Video',
     },
@@ -669,7 +669,7 @@ const messages = {
         {
           icon: '📰',
           title: 'Press & Media',
-          description: 'Get assets and story angles for covering NutriVision AI.',
+          description: 'Get assets and story angles for covering Macro AI.',
         },
         {
           icon: '🕓',
@@ -679,7 +679,7 @@ const messages = {
       ],
     },
     footer: {
-      copy: '© 2025 NutriVision AI · All rights reserved',
+      copy: '© 2025 Macro AI · All rights reserved',
       links: {
         home: 'Home',
         pricing: 'Pricing',
@@ -700,9 +700,9 @@ const messages = {
     },
     hero: {
       badge: 'Nutrição com Inteligência Artificial',
-      title: 'NutriVision AI',
+      title: 'Macro AI',
       subtitle:
-        'Imagine apontar sua câmera para qualquer refeição e, em segundos, receber uma análise nutricional completa diretamente no WhatsApp! Com o NutriVision AI, isso já é possível.',
+        'Imagine apontar sua câmera para qualquer refeição e, em segundos, receber uma análise nutricional completa diretamente no WhatsApp! Com o Macro AI, isso já é possível.',
       demo: 'Testar no WhatsApp',
       watch: 'Ver Vídeo',
     },
@@ -848,7 +848,7 @@ const messages = {
         {
           icon: '📰',
           title: 'Imprensa e Mídia',
-          description: 'Receba materiais e histórias para divulgar o NutriVision AI.',
+          description: 'Receba materiais e histórias para divulgar o Macro AI.',
         },
         {
           icon: '🕓',
@@ -858,7 +858,7 @@ const messages = {
       ],
     },
     footer: {
-      copy: '© 2025 NutriVision AI · Todos os direitos reservados',
+      copy: '© 2025 Macro AI · Todos os direitos reservados',
       links: {
         home: 'Início',
         pricing: 'Planos',

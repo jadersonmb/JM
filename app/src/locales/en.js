@@ -86,7 +86,7 @@ export default {
   register: {
     title: 'Create your account',
     subtitle: 'You’re subscribing to {plan}',
-    planFallback: 'NutriVision AI',
+    planFallback: 'Macro AI',
     name: 'Full name',
     email: 'Email',
     phone: 'WhatsApp number',
@@ -101,7 +101,7 @@ export default {
     errorTitle: 'Unable to continue',
     errorMessage: 'We could not finish your subscription. Try again.',
     welcomeMessage:
-      '👋 Hello {name}! Welcome to NutriVision AI 🥗 You can now send your meal photos here for instant nutritional insights.',
+      '👋 Hello {name}! Welcome to Macro AI 🥗 You can now send your meal photos here for instant nutritional insights.',
   },
   firstAccess: {
     title: 'Set your new password',

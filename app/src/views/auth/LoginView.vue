@@ -8,9 +8,9 @@
       <div class="relative flex flex-col justify-between gap-10 text-white">
         <div>
           <p class="text-sm uppercase tracking-[0.4em] text-primary-200">Revolutionize Your Nutrition</p>
-          <h1 class="mt-6 text-4xl font-semibold leading-tight">NutriVision AI</h1>
+          <h1 class="mt-6 text-4xl font-semibold leading-tight">Macro AI</h1>
           <p class="mt-4 max-w-md text-base text-slate-200 text-justify">
-            Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis directly to your WhatsApp! With NutriVision AI, this reality is within reach on your phone.</p>
+            Imagine being able to point your camera at any meal and, in seconds, receive a complete nutritional analysis directly to your WhatsApp! With Macro AI, this reality is within reach on your phone.</p>
           <div class="mt-8 flex items-center gap-2 ml-20">
             <!--<img src="@/assets/marketing_login.gif" alt="WhatsApp icon"
               class="max-w-xs w-full rounded-2xl shadow-2xl border border-white/10" /> -->

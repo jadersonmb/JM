@@ -22,7 +22,7 @@ const router = createRouter({
       path: '/',
       name: 'landing',
       component: () => import('@/views/LandingPage.vue'),
-      meta: { guestOnly: true, title: 'NutriVision AI' },
+      meta: { guestOnly: true, title: 'Macro AI' },
     },
     {
       path: '/app',
@@ -253,7 +253,7 @@ router.beforeEach(async (to) => {
     return { name: 'unauthorized' };
   }
 
-  const baseTitle = '🌿 NutriVision AI';
+  const baseTitle = '🌿 Macro AI';
 
   if (to.meta.titleKey) {
     const title = i18n.global.t(to.meta.titleKey);

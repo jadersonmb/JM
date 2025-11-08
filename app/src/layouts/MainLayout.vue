@@ -466,7 +466,7 @@ watch(
   () => preferences.locale,
   () => {
     if (route.meta.titleKey) {
-      document.title = `${t(route.meta.titleKey)} · 🌿 NutriVision AI`;
+      document.title = `${t(route.meta.titleKey)} · 🌿 Macro AI`;
     }
   },
 );
