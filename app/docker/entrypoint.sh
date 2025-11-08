@@ -17,7 +17,7 @@ LE_LIVE_DIR="$LE_DIR/live/$DOMAIN"
 TEMPLATE_DIR="/opt/letsencrypt"
 CHECK_INTERVAL="${NGINX_CERT_CHECK_INTERVAL:-300}"
 
-mkdir -p /var/www/certbot
+mkdir -p /var/www/certbot/.well-known/acme-challenge
 mkdir -p "$LE_DIR"
 
 if [ ! -f "$LE_DIR/options-ssl-nginx.conf" ]; then
