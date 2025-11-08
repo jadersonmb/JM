@@ -192,27 +192,44 @@ services:
           exit 1
         fi
 
-        DOMAINS="${CERTBOT_DOMAINS:-macromv.com,www.macromv.com}"
-        PRIMARY_DOMAIN=$(printf "%s" "$DOMAINS" | cut -d',' -f1)
-        set -- $(printf "%s" "$DOMAINS" | tr ',' ' ')
+        DOMAINS_RAW="${CERTBOT_DOMAINS:-macromv.com,www.macromv.com}"
+        DOMAINS_LIST=$(printf "%s" "$DOMAINS_RAW" | tr ',\n' ' ')
+        set -- $DOMAINS_LIST
+
         if [ "$#" -eq 0 ]; then
           echo "[certbot] No domains provided via CERTBOT_DOMAINS" >&2
           exit 1
         fi
-        DOMAIN_ARGS=""
 
+        PRIMARY_DOMAIN="$1"
+        WEBROOT="/var/www/certbot"
+        mkdir -p "$WEBROOT/.well-known/acme-challenge"
+
+        DOMAIN_ARGS=""
         for domain in "$@"; do
           DOMAIN_ARGS="$DOMAIN_ARGS -d $domain"
         done
 
-        if [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/privkey.pem" ]; then
-          echo "[certbot] Requesting initial certificate for $DOMAINS"
-          certbot certonly \
+        request_certificate() {
+          echo "[certbot] Requesting certificate for $DOMAINS_RAW"
+          if certbot certonly \
             --non-interactive \
             --agree-tos \
             --email "$CERTBOT_EMAIL" \
-            --webroot -w /var/www/certbot \
-            $DOMAIN_ARGS
+            --webroot -w "$WEBROOT" \
+            $DOMAIN_ARGS; then
+            echo "[certbot] Successfully obtained certificate for $DOMAINS_RAW"
+            return 0
+          fi
+
+          echo "[certbot] Certificate request for $DOMAINS_RAW failed; retrying" >&2
+          return 1
+        }
+
+        if [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/fullchain.pem" ] || [ ! -f "/etc/letsencrypt/live/$PRIMARY_DOMAIN/privkey.pem" ]; then
+          until request_certificate; do
+            sleep 60
+          done
         else
           echo "[certbot] Existing certificate found for $PRIMARY_DOMAIN; skipping initial request"
         fi
@@ -220,8 +237,9 @@ services:
         trap 'exit 0' TERM INT
 
         while :; do
-          certbot renew --webroot -w /var/www/certbot --quiet || true
-          sleep 43200 & wait $!
+          certbot renew --webroot -w "$WEBROOT" --quiet || echo "[certbot] Renewal attempt failed; will retry later" >&2
+          sleep 43200 &
+          wait $!
         done
     networks:
       - jm-network
