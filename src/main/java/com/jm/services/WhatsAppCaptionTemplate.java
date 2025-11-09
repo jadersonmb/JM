@@ -14,25 +14,67 @@ public enum WhatsAppCaptionTemplate {
     DAILY_EN("daily_en", "en_US",
             List.of("meal_name", "portion", "dish_name", "dish_emoji", "protein", "carbs", "fat", "fiber", "kcal",
                     "protein_total", "carb_total", "fat_total", "fiber_total", "kcal_total"),
-            "\uD83C\uDF73 {{meal_name}}: {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g proteína | {{carbs}} g carboidrato | {{fat}} g gordura | {{fiber}} g fibras | {{kcal}} kcal) \uD83C\uDFAF Total: \uD83E\uDD57 Proteínas: {{protein_total}} g \uD83C\uDF5E Carboidratos: {{carb_total}} g \uD83C\uDF73 Gorduras: {{fat_total}} g \uD83C\uDF97\uFE0F Fibras: {{fiber_total}} g \uD83C\uDF7D\uFE0F Ingeridas: {{kcal_total}} kcal",
+            "\uD83C\uDF73 {{meal_name}}: {{portion}}g {{dish_name}} {{dish_emoji}}\n"
+                    + "\uD83E\uDD57 Prote\u00EDnas: {{protein}} g\n"
+                    + "\uD83C\uDF5E Carboidratos: {{carbs}} g\n"
+                    + "\uD83C\uDF73 Gorduras: {{fat}} g\n"
+                    + "\uD83C\uDF97\uFE0F Fibras: {{fiber}} g\n"
+                    + "\uD83C\uDF7D\uFE0F Calorias: {{kcal}} kcal\n"
+                    + "\uD83C\uDFAF\n"
+                    + "\uD83C\uDFAF Total di\u00E1rio:\n"
+                    + "\uD83E\uDD57 Prote\u00EDnas: {{protein_total}} g\n"
+                    + "\uD83C\uDF5E Carboidratos: {{carb_total}} g\n"
+                    + "\uD83C\uDF73 Gorduras: {{fat_total}} g\n"
+                    + "\uD83C\uDF97\uFE0F Fibras: {{fiber_total}} g\n"
+                    + "\uD83C\uDF7D\uFE0F Ingeridas: {{kcal_total}} kcal",
             "daily_en", "daily_en_v1", "daily_pt"),
     DAILY_SUMMARY_EN("daily_sumary_en", "en_US",
             List.of("date", "protein_total", "carb_total", "fat_total", "fiber_total", "water_total", "kcal_total",
                     "kcal_goal", "deficit", "status"),
-            "\uD83D\uDDD3\uFE0F Daily summary - {{date}} \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal \uD83C\uDFAF Goal: {{kcal_goal}} kcal Result: {{deficit}} kcal ({{status}})",
+            "\uD83D\uDDD3\uFE0F Daily summary - {{date}}\n"
+                    + "\uD83E\uDD57 Protein: {{protein_total}} g\n"
+                    + "\uD83C\uDF5E Carbs: {{carb_total}} g\n"
+                    + "\uD83C\uDF73 Fat: {{fat_total}} g\n"
+                    + "\uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g\n"
+                    + "\uD83D\uDEB0 Water: {{water_total}} ml\n"
+                    + "\uD83D\uDD25 Calories consumed: {{kcal_total}} kcal\n"
+                    + "\uD83C\uDFAF Goal: {{kcal_goal}} kcal\n"
+                    + "Result: {{deficit}} kcal ({{status}})",
             "daily_sumary_en", "daily_summary_en", "daily_summary_pt"),
     EDIT_MEALS_EN("edit_meals_en", "en_US",
             List.of("meal_name", "portion", "dish_name", "dish_emoji", "protein", "carbs", "fat", "fiber", "kcal",
                     "protein_total", "carb_total", "fat_total", "fiber_total", "water_total", "kcal_total",
                     "kcal_total_1", "tmb", "deficit"),
-            "\u2705 Changes saved successfully! \uD83C\uDF5D Meal: {{meal_name}} \uD83C\uDF73 {{portion}}g {{dish_name}} {{dish_emoji}} ({{protein}} g protein | {{carbs}} g carbs | {{fat}} g fat | {{fiber}} g fiber | {{kcal}} kcal) \uD83C\uDFAF Daily total: \uD83E\uDD57 Protein: {{protein_total}} g \uD83C\uDF5E Carbs: {{carb_total}} g \uD83C\uDF73 Fat: {{fat_total}} g \uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g \uD83D\uDEB0 Water: {{water_total}} ml \uD83D\uDD25 Calories consumed: {{kcal_total}} kcal Deficit: {{kcal_total_1}} - {{tmb}} = {{deficit}} kcal",
+            "\u2705 Changes saved successfully!\n"
+                    + "\uD83C\uDF5D Meal: {{meal_name}}\n"
+                    + "\uD83C\uDF73 {{portion}}g {{dish_name}} {{dish_emoji}}\n"
+                    + "\uD83E\uDD57 Protein: {{protein}} g\n"
+                    + "\uD83C\uDF5E Carbs: {{carbs}} g\n"
+                    + "\uD83C\uDF73 Fat: {{fat}} g\n"
+                    + "\uD83C\uDF97\uFE0F Fiber: {{fiber}} g\n"
+                    + "\uD83C\uDF7D\uFE0F Calories: {{kcal}} kcal\n"
+                    + "\uD83C\uDFAF Daily total:\n"
+                    + "\uD83E\uDD57 Protein: {{protein_total}} g\n"
+                    + "\uD83C\uDF5E Carbs: {{carb_total}} g\n"
+                    + "\uD83C\uDF73 Fat: {{fat_total}} g\n"
+                    + "\uD83C\uDF97\uFE0F Fiber: {{fiber_total}} g\n"
+                    + "\uD83D\uDEB0 Water: {{water_total}} ml\n"
+                    + "\uD83D\uDD25 Calories consumed: {{kcal_total}} kcal\n"
+                    + "Deficit: {{kcal_total_1}} - {{tmb}} = {{deficit}} kcal",
             "edit_meals_en", "edit_meals_pt"),
     MEAL_REMINDERS_EN("meal_reminders_en", "en_US",
             List.of("user_name", "meal_name", "dish_name", "kcal", "protein"),
-            "\u23F0 Time for your next meal, {{user_name}}! \uD83C\uDF74 {{meal_name}} is ready \uD83D\uDCAA Suggestion: {{dish_name}} ({{kcal}} kcal | {{protein}} g protein) Don't skip meals — consistency is key! \u26A1",
+            "\u23F0 Time for your next meal, {{user_name}}!\n"
+                    + "\uD83C\uDF74 {{meal_name}} is ready\n"
+                    + "\uD83D\uDCAA Suggestion: {{dish_name}}\n"
+                    + "({{kcal}} kcal | {{protein}} g protein)\n"
+                    + "Don't skip meals - consistency is key! \u26A1",
             "meal_reminders_en", "meal_reminders_pt"),
     GOLS_WATER_EN("gols_water_en", "en_US", List.of("user_name", "water_goal", "water_current", "water_remaining"),
-            "\uD83D\uDCA7 Time to drink some water, {{user_name}}! Daily goal: {{water_goal}} ml You've already had {{water_current}} ml. Only {{water_remaining}} ml left! \uD83D\uDEB0",
+            "\uD83D\uDCA7 Time to drink some water, {{user_name}}!\n"
+                    + "Daily goal: {{water_goal}} ml\n"
+                    + "You've already had {{water_current}} ml.\n"
+                    + "Only {{water_remaining}} ml left! \uD83D\uDEB0",
             "gols_water_en", "gols_water_pt");
 
     private final String code;

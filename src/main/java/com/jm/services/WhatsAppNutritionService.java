@@ -39,8 +39,6 @@ import com.jm.enums.BiologicalSex;
 import com.jm.enums.NutritionGoalObjective;
 import com.jm.execption.JMException;
 import com.jm.execption.ProblemType;
-import com.jm.services.AnalyticsService;
-import com.jm.services.WhatsAppCaptionTemplate;
 import com.jm.services.ai.AiClient;
 import com.jm.services.ai.AiClientFactory;
 import com.jm.services.ai.AiRequest;
@@ -104,36 +102,48 @@ public class WhatsAppNutritionService {
     private static final String DEFAULT_OLLAMA_VISION_MODEL = "llava:34b";
     private static final String OLLAMA_AUDIO_MODEL = "nuextract:latest";
     private static final String DEFAULT_IMAGE_PROMPT = """
-            You are a nutrition vision assistant. Analyse the meal image and respond ONLY with the following JSON structure:
+                        You are a nutrition vision assistant.
+            Your task is to analyze the uploaded meal image and provide a detailed **nutrition estimation**.
+
+            Identify all visible food items and estimate their quantities and macronutrients based on typical serving sizes and common nutrition databases (e.g., USDA, TACO).
+
+            Respond ONLY in valid JSON format using this structure:
+
             {
-              \"isFood\": true|false,
-              \"foodName\": \"name of the meal\",
-              \"dish_name\": \"short dish name in Portuguese\",
-              \"dish_emoji\": \"emoji that represents the dish\",
-              \"meal_name\": \"Breakfast|Lunch|Dinner|Snack|Supper|Other meals\",
-              \"mealType\": \"BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS\",
-              \"portion\": number in grams or null,
-              \"calories\": null,
-              \"kcal\": null,
-              \"macronutrients\": {
-                \"protein_g\": null,
-                \"carbs_g\": null,
-                \"fat_g\": null,
-                \"fiber_g\": null
+              "isFood": true|false,
+              "foodName": "Full meal name in English or Portuguese",
+              "dish_name": "short dish name in Portuguese",
+              "dish_emoji": "emoji representing the dish",
+              "meal_name": "Breakfast|Lunch|Dinner|Snack|Supper|Other meals",
+              "mealType": "BREAKFAST|LUNCH|DINNER|SNACK|SUPPER|OTHER_MEALS",
+              "portion": number in grams or null,
+              "calories": number in kcal or null,
+              "kcal": same as calories (duplicated field for compatibility),
+              "macronutrients": {
+                "protein_g": number or null,
+                "carbs_g": number or null,
+                "fat_g": number or null,
+                "fiber_g": number or null
               },
-              \"items\": [
-                { \"name\": \"food item\", \"confidence\": value between 0 and 1, \"portion_g\": number in grams or null }
+              "items": [
+                { "name": "food item", "confidence": value between 0 and 1, "portion_g": number or null }
               ],
-              \"categories\": [
-                { \"name\": \"category name\", \"confidence\": value between 0 and 1 }
+              "categories": [
+                { "name": "category name", "confidence": value between 0 and 1 }
               ],
-              \"summary\": \"short sentence about the meal\",
-              \"confidence\": value between 0 and 1
+              "summary": "short nutritional summary of the meal",
+              "confidence": value between 0 and 1
             }
-            Focus on identifying the food items accurately. If the picture does not contain food, respond exactly with:
-            {\"isFood\": false, \"summary\": \"brief explanation\"}
-            Keep the response compact and valid JSON.
-            """;
+
+            ### Rules:
+            - Always fill in **calories** and **macronutrients** with estimated numeric values, not null.
+            - Estimate values based on typical portions and food databases, not on visual guess only.
+            - If multiple foods are detected, aggregate total macronutrients.
+            - If the image does not contain food, respond exactly with:
+              {"isFood": false, "summary": "brief explanation"}
+
+            Keep the response concise and valid JSON only.
+                        """;
     private static final String DEFAULT_PERSONALIZED_PROMPT = """
             You are a personalised nutrition assistant. A vision model analysed a meal photo and produced the JSON below:
             {{DETECTION_JSON}}
@@ -673,7 +683,8 @@ public class WhatsAppNutritionService {
         }
 
         NutritionGoalObjective objective = parseObjectiveFromBody(body);
-        return Optional.of(new AutoPlanInput(age, sex, weight, weightUnit, height, heightUnit, heightInches, objective));
+        return Optional
+                .of(new AutoPlanInput(age, sex, weight, weightUnit, height, heightUnit, heightInches, objective));
     }
 
     private Integer parseInteger(String value) {
@@ -1603,7 +1614,8 @@ public class WhatsAppNutritionService {
                 .orElse(null);
     }
 
-    private GeminiNutritionResult requestOllamaNutritionAnalysis(byte[] imageBytes, Users owner, String configuredModel) {
+    private GeminiNutritionResult requestOllamaNutritionAnalysis(byte[] imageBytes, Users owner,
+            String configuredModel) {
         if (imageBytes == null || imageBytes.length == 0) {
             return null;
         }
@@ -1726,7 +1738,7 @@ public class WhatsAppNutritionService {
         }
 
         String trimmed = spec.trim();
-        String[][] separators = new String[][] { {"::"}, {"|"}, {"=>"} };
+        String[][] separators = new String[][] { { "::" }, { "|" }, { "=>" } };
         for (String[] separator : separators) {
             String token = separator[0];
             int idx = trimmed.indexOf(token);
@@ -1806,7 +1818,6 @@ public class WhatsAppNutritionService {
         }
         return result;
     }
-
 
     private Optional<AiClient> resolveClient(AiProvider provider) {
         try {
