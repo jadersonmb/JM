@@ -20,7 +20,7 @@ public enum WhatsAppCaptionTemplate {
                     + "\uD83C\uDF73 Gorduras: {{fat}} g\n"
                     + "\uD83C\uDF97\uFE0F Fibras: {{fiber}} g\n"
                     + "\uD83C\uDF7D\uFE0F Calorias: {{kcal}} kcal\n"
-                    + "\uD83C\uDFAF\n"
+                    + "\uD83C \n"
                     + "\uD83C\uDFAF Total di\u00E1rio:\n"
                     + "\uD83E\uDD57 Prote\u00EDnas: {{protein_total}} g\n"
                     + "\uD83C\uDF5E Carboidratos: {{carb_total}} g\n"
