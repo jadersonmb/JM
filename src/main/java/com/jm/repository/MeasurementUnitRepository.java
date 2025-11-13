@@ -18,4 +18,8 @@ public interface MeasurementUnitRepository extends JpaRepository<MeasurementUnit
     List<MeasurementUnits> findByIsActiveTrueOrderByDescriptionAsc();
 
     Optional<MeasurementUnits> findByCodeIgnoreCase(String code);
+
+    Optional<MeasurementUnits> findFirstByDescriptionIgnoreCase(String description);
+
+    Optional<MeasurementUnits> findFirstBySymbolIgnoreCase(String symbol);
 }

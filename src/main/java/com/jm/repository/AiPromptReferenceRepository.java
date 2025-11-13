@@ -15,4 +15,6 @@ public interface AiPromptReferenceRepository
 
     Optional<AiPromptReference> findFirstByCodeIgnoreCaseAndProviderAndModelIgnoreCaseAndOwnerIsNullAndActiveTrueOrderByUpdatedAtDesc(
             String code, AiProvider provider, String model);
+
+    Optional<AiPromptReference> findFirstByCodeIgnoreCaseAndActiveTrueOrderByUpdatedAtDesc(String code);
 }

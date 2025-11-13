@@ -64,6 +64,11 @@ whatsapp:
     url: https://graph.facebook.com/v22.0/{phoneNumberId}/messages
     token: ${WHATSAPP_API_TOKEN:}
 
+diet:
+  ai:
+    prompt-code: ${DIET_AI_PROMPT_CODE:PLAN_DIET}
+    timeout-seconds: ${DIET_AI_TIMEOUT_SECONDS:45}
+
 # Cloudflare R2 Configuration
 cloudflare:
   r2:

@@ -26,4 +26,6 @@ public interface FoodRepository extends JpaRepository<Food, UUID> {
     Optional<Food> findFirstByNameIgnoreCase(String name);
 
     Optional<Food> findFirstByNameContainingIgnoreCase(String name);
+
+    Optional<Food> findFirstByCodeIgnoreCase(String code);
 }

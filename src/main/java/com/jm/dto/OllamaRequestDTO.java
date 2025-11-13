@@ -15,4 +15,5 @@ public class OllamaRequestDTO {
     private String prompt;
     private Boolean stream;
     private List<String> images;
+    private String metadata;
 }

@@ -1,10 +1,13 @@
 package com.jm.controllers;
 
 import com.jm.dto.DietOwnerDTO;
+import com.jm.dto.DietPlanAiSuggestionRequest;
+import com.jm.dto.DietPlanAiSuggestionResponse;
 import com.jm.dto.DietPlanDTO;
 import com.jm.execption.JMException;
 import com.jm.execption.Problem;
 import com.jm.security.annotation.PermissionRequired;
+import com.jm.services.DietPlanAiService;
 import com.jm.services.DietPlanService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -37,11 +40,25 @@ public class DietPlanController {
     private static final Logger logger = LoggerFactory.getLogger(DietPlanService.class);
 
     private final DietPlanService service;
+    private final DietPlanAiService aiService;
 
     @PermissionRequired("ROLE_DIETS_CREATE")
     @PostMapping
     public ResponseEntity<?> create(@RequestBody DietPlanDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
+    }
+
+    @PermissionRequired("ROLE_DIETS_GENERATE_AI")
+    @PostMapping("/ai/suggestions")
+    public ResponseEntity<DietPlanAiSuggestionResponse> generateWithAi(
+            @RequestBody DietPlanAiSuggestionRequest request) {
+        return ResponseEntity.ok(aiService.requestSuggestion(request));
+    }
+
+    @PermissionRequired("ROLE_DIETS_GENERATE_AI")
+    @GetMapping("/ai/suggestions/{jobId}")
+    public ResponseEntity<DietPlanAiSuggestionResponse> getAiSuggestionStatus(@PathVariable UUID jobId) {
+        return ResponseEntity.ok(aiService.getSuggestion(jobId));
     }
 
     @PermissionRequired("ROLE_DIETS_READ")
